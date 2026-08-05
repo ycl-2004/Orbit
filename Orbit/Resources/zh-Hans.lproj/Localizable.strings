@@ -1,0 +1,94 @@
+/* Orbit — zh-Hans */
+
+/* Menu bar */
+"statusMenu.permission.granted" = "快捷键已启用";
+"statusMenu.permission.missing" = "快捷键需要授权";
+"statusMenu.hint.hold" = "按住 %@ 唤出环形界面";
+"statusMenu.grantAccess" = "打开辅助功能设置…";
+"statusMenu.preferences" = "设置...";
+"statusMenu.quit" = "退出 Orbit";
+
+/* Settings — window and permissions */
+"prefs.windowTitle" = "设置";
+"prefs.access.granted" = "Orbit 已获得辅助功能权限";
+"prefs.access.missing" = "Orbit 需要辅助功能权限";
+"prefs.access.grant" = "去授权…";
+
+/* Settings — summoning */
+"prefs.group.trigger" = "唤出方式";
+"prefs.trigger.key" = "唤出按键";
+"prefs.trigger.clearKey" = "取消选择键";
+"prefs.trigger.holdTime" = "按住时长";
+"prefs.trigger.holdTimeValue" = "%d 毫秒";
+"prefs.trigger.letterKeys" = "字母快捷键";
+"prefs.trigger.numberKeys" = "数字快捷键";
+"prefs.trigger.keysNote" = "方向键始终可用；可按需开启字母或数字快捷键。";
+
+/* Settings — appearance */
+"prefs.group.appearance" = "外观";
+"prefs.appearance.placement" = "唤出位置";
+"prefs.appearance.cardSize" = "卡片大小";
+"prefs.appearance.cardFinish" = "卡片材质";
+
+/* Settings — window preview */
+"prefs.group.preview" = "窗口预览";
+"prefs.preview.enabled" = "显示窗口预览";
+"prefs.preview.needsRecording" = "需要屏幕录制权限。授权后请重新启动 Orbit。";
+"prefs.preview.openSystemSettings" = "打开系统设置";
+"prefs.preview.note" = "选中应用时，在环形右侧显示它所有窗口的截图。需要屏幕录制权限。";
+
+/* Settings — login */
+"prefs.group.startup" = "登录";
+"prefs.startup.launchAtLogin" = "开机自动启动";
+
+/* Settings — shortcut reference */
+"prefs.group.cheatSheet" = "快捷键速查";
+"prefs.hint.hold" = "按住 %@ 唤出环形界面";
+"prefs.hint.move" = "方向键或 Tab 在应用之间移动";
+"prefs.hint.letters" = "按字母键直接跳到对应应用";
+"prefs.hint.numbers" = "数字键 1–9 直接选中应用";
+"prefs.hint.clear" = "按 %@ 取消当前选择";
+"prefs.hint.release" = "松开触发键即切换并关闭";
+
+/* Modifier keys */
+"triggerKey.option" = "Option";
+"triggerKey.command" = "Command";
+"triggerKey.control" = "Control";
+"triggerKey.shift" = "Shift";
+"triggerKey.disabled" = "关闭";
+
+/* Ring placement */
+"ringPlacement.screenCenter" = "屏幕中央";
+"ringPlacement.cursor" = "跟随光标";
+
+/* Card size and finish */
+"cardSize.small" = "小";
+"cardSize.medium" = "中";
+"cardSize.large" = "大";
+"cardSize.extraLarge" = "超大";
+"cardFinish.white" = "纯白";
+"cardFinish.black" = "纯黑";
+"cardFinish.system" = "跟随系统";
+
+/* Ring — center control */
+"center.cancel" = "取消";
+"center.confirm" = "松开切换";
+"center.quit" = "拖入退出应用";
+"center.share" = "拖入分享";
+"center.trash" = "拖入废纸篓";
+
+/* Ring — window preview panel */
+"preview.empty" = "选择一个应用查看窗口";
+"preview.none" = "没有可预览的窗口";
+
+/* VoiceOver */
+"accessibility.selected" = "已选择。按 Enter 或松开触发键确认切换。";
+"accessibility.select" = "选择但不立即跳转。";
+
+/* Onboarding */
+"onboarding.title" = "Orbit";
+"onboarding.description" = "正在运行的应用，一环即达。\n按住、选中、松手。";
+"onboarding.start" = "上手试试";
+
+/* Fallbacks */
+"app.unnamed" = "未命名应用";

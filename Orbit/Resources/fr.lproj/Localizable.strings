@@ -1,0 +1,94 @@
+/* Orbit — fr */
+
+/* Menu bar */
+"statusMenu.permission.granted" = "Raccourci actif";
+"statusMenu.permission.missing" = "Le raccourci requiert un accès";
+"statusMenu.hint.hold" = "Maintenez %@ pour afficher l'anneau";
+"statusMenu.grantAccess" = "Ouvrir les réglages d'accessibilité…";
+"statusMenu.preferences" = "Réglages...";
+"statusMenu.quit" = "Quitter Orbit";
+
+/* Settings — window and permissions */
+"prefs.windowTitle" = "Réglages";
+"prefs.access.granted" = "Orbit dispose de l'accès à l'accessibilité";
+"prefs.access.missing" = "Orbit a besoin de l'accès à l'accessibilité";
+"prefs.access.grant" = "Autoriser…";
+
+/* Settings — summoning */
+"prefs.group.trigger" = "Invocation";
+"prefs.trigger.key" = "Invoquer avec";
+"prefs.trigger.clearKey" = "Touche de désélection";
+"prefs.trigger.holdTime" = "Durée d'appui";
+"prefs.trigger.holdTimeValue" = "%d ms";
+"prefs.trigger.letterKeys" = "Raccourcis par lettre";
+"prefs.trigger.numberKeys" = "Raccourcis numériques";
+"prefs.trigger.keysNote" = "Les touches fléchées restent toujours disponibles. Activez les raccourcis par lettre ou numériques selon vos besoins.";
+
+/* Settings — appearance */
+"prefs.group.appearance" = "Apparence";
+"prefs.appearance.placement" = "Position d’affichage";
+"prefs.appearance.cardSize" = "Taille des cartes";
+"prefs.appearance.cardFinish" = "Matériau des cartes";
+
+/* Settings — window preview */
+"prefs.group.preview" = "Aperçu des fenêtres";
+"prefs.preview.enabled" = "Afficher l’aperçu des fenêtres";
+"prefs.preview.needsRecording" = "Autorisation d’enregistrement de l’écran requise. Redémarrez Orbit ensuite.";
+"prefs.preview.openSystemSettings" = "Ouvrir Réglages Système";
+"prefs.preview.note" = "Affiche toutes les fenêtres de l’app sélectionnée à droite de l’anneau. Nécessite l’autorisation d’enregistrement de l’écran.";
+
+/* Settings — login */
+"prefs.group.startup" = "Ouverture de session";
+"prefs.startup.launchAtLogin" = "Lancer à l'ouverture de session";
+
+/* Settings — shortcut reference */
+"prefs.group.cheatSheet" = "Aide-mémoire des raccourcis";
+"prefs.hint.hold" = "Maintenez %@ pour afficher l'anneau";
+"prefs.hint.move" = "Les flèches ou Tab passent d'une app à l'autre";
+"prefs.hint.letters" = "Tapez une lettre pour aller à l'app correspondante";
+"prefs.hint.numbers" = "Les touches 1 à 9 sélectionnent directement une app";
+"prefs.hint.clear" = "Appuyez sur %@ pour annuler la sélection";
+"prefs.hint.release" = "Relâchez la touche pour basculer et fermer";
+
+/* Modifier keys */
+"triggerKey.option" = "Option";
+"triggerKey.command" = "Command";
+"triggerKey.control" = "Control";
+"triggerKey.shift" = "Shift";
+"triggerKey.disabled" = "Désactivé";
+
+/* Ring placement */
+"ringPlacement.screenCenter" = "Centre de l’écran";
+"ringPlacement.cursor" = "Suivre le curseur";
+
+/* Card size and finish */
+"cardSize.small" = "Petite";
+"cardSize.medium" = "Moyenne";
+"cardSize.large" = "Grande";
+"cardSize.extraLarge" = "Très grande";
+"cardFinish.white" = "Blanc";
+"cardFinish.black" = "Noir";
+"cardFinish.system" = "Système";
+
+/* Ring — center control */
+"center.cancel" = "Annuler";
+"center.confirm" = "Relâchez pour basculer";
+"center.quit" = "Déposez pour quitter";
+"center.share" = "Déposez pour partager";
+"center.trash" = "Déposez pour mettre à la corbeille";
+
+/* Ring — window preview panel */
+"preview.empty" = "Sélectionnez une app pour voir ses fenêtres";
+"preview.none" = "Aucune fenêtre à prévisualiser";
+
+/* VoiceOver */
+"accessibility.selected" = "Sélectionné. Appuyez sur Entrée ou relâchez la touche pour basculer.";
+"accessibility.select" = "Sélectionner sans basculer.";
+
+/* Onboarding */
+"onboarding.title" = "Orbit";
+"onboarding.description" = "Vos apps ouvertes, à un anneau près.\nMaintenez, choisissez, relâchez.";
+"onboarding.start" = "C'est parti";
+
+/* Fallbacks */
+"app.unnamed" = "App sans nom";

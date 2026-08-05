@@ -1,0 +1,62 @@
+# ─── Build output ───────────────────────────────────────────────────────────
+[Bb]uild/
+DerivedData/
+.build/
+Packages/
+*.xcarchive
+*.ipa
+*.hmap
+*.dSYM
+*.dSYM.zip
+
+# Release artifacts produced by scripts/package_release.sh
+dist/
+Orbit-macOS-v*.zip
+
+# ─── Xcode per-user state ───────────────────────────────────────────────────
+# Never commit these: they pin the project to one developer's machine.
+xcuserdata/
+**/xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+
+# ─── Signing material and secrets ───────────────────────────────────────────
+*.p12
+*.p8
+*.pem
+*.key
+*.cer
+*.crt
+*.mobileprovision
+*.keystore
+*.jks
+**/Secret.plist
+**/Secrets.*
+
+# ─── Local configuration ────────────────────────────────────────────────────
+.env
+.env.*
+*.env
+!.env.example
+!.env.*.example
+*.xcconfig.local
+*.xcconfig.user
+
+# Scratch state written by local AI/agent tooling
+.agents/
+.codex/
+.fable/
+
+# ─── macOS and editor noise ─────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Icon?
+.Spotlight-V100
+.Trashes
+*.log
+*.tmp
+*.sw[op]

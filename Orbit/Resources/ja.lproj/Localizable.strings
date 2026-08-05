@@ -1,0 +1,94 @@
+/* Orbit — ja */
+
+/* Menu bar */
+"statusMenu.permission.granted" = "ショートカット有効";
+"statusMenu.permission.missing" = "ショートカットに許可が必要";
+"statusMenu.hint.hold" = "%@ を長押しでリングを表示";
+"statusMenu.grantAccess" = "アクセシビリティ設定を開く…";
+"statusMenu.preferences" = "設定...";
+"statusMenu.quit" = "Orbit を終了";
+
+/* Settings — window and permissions */
+"prefs.windowTitle" = "設定";
+"prefs.access.granted" = "Orbit にアクセシビリティ権限があります";
+"prefs.access.missing" = "Orbit にはアクセシビリティ権限が必要です";
+"prefs.access.grant" = "許可する…";
+
+/* Settings — summoning */
+"prefs.group.trigger" = "呼び出し";
+"prefs.trigger.key" = "呼び出しキー";
+"prefs.trigger.clearKey" = "選択解除キー";
+"prefs.trigger.holdTime" = "長押し時間";
+"prefs.trigger.holdTimeValue" = "%d ミリ秒";
+"prefs.trigger.letterKeys" = "文字ショートカット";
+"prefs.trigger.numberKeys" = "数字ショートカット";
+"prefs.trigger.keysNote" = "矢印キーは常に使用できます。必要に応じて文字または数字ショートカットを有効にしてください。";
+
+/* Settings — appearance */
+"prefs.group.appearance" = "外観";
+"prefs.appearance.placement" = "表示位置";
+"prefs.appearance.cardSize" = "カードのサイズ";
+"prefs.appearance.cardFinish" = "カードの材質";
+
+/* Settings — window preview */
+"prefs.group.preview" = "ウインドウプレビュー";
+"prefs.preview.enabled" = "ウインドウプレビューを表示";
+"prefs.preview.needsRecording" = "画面収録の許可が必要です。許可後は Orbit を再起動してください。";
+"prefs.preview.openSystemSettings" = "システム設定を開く";
+"prefs.preview.note" = "アプリを選択すると、そのすべてのウインドウをリングの右側に表示します。画面収録の許可が必要です。";
+
+/* Settings — login */
+"prefs.group.startup" = "ログイン";
+"prefs.startup.launchAtLogin" = "ログイン時に起動";
+
+/* Settings — shortcut reference */
+"prefs.group.cheatSheet" = "ショートカット早見表";
+"prefs.hint.hold" = "%@ を長押しでリングを表示";
+"prefs.hint.move" = "矢印キーか Tab でアプリを移動";
+"prefs.hint.letters" = "文字キーでそのアプリへ移動";
+"prefs.hint.numbers" = "数字キー 1–9 で直接選択";
+"prefs.hint.clear" = "%@ で選択を解除";
+"prefs.hint.release" = "トリガーキーを離すと切り替えて閉じる";
+
+/* Modifier keys */
+"triggerKey.option" = "Option";
+"triggerKey.command" = "Command";
+"triggerKey.control" = "Control";
+"triggerKey.shift" = "Shift";
+"triggerKey.disabled" = "オフ";
+
+/* Ring placement */
+"ringPlacement.screenCenter" = "画面中央";
+"ringPlacement.cursor" = "カーソルに追従";
+
+/* Card size and finish */
+"cardSize.small" = "小";
+"cardSize.medium" = "中";
+"cardSize.large" = "大";
+"cardSize.extraLarge" = "特大";
+"cardFinish.white" = "白";
+"cardFinish.black" = "黒";
+"cardFinish.system" = "システム";
+
+/* Ring — center control */
+"center.cancel" = "キャンセル";
+"center.confirm" = "離して切り替え";
+"center.quit" = "ドロップして終了";
+"center.share" = "ドロップして共有";
+"center.trash" = "ドロップしてゴミ箱へ";
+
+/* Ring — window preview panel */
+"preview.empty" = "アプリを選択してウインドウを表示";
+"preview.none" = "プレビューできるウインドウがありません";
+
+/* VoiceOver */
+"accessibility.selected" = "選択中。Enter を押すかトリガーキーを離すと切り替わります。";
+"accessibility.select" = "すぐに切り替えずに選択します。";
+
+/* Onboarding */
+"onboarding.title" = "Orbit";
+"onboarding.description" = "起動中のアプリを、ひとつのリングに。\n押して、選んで、離すだけ。";
+"onboarding.start" = "はじめる";
+
+/* Fallbacks */
+"app.unnamed" = "名称未設定のアプリ";

@@ -1,0 +1,929 @@
+//
+//  OrbitRingView.swift
+//  Orbit
+//
+//  The ring deliberately separates selection from activation. A card click or
+//  hover selects an app; activation happens on Enter or when the trigger key
+//  is released. The center is a cancel target unless a card is explicitly
+//  dragged into it.
+//
+
+import AppKit
+import Combine
+import SwiftUI
+import UniformTypeIdentifiers
+
+@MainActor
+final class OrbitRingViewModel: ObservableObject {
+    @Published private(set) var apps: [AppInfo]
+    @Published var selectedID: String?
+    @Published var draggedAppID: String?
+    @Published var dragOffset: CGSize = .zero
+    @Published var dragOverCenter = false
+    @Published var dissolvingAppID: String?
+    @Published var fileDropPhase: FileDropPhase = .idle
+    @Published var fileTrashReady = false
+    @Published private(set) var previews: [WindowPreview] = []
+    @Published private(set) var isLoadingPreviews = false
+    /// Which of the selected app's windows the arrow keys point at.
+    @Published var selectedWindowIndex = 0
+
+    var onCancel: (() -> Void)?
+    /// Second argument is the window title to raise, when one was picked.
+    var onActivate: ((AppInfo, String?) -> Void)?
+
+    private var fileTrashTask: DispatchWorkItem?
+    /// Cursor position at the moment selection was explicitly cleared.
+    private var hoverAnchor: CGPoint?
+    /// Where the selection stood when it was cleared, so arrowing again picks
+    /// up from there instead of starting over.
+    private var resumeIndex: Int?
+
+    /// Captured once per showing: the layout flips and the panel resizes
+    /// around this, so it must not change while the ring is on screen.
+    let showsPreview: Bool
+
+    init(apps: [AppInfo], showsPreview: Bool? = nil) {
+        self.apps = Array(apps.prefix(OrbitConfig.maxVisibleApps))
+        self.showsPreview = showsPreview
+            ?? (OrbitConfig.windowPreviewEnabled && WindowPreviewService.hasScreenRecordingPermission())
+    }
+
+    var selectedApp: AppInfo? {
+        guard let selectedID else { return nil }
+        return apps.first(where: { $0.id == selectedID })
+    }
+
+    var centerMode: OrbitCenterMode {
+        if draggedAppID != nil && dragOverCenter {
+            return .quit
+        }
+        if fileTrashReady {
+            return .trash
+        }
+        if fileDropPhase.isReceiving {
+            return .share
+        }
+        if selectedID != nil {
+            return .confirm
+        }
+        return .cancel
+    }
+
+    var ringRadius: CGFloat {
+        OrbitConfig.ringRadius(cardCount: apps.count)
+    }
+
+    var canvasSize: CGFloat {
+        OrbitConfig.ringCanvasSize(cardCount: apps.count)
+    }
+
+    /// The fan opens symmetrically around one direction, leaving its gap on the
+    /// opposite side. Without a preview the gap faces left; with one it faces
+    /// right so the cards curl around the preview panel.
+    private var fanAxis: Double {
+        showsPreview ? .pi : 0
+    }
+
+    /// Few apps make a small fan; many apps keep the same step until the fan
+    /// hits its 270° limit, then tighten it while the radius grows.
+    func angle(for index: Int) -> Double {
+        guard apps.count > 1 else { return fanAxis }
+
+        let step = OrbitConfig.ringStep(cardCount: apps.count)
+        let span = step * Double(apps.count - 1)
+        let offset = step * Double(index)
+        // Cards always read top-to-bottom. Mirroring the axis would also
+        // mirror that order, so the flipped fan is walked backwards.
+        return showsPreview
+            ? fanAxis + span / 2 - offset
+            : fanAxis - span / 2 + offset
+    }
+
+    /// Total size of the panel that hosts the ring, plus the preview when it
+    /// is enabled. The preview tucks into the fan's gap rather than sitting
+    /// beside an untouched square canvas.
+    var panelSize: CGSize {
+        guard showsPreview else {
+            return CGSize(width: canvasSize, height: canvasSize)
+        }
+        // A short fan must not squash the carousel: the window grows past the
+        // canvas when the ring alone would not give the stage room. The ring
+        // stays centered in whatever height that comes to.
+        let screenHeight = NSScreen.main?.visibleFrame.height ?? 900
+        let stageHeight = previewCardWidth / OrbitConfig.previewStageAspectRatio + 120
+        return CGSize(
+            width: canvasSize + previewPanelWidth - previewOverlap,
+            height: min(max(canvasSize, stageHeight), screenHeight - 60)
+        )
+    }
+
+    /// Sized from what the fan leaves over, so it must be read once and shared
+    /// by the window frame and the carousel inside it.
+    var previewPanelWidth: CGFloat {
+        OrbitConfig.previewPanelWidth(cardCount: apps.count, overlap: previewOverlap)
+    }
+
+    /// Width of the foreground carousel card. Driven by the horizontal room
+    /// the fan leaves over — never by the selected window — so that the stage,
+    /// and with it the page control, holds still while arrowing through.
+    var previewCardWidth: CGFloat {
+        let byWidth = (previewPanelWidth - previewOverlap - 48) / OrbitConfig.previewCarouselSpan
+        return max(160, min(OrbitConfig.previewCardMaximumWidth, byWidth))
+    }
+
+    /// How far the preview slides back over the canvas. The fan's end cards
+    /// reach `cos(span/2) * radius` past the center, so stop just clear of them.
+    var previewOverlap: CGFloat {
+        let step = OrbitConfig.ringStep(cardCount: apps.count)
+        let halfSpan = step * Double(max(apps.count - 1, 0)) / 2
+        let reach = abs(cos(halfSpan)) * ringRadius + OrbitConfig.cardSize.dimension * 0.5
+        return max(0, canvasSize / 2 - reach - OrbitConfig.previewGap)
+    }
+
+    func position(for index: Int) -> CGPoint {
+        let center = canvasSize / 2
+        guard !apps.isEmpty else {
+            return CGPoint(x: center, y: center)
+        }
+
+        let angle = angle(for: index)
+        return CGPoint(
+            x: center + cos(angle) * ringRadius,
+            y: center + sin(angle) * ringRadius
+        )
+    }
+
+    func select(_ app: AppInfo) {
+        guard draggedAppID == nil else { return }
+        hoverAnchor = nil
+        resumeIndex = nil
+        selectedID = app.id
+    }
+
+    /// Hovering re-selects a card, which would undo an explicit deselect the
+    /// moment the card resizes under a stationary cursor. Ignore hover until
+    /// the pointer actually moves.
+    func selectFromHover(_ app: AppInfo) {
+        if let anchor = hoverAnchor {
+            let now = NSEvent.mouseLocation
+            guard hypot(now.x - anchor.x, now.y - anchor.y) > 4 else { return }
+        }
+        select(app)
+    }
+
+    /// Reloads thumbnails for whatever is selected. Cancelling the previous
+    /// call is what keeps a fast hover sweep from queueing captures.
+    func loadPreviews() async {
+        guard showsPreview, let app = selectedApp else {
+            previews = []
+            isLoadingPreviews = false
+            return
+        }
+
+        isLoadingPreviews = true
+        selectedWindowIndex = 0
+        let captured = await WindowPreviewService.shared
+            .previews(forProcessIdentifier: app.processIdentifier)
+        guard !Task.isCancelled else { return }
+
+        previews = Array(captured.prefix(OrbitConfig.maxVisiblePreviews))
+        isLoadingPreviews = false
+    }
+
+    func moveWindowSelection(step: Int) {
+        guard previews.count > 1 else { return }
+        selectedWindowIndex = (selectedWindowIndex + step + previews.count) % previews.count
+    }
+
+    /// Title of the window the arrow keys landed on, if the app has more than
+    /// one to choose between.
+    var selectedWindowTitle: String? {
+        guard previews.indices.contains(selectedWindowIndex) else { return nil }
+        return previews[selectedWindowIndex].title
+    }
+
+    func moveSelection(step: Int) {
+        guard !apps.isEmpty else { return }
+
+        // After an explicit deselect, the first arrow press returns to the card
+        // that was left, rather than jumping back to the start of the ring.
+        if selectedID == nil, let resumeIndex, apps.indices.contains(resumeIndex) {
+            self.resumeIndex = nil
+            hoverAnchor = nil
+            selectedID = apps[resumeIndex].id
+            return
+        }
+
+        let currentIndex = selectedID.flatMap { id in apps.firstIndex(where: { $0.id == id }) } ?? (step > 0 ? -1 : 0)
+        let nextIndex = (currentIndex + step + apps.count) % apps.count
+        selectedID = apps[nextIndex].id
+    }
+
+    func select(number: String) {
+        guard let number = Int(number), number > 0, number <= apps.count else { return }
+        selectedID = apps[number - 1].id
+    }
+
+    func select(letter: String) {
+        guard !apps.isEmpty, let first = letter.first else { return }
+        let startIndex = selectedID.flatMap { id in apps.firstIndex(where: { $0.id == id }) } ?? -1
+        let orderedIndices = Array(0 ..< apps.count).map { (startIndex + 1 + $0) % apps.count }
+        guard let match = orderedIndices.first(where: { apps[$0].firstLetter == Character(String(first).uppercased()) }) else {
+            return
+        }
+        selectedID = apps[match].id
+    }
+
+    func confirmSelection() {
+        guard let selectedApp else {
+            onCancel?()
+            return
+        }
+        onActivate?(selectedApp, selectedWindowTitle)
+    }
+
+    /// Clears the highlight so releasing the trigger dismisses the ring
+    /// instead of switching apps.
+    func deselect() {
+        guard draggedAppID == nil else { return }
+        resumeIndex = selectedID.flatMap { id in apps.firstIndex(where: { $0.id == id }) }
+        selectedID = nil
+        hoverAnchor = NSEvent.mouseLocation
+    }
+
+    func cancel() {
+        guard draggedAppID == nil, !fileDropPhase.isReceiving else { return }
+        onCancel?()
+    }
+
+    func triggerReleased() {
+        guard draggedAppID == nil, fileDropPhase == .idle else { return }
+        if selectedID == nil {
+            onCancel?()
+        } else {
+            confirmSelection()
+        }
+    }
+
+    func beginAppDrag(_ app: AppInfo) {
+        selectedID = app.id
+        draggedAppID = app.id
+        dragOffset = .zero
+        dragOverCenter = false
+    }
+
+    func updateAppDrag(_ app: AppInfo, offset: CGSize, overCenter: Bool) {
+        guard draggedAppID == app.id else { return }
+        dragOffset = offset
+        dragOverCenter = overCenter
+    }
+
+    func finishAppDrag(_ app: AppInfo) {
+        guard draggedAppID == app.id else { return }
+        let shouldQuit = dragOverCenter
+        draggedAppID = nil
+        dragOffset = .zero
+        dragOverCenter = false
+
+        guard shouldQuit else { return }
+
+        selectedID = nil
+        dissolvingAppID = app.id
+        app.terminate { [weak self] success in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if success {
+                    self.apps.removeAll { $0.id == app.id }
+                    if self.apps.isEmpty {
+                        self.onCancel?()
+                    }
+                } else {
+                    self.dissolvingAppID = nil
+                }
+            }
+        }
+    }
+
+    func setFileDragTargeted(_ targeted: Bool) {
+        if targeted {
+            fileTrashTask?.cancel()
+            fileTrashReady = false
+            fileDropPhase = .hovering
+
+            let task = DispatchWorkItem { [weak self] in
+                guard let self, self.fileDropPhase.isReceiving else { return }
+                self.fileTrashReady = true
+                self.fileDropPhase = .trashArmed
+            }
+            fileTrashTask = task
+            DispatchQueue.main.asyncAfter(deadline: .now() + OrbitConfig.fileTrashHoldDuration, execute: task)
+        } else if !fileTrashReady {
+            fileTrashTask?.cancel()
+            fileTrashTask = nil
+            fileDropPhase = .idle
+        }
+    }
+
+    func handleFileDrop(_ providers: [NSItemProvider]) -> Bool {
+        let shouldTrash = fileTrashReady
+        fileTrashTask?.cancel()
+        fileTrashTask = nil
+        fileDropPhase = .completing
+
+        var urls: [URL] = []
+        let group = DispatchGroup()
+
+        for provider in providers where provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+            group.enter()
+            provider.loadDataRepresentation(forTypeIdentifier: UTType.fileURL.identifier) { data, _ in
+                if let data, let url = URL(dataRepresentation: data, relativeTo: nil) {
+                    urls.append(url)
+                }
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self else { return }
+            self.fileTrashReady = false
+            self.fileDropPhase = .idle
+            guard !urls.isEmpty else {
+                self.onCancel?()
+                return
+            }
+
+            if shouldTrash {
+                for url in urls {
+                    try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                }
+            } else if let service = NSSharingService(named: .sendViaAirDrop), service.canPerform(withItems: urls) {
+                service.perform(withItems: urls)
+            }
+
+            // The file operation owns the ring's lifetime. This also handles
+            // the case where the user releases the trigger key while Finder is
+            // still delivering the dropped URL asynchronously.
+            self.onCancel?()
+        }
+
+        return true
+    }
+
+    func handle(_ command: OrbitKeyboardCommand, value: String?) {
+        switch command {
+        case .next:
+            moveSelection(step: 1)
+        case .previous:
+            moveSelection(step: -1)
+        case .activate:
+            confirmSelection()
+        case .cancel:
+            cancel()
+        case .deselect:
+            deselect()
+        case .nextWindow:
+            moveWindowSelection(step: 1)
+        case .previousWindow:
+            moveWindowSelection(step: -1)
+        case .number:
+            guard OrbitConfig.numericShortcutsEnabled, let value else { return }
+            select(number: value)
+        case .letter:
+            guard OrbitConfig.letterShortcutsEnabled, let value else { return }
+            select(letter: value)
+        }
+    }
+}
+
+enum OrbitCenterMode {
+    case cancel
+    case confirm
+    case quit
+    case share
+    case trash
+}
+
+struct OrbitRingView: View {
+    @ObservedObject var model: OrbitRingViewModel
+
+    @State private var hasAppeared = false
+
+    var body: some View {
+        HStack(spacing: -model.previewOverlap) {
+            ringCanvas
+
+            if model.showsPreview {
+                OrbitPreviewPanel(model: model)
+                    .frame(width: model.previewPanelWidth)
+            }
+        }
+        .frame(width: model.panelSize.width, height: model.panelSize.height)
+        .scaleEffect(hasAppeared ? 1 : 0.9)
+        .opacity(hasAppeared ? 1 : 0)
+        .animation(.spring(response: 0.32, dampingFraction: 0.78), value: hasAppeared)
+        .onAppear { hasAppeared = true }
+    }
+
+    private var ringCanvas: some View {
+        ZStack {
+            ForEach(Array(model.apps.enumerated()), id: \.element.id) { index, app in
+                let basePosition = model.position(for: index)
+                OrbitAppCard(
+                    app: app,
+                    cardNumber: index + 1,
+                    angle: model.angle(for: index),
+                    isSelected: model.selectedID == app.id,
+                    isDragging: model.draggedAppID == app.id,
+                    isDissolving: model.dissolvingAppID == app.id,
+                    dragOffset: model.draggedAppID == app.id ? model.dragOffset : .zero,
+                    onSelect: { model.select(app) },
+                    onHoverSelect: { model.selectFromHover(app) },
+                    onDragChanged: { offset in
+                        if model.draggedAppID != app.id {
+                            model.beginAppDrag(app)
+                        }
+                        let draggedCenter = CGPoint(
+                            x: basePosition.x + offset.width,
+                            y: basePosition.y + offset.height
+                        )
+                        let center = CGPoint(
+                            x: model.canvasSize / 2,
+                            y: model.canvasSize / 2
+                        )
+                        let distance = hypot(draggedCenter.x - center.x, draggedCenter.y - center.y)
+                        model.updateAppDrag(
+                            app,
+                            offset: offset,
+                            overCenter: distance <= OrbitConfig.centerRadius + 28
+                        )
+                    },
+                    onDragEnded: { model.finishAppDrag(app) }
+                )
+                .position(basePosition)
+                // A lifted card must never slide underneath its neighbours.
+                .zIndex(model.draggedAppID == app.id ? 2 : (model.selectedID == app.id ? 1 : 0))
+            }
+
+            OrbitCenterControl(
+                mode: model.centerMode,
+                isFileTargeted: Binding(
+                    get: { model.fileDropPhase.isReceiving },
+                    set: { model.setFileDragTargeted($0) }
+                ),
+                onCancel: { model.cancel() },
+                onDrop: { providers in model.handleFileDrop(providers) }
+            )
+            .position(
+                x: model.canvasSize / 2,
+                y: model.canvasSize / 2
+            )
+            .zIndex(3)
+        }
+        .frame(width: model.canvasSize, height: model.canvasSize)
+        .background(Color.clear)
+        .animation(.spring(response: 0.26, dampingFraction: 0.8), value: model.selectedID)
+        .animation(.spring(response: 0.26, dampingFraction: 0.8), value: model.centerMode)
+    }
+}
+
+/// A compact carousel of every window belonging to the selected app. The
+/// selected window stays in front while its neighbours peek out on either
+/// side, matching the way a person scans a small stack of related screens.
+private struct OrbitPreviewPanel: View {
+    @ObservedObject var model: OrbitRingViewModel
+
+    private var selectedIndex: Int {
+        guard model.previews.indices.contains(model.selectedWindowIndex) else { return 0 }
+        return model.selectedWindowIndex
+    }
+
+    private var cardSize: CGSize {
+        let width = model.previewCardWidth
+        return CGSize(
+            width: width,
+            height: (width / OrbitConfig.previewStageAspectRatio).rounded()
+        )
+    }
+
+    var body: some View {
+        Group {
+            if model.selectedApp == nil {
+                placeholder(Text("preview.empty"))
+            } else if !model.previews.isEmpty {
+                carousel
+            } else if model.isLoadingPreviews {
+                placeholder(ProgressView().controlSize(.small))
+            } else {
+                placeholder(Text("preview.none"))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(.easeOut(duration: 0.18), value: model.previews.map(\.id))
+        .animation(.easeOut(duration: 0.14), value: model.selectedWindowIndex)
+        // Re-running on identity cancels the in-flight capture when the
+        // selection moves on, which is the whole debounce we need.
+        .task(id: model.selectedID) {
+            await model.loadPreviews()
+        }
+    }
+
+    private var carousel: some View {
+        VStack(spacing: 16) {
+            ZStack {
+                ForEach(Array(model.previews.enumerated()), id: \.element.id) { index, preview in
+                    if let position = deckPosition(for: index) {
+                        OrbitPreviewWindowCard(
+                            preview: preview,
+                            isSelected: index == selectedIndex
+                        )
+                        .frame(width: cardSize.width, height: cardSize.height)
+                        .scaleEffect(position.scale)
+                        .offset(position.offset)
+                        .opacity(position.opacity)
+                        .zIndex(position.zIndex)
+                        .onTapGesture { model.selectedWindowIndex = index }
+                    }
+                }
+            }
+            .frame(height: cardSize.height + 24)
+
+            if model.previews.count > 1 {
+                windowControls
+            }
+        }
+        // Center the group on the visible part of the panel rather than on the
+        // panel itself, whose left edge sits under the fan.
+        .offset(x: model.previewOverlap / 2)
+    }
+
+    private var windowControls: some View {
+        HStack(spacing: 6) {
+            windowStep(systemName: "chevron.left", step: -1)
+
+            Text("\(selectedIndex + 1) / \(model.previews.count)")
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.primary)
+                .frame(minWidth: 46)
+
+            windowStep(systemName: "chevron.right", step: 1)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(.regularMaterial, in: Capsule())
+    }
+
+    /// A plain tap target rather than a `Button`: the ring window takes key
+    /// focus, and a focusable control there would answer Return before the
+    /// selected app does.
+    private func windowStep(systemName: String, step: Int) -> some View {
+        Image(systemName: systemName)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(.primary)
+            .frame(width: 30, height: 26)
+            .contentShape(Rectangle())
+            .onTapGesture { model.moveWindowSelection(step: step) }
+    }
+
+    /// Only the immediate neighbours are drawn. A deeper stack turns into
+    /// clutter well before it helps anyone tell two windows apart.
+    private func deckPosition(for index: Int) -> (offset: CGSize, scale: CGFloat, opacity: Double, zIndex: Double)? {
+        let sideOffset = cardSize.width * OrbitConfig.previewSideOffsetRatio
+        let sideScale = OrbitConfig.previewSideScale
+
+        switch relativeIndex(for: index) {
+        case 0:
+            return (.zero, 1, 1, 2)
+        case -1:
+            return (CGSize(width: -sideOffset, height: 20), sideScale, 0.8, 1)
+        case 1:
+            return (CGSize(width: sideOffset, height: 20), sideScale, 0.8, 1)
+        default:
+            return nil
+        }
+    }
+
+    private func relativeIndex(for index: Int) -> Int {
+        let count = model.previews.count
+        guard count > 0 else { return 0 }
+
+        let raw = index - selectedIndex
+        if raw > count / 2 {
+            return raw - count
+        }
+        if raw < -(count / 2) {
+            return raw + count
+        }
+        return raw
+    }
+
+    /// Carries its own backing so the message stays readable against whatever
+    /// wallpaper the ring happens to open over.
+    private func placeholder(_ content: some View) -> some View {
+        content
+            .font(.system(size: 13))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background(.regularMaterial, in: Capsule())
+            .offset(x: model.previewOverlap / 2)
+    }
+}
+
+/// One window in the carousel. The stage it is handed is the same shape for
+/// every window, but the border has to hug the picture — which is a different
+/// shape in each. So the artwork floats inside the stage at its own ratio and
+/// carries the fill, clip, border and shadow with it. The opaque fill is what
+/// keeps a translucent capture readable over the desktop behind it.
+private struct OrbitPreviewWindowCard: View {
+    let preview: WindowPreview
+    let isSelected: Bool
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+
+        Color.clear
+            .overlay {
+                artwork
+                    .aspectRatio(max(preview.aspectRatio, 0.5), contentMode: .fit)
+                    .background(OrbitPalette.ivory)
+                    .clipShape(shape)
+                    .overlay(
+                        shape.stroke(
+                            isSelected ? OrbitPalette.burgundy : .black.opacity(0.08),
+                            lineWidth: isSelected ? 2.5 : 1
+                        )
+                    )
+                    .shadow(
+                        color: .black.opacity(isSelected ? 0.24 : 0.14),
+                        radius: isSelected ? 18 : 10,
+                        y: isSelected ? 8 : 4
+                    )
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(preview.title))
+            .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    @ViewBuilder
+    private var artwork: some View {
+        if let image = preview.image {
+            // Frames are captured in device pixels, so declare that scale
+            // rather than letting SwiftUI read them as points and resample.
+            Image(decorative: image, scale: NSScreen.main?.backingScaleFactor ?? 2)
+                .resizable()
+                .interpolation(.high)
+                .opacity(preview.isStale ? 0.75 : 1)
+        } else {
+            // Nothing capturable and nothing cached — the title is still
+            // enough to pick the right window by.
+            Color.clear
+                .overlay(
+                    Text(preview.title)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .padding(16)
+                )
+        }
+    }
+}
+
+private struct OrbitAppCard: View {
+    let app: AppInfo
+    let cardNumber: Int
+    /// Where the card sits on the ring, in radians (0 = 3 o'clock).
+    let angle: Double
+    let isSelected: Bool
+    let isDragging: Bool
+    let isDissolving: Bool
+    let dragOffset: CGSize
+    let onSelect: () -> Void
+    let onHoverSelect: () -> Void
+    let onDragChanged: (CGSize) -> Void
+    let onDragEnded: () -> Void
+
+    @State private var dissolveProgress = 0.0
+
+    /// Rotating by the ring angle plus a quarter turn points the card's
+    /// bottom edge — the shortcut hint — at the center, so the icon always
+    /// faces outward.
+    private var cardRotation: Angle {
+        .radians(angle + .pi / 2)
+    }
+
+    private var shortcutHint: String {
+        var hints: [String] = []
+        if OrbitConfig.numericShortcutsEnabled, cardNumber <= 9 {
+            hints.append(String(cardNumber))
+        }
+        if OrbitConfig.letterShortcutsEnabled, let firstLetter = app.firstLetter {
+            hints.append(String(firstLetter).lowercased())
+        }
+        return hints.joined(separator: " · ")
+    }
+
+    var body: some View {
+        let size = OrbitConfig.cardSize
+        let dimension = size.dimension
+        let cornerRadius = dimension * 0.17
+
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+
+            Image(nsImage: app.icon)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size.iconDimension, height: size.iconDimension)
+
+            Spacer(minLength: 0)
+
+            if !shortcutHint.isEmpty {
+                Text(shortcutHint)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(hintColor)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.top, dimension * 0.16)
+        .padding(.bottom, dimension * 0.1)
+        .frame(width: dimension, height: size.height)
+        .background(cardBackground(cornerRadius: cornerRadius))
+        // Selection reads through lift and shadow, the way the reference does;
+        // the accent hairline is only there to stay legible without color.
+        .overlay(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .stroke(isSelected ? OrbitPalette.burgundy.opacity(0.9) : borderColor, lineWidth: isSelected ? 1.5 : 1)
+        )
+        .shadow(
+            color: isDragging ? OrbitPalette.burgundy.opacity(0.24) : .black.opacity(isSelected ? 0.20 : 0.10),
+            radius: isSelected ? 24 : 16,
+            y: isSelected ? 10 : 4
+        )
+        .scaleEffect(isSelected ? 1.1 : 1)
+        .rotationEffect(cardRotation)
+        .offset(dragOffset)
+        .opacity(isDissolving ? 0.35 : 1)
+        // Particles are drawn in unrotated screen space, so aim them straight
+        // at the ring center rather than at the card's own bottom edge.
+        .pixelDissolve(progress: dissolveProgress, blackHoleDirection: angle + .pi)
+        .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .onTapGesture(perform: onSelect)
+        .gesture(
+            DragGesture(minimumDistance: 8)
+                .onChanged { value in onDragChanged(value.translation) }
+                .onEnded { _ in onDragEnded() }
+        )
+        .onHover { isHovering in
+            if isHovering && !isDragging {
+                onHoverSelect()
+            }
+        }
+        .onChange(of: isDissolving) { _, newValue in
+            if newValue {
+                withAnimation(.easeIn(duration: OrbitConfig.dissolveDuration)) {
+                    dissolveProgress = 1
+                }
+            } else {
+                dissolveProgress = 0
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(app.name))
+        .accessibilityHint(Text(isSelected ? "accessibility.selected" : "accessibility.select"))
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private func cardBackground(cornerRadius: CGFloat) -> some View {
+        let material: AnyShapeStyle
+        switch OrbitConfig.cardMaterial {
+        case .white:
+            material = AnyShapeStyle(isDragging ? OrbitPalette.ivory : Color.white)
+        case .black:
+            material = AnyShapeStyle(Color.black.opacity(0.86))
+        case .system:
+            material = AnyShapeStyle(.regularMaterial)
+        }
+        return RoundedRectangle(cornerRadius: cornerRadius, style: .continuous).fill(material)
+    }
+
+    private var hintColor: Color {
+        switch OrbitConfig.cardMaterial {
+        case .white: .black.opacity(0.42)
+        case .black: .white.opacity(0.55)
+        case .system: .secondary
+        }
+    }
+
+    private var borderColor: Color {
+        switch OrbitConfig.cardMaterial {
+        case .white: .black.opacity(0.06)
+        case .black: .white.opacity(0.12)
+        case .system: .white.opacity(0.2)
+        }
+    }
+}
+
+private struct OrbitCenterControl: View {
+    let mode: OrbitCenterMode
+    @Binding var isFileTargeted: Bool
+    let onCancel: () -> Void
+    let onDrop: ([NSItemProvider]) -> Bool
+
+    /// Keep the hub visible so a file drag has an obvious destination. The
+    /// state label changes from Cancel/confirm to Share/Trash as the drag
+    /// enters and stays over the target.
+    private var isVisible: Bool {
+        true
+    }
+
+    var body: some View {
+        ZStack {
+            // The forgiving hit target extends beyond the visible hub so a
+            // Finder drag does not require pixel-perfect aim.
+            Color.clear
+                .frame(
+                    width: OrbitConfig.centerDropRadius * 2,
+                    height: OrbitConfig.centerDropRadius * 2
+                )
+                .contentShape(Circle())
+
+            if isVisible {
+                VStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .fill(centerFill)
+                            .frame(
+                                width: OrbitConfig.centerRadius * 2,
+                                height: OrbitConfig.centerRadius * 2
+                            )
+                            .overlay(Circle().stroke(centerStroke, lineWidth: 2))
+
+                        Image(systemName: centerIcon)
+                            .font(.system(size: 26, weight: .semibold))
+                            .foregroundStyle(centerIconColor)
+                    }
+
+                    Text(centerLabel)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(.regularMaterial, in: Capsule())
+                }
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
+        }
+        .onTapGesture {
+            if mode != .quit && mode != .trash && mode != .share {
+                onCancel()
+            }
+        }
+        .onDrop(of: [UTType.fileURL], isTargeted: $isFileTargeted, perform: onDrop)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(centerLabel))
+    }
+
+    private var centerIcon: String {
+        switch mode {
+        case .cancel: "xmark"
+        case .confirm: "arrow.right"
+        case .quit, .trash: "circle.dashed"
+        case .share: "square.and.arrow.up"
+        }
+    }
+
+    private var centerLabel: String {
+        switch mode {
+        case .cancel: NSLocalizedString("center.cancel", comment: "")
+        case .confirm: NSLocalizedString("center.confirm", comment: "")
+        case .quit: NSLocalizedString("center.quit", comment: "")
+        case .share: NSLocalizedString("center.share", comment: "")
+        case .trash: NSLocalizedString("center.trash", comment: "")
+        }
+    }
+
+    private var centerFill: Color {
+        switch mode {
+        case .cancel: .black.opacity(0.82)
+        case .confirm: OrbitPalette.burgundy.opacity(0.92)
+        case .quit, .trash: .black
+        case .share: OrbitPalette.denim.opacity(0.96)
+        }
+    }
+
+    private var centerStroke: Color {
+        switch mode {
+        case .cancel: .white.opacity(0.65)
+        case .confirm: OrbitPalette.burgundy
+        case .quit, .trash: OrbitPalette.coral
+        case .share: OrbitPalette.burgundy.opacity(0.65)
+        }
+    }
+
+    private var centerIconColor: Color {
+        mode == .share ? OrbitPalette.burgundy : .white
+    }
+}

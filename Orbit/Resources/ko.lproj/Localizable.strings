@@ -1,0 +1,94 @@
+/* Orbit — ko */
+
+/* Menu bar */
+"statusMenu.permission.granted" = "단축키 활성화됨";
+"statusMenu.permission.missing" = "단축키에 권한 필요";
+"statusMenu.hint.hold" = "%@ 를 길게 눌러 링 열기";
+"statusMenu.grantAccess" = "손쉬운 사용 설정 열기…";
+"statusMenu.preferences" = "설정...";
+"statusMenu.quit" = "Orbit 종료";
+
+/* Settings — window and permissions */
+"prefs.windowTitle" = "설정";
+"prefs.access.granted" = "Orbit에 손쉬운 사용 권한이 있습니다";
+"prefs.access.missing" = "Orbit에 손쉬운 사용 권한이 필요합니다";
+"prefs.access.grant" = "허용…";
+
+/* Settings — summoning */
+"prefs.group.trigger" = "호출";
+"prefs.trigger.key" = "호출 키";
+"prefs.trigger.clearKey" = "선택 해제 키";
+"prefs.trigger.holdTime" = "누르는 시간";
+"prefs.trigger.holdTimeValue" = "%d ms";
+"prefs.trigger.letterKeys" = "문자 단축키";
+"prefs.trigger.numberKeys" = "숫자 단축키";
+"prefs.trigger.keysNote" = "화살표 키는 항상 사용할 수 있습니다. 필요에 따라 문자 또는 숫자 단축키를 켜세요.";
+
+/* Settings — appearance */
+"prefs.group.appearance" = "모양";
+"prefs.appearance.placement" = "표시 위치";
+"prefs.appearance.cardSize" = "카드 크기";
+"prefs.appearance.cardFinish" = "카드 재질";
+
+/* Settings — window preview */
+"prefs.group.preview" = "윈도우 미리보기";
+"prefs.preview.enabled" = "윈도우 미리보기 표시";
+"prefs.preview.needsRecording" = "화면 기록 권한이 필요합니다. 허용한 후 Orbit을 다시 실행하세요.";
+"prefs.preview.openSystemSettings" = "시스템 설정 열기";
+"prefs.preview.note" = "앱을 선택하면 링 오른쪽에 해당 앱의 모든 윈도우를 표시합니다. 화면 기록 권한이 필요합니다.";
+
+/* Settings — login */
+"prefs.group.startup" = "로그인";
+"prefs.startup.launchAtLogin" = "로그인 시 시작";
+
+/* Settings — shortcut reference */
+"prefs.group.cheatSheet" = "단축키 요약";
+"prefs.hint.hold" = "%@ 를 길게 눌러 링 열기";
+"prefs.hint.move" = "화살표 키나 Tab으로 앱 이동";
+"prefs.hint.letters" = "문자 키를 눌러 해당 앱으로 이동";
+"prefs.hint.numbers" = "숫자 키 1–9로 앱 바로 선택";
+"prefs.hint.clear" = "%@ 를 눌러 선택 해제";
+"prefs.hint.release" = "트리거 키를 놓으면 전환 후 닫힘";
+
+/* Modifier keys */
+"triggerKey.option" = "Option";
+"triggerKey.command" = "Command";
+"triggerKey.control" = "Control";
+"triggerKey.shift" = "Shift";
+"triggerKey.disabled" = "사용 안 함";
+
+/* Ring placement */
+"ringPlacement.screenCenter" = "화면 중앙";
+"ringPlacement.cursor" = "커서 따라가기";
+
+/* Card size and finish */
+"cardSize.small" = "작게";
+"cardSize.medium" = "중간";
+"cardSize.large" = "크게";
+"cardSize.extraLarge" = "아주 크게";
+"cardFinish.white" = "흰색";
+"cardFinish.black" = "검은색";
+"cardFinish.system" = "시스템";
+
+/* Ring — center control */
+"center.cancel" = "취소";
+"center.confirm" = "놓으면 전환";
+"center.quit" = "끌어다 놓아 종료";
+"center.share" = "끌어다 놓아 공유";
+"center.trash" = "끌어다 놓아 휴지통으로";
+
+/* Ring — window preview panel */
+"preview.empty" = "앱을 선택해 윈도우 보기";
+"preview.none" = "미리볼 윈도우가 없습니다";
+
+/* VoiceOver */
+"accessibility.selected" = "선택됨. Enter를 누르거나 트리거 키를 놓으면 전환합니다.";
+"accessibility.select" = "전환하지 않고 선택합니다.";
+
+/* Onboarding */
+"onboarding.title" = "Orbit";
+"onboarding.description" = "실행 중인 앱을 하나의 링에.\n누르고, 고르고, 놓으세요.";
+"onboarding.start" = "시작하기";
+
+/* Fallbacks */
+"app.unnamed" = "이름 없는 앱";

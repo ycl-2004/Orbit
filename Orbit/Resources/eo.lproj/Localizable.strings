@@ -1,0 +1,94 @@
+/* Orbit — eo */
+
+/* Menu bar */
+"statusMenu.permission.granted" = "Fulmoklavo aktiva";
+"statusMenu.permission.missing" = "Fulmoklavo bezonas permeson";
+"statusMenu.hint.hold" = "Tenu %@ por malfermi la ringon";
+"statusMenu.grantAccess" = "Malfermi agordojn de alirebleco…";
+"statusMenu.preferences" = "Agordoj...";
+"statusMenu.quit" = "Eliri el Orbit";
+
+/* Settings — window and permissions */
+"prefs.windowTitle" = "Agordoj";
+"prefs.access.granted" = "Orbit havas alireblecan permeson";
+"prefs.access.missing" = "Orbit bezonas alireblecan permeson";
+"prefs.access.grant" = "Permesi…";
+
+/* Settings — summoning */
+"prefs.group.trigger" = "Alvoko";
+"prefs.trigger.key" = "Alvoki per";
+"prefs.trigger.clearKey" = "Malelekta klavo";
+"prefs.trigger.holdTime" = "Tendaŭro";
+"prefs.trigger.holdTimeValue" = "%d ms";
+"prefs.trigger.letterKeys" = "Literaj ŝparvojoj";
+"prefs.trigger.numberKeys" = "Numeraj ŝparvojoj";
+"prefs.trigger.keysNote" = "Sagoklavoj estas ĉiam disponeblaj. Ebligu literajn aŭ numerajn ŝparvojojn laŭbezone.";
+
+/* Settings — appearance */
+"prefs.group.appearance" = "Aspekto";
+"prefs.appearance.placement" = "Aperloko";
+"prefs.appearance.cardSize" = "Grandeco de kartoj";
+"prefs.appearance.cardFinish" = "Materialo de kartoj";
+
+/* Settings — window preview */
+"prefs.group.preview" = "Fenestra antaŭrigardo";
+"prefs.preview.enabled" = "Montri fenestran antaŭrigardon";
+"prefs.preview.needsRecording" = "Bezonas ekranregistran permeson. Poste rekomencu Orbit.";
+"prefs.preview.openSystemSettings" = "Malfermi Sistemajn Agordojn";
+"prefs.preview.note" = "Montras ĉiujn fenestrojn de la elektita aplikaĵo dekstre de la ringo. Bezonas ekranregistran permeson.";
+
+/* Settings — login */
+"prefs.group.startup" = "Ensaluto";
+"prefs.startup.launchAtLogin" = "Lanĉi ĉe ensaluto";
+
+/* Settings — shortcut reference */
+"prefs.group.cheatSheet" = "Fulmoklava resumo";
+"prefs.hint.hold" = "Tenu %@ por malfermi la ringon";
+"prefs.hint.move" = "Sagoklavoj aŭ Tab movas inter aplikaĵoj";
+"prefs.hint.letters" = "Tajpu literon por salti al tiu aplikaĵo";
+"prefs.hint.numbers" = "Ciferklavoj 1–9 elektas aplikaĵon rekte";
+"prefs.hint.clear" = "Premu %@ por nuligi la elekton";
+"prefs.hint.release" = "Lasu la ekigan klavon por ŝalti kaj fermi";
+
+/* Modifier keys */
+"triggerKey.option" = "Option";
+"triggerKey.command" = "Command";
+"triggerKey.control" = "Control";
+"triggerKey.shift" = "Shift";
+"triggerKey.disabled" = "Malŝaltita";
+
+/* Ring placement */
+"ringPlacement.screenCenter" = "Centro de la ekrano";
+"ringPlacement.cursor" = "Sekvi la kursoron";
+
+/* Card size and finish */
+"cardSize.small" = "Malgranda";
+"cardSize.medium" = "Meza";
+"cardSize.large" = "Granda";
+"cardSize.extraLarge" = "Tre granda";
+"cardFinish.white" = "Blanka";
+"cardFinish.black" = "Nigra";
+"cardFinish.system" = "Sistemo";
+
+/* Ring — center control */
+"center.cancel" = "Nuligi";
+"center.confirm" = "Lasu por ŝalti";
+"center.quit" = "Faligu por fermi";
+"center.share" = "Faligu por kunhavigi";
+"center.trash" = "Faligu en rubujon";
+
+/* Ring — window preview panel */
+"preview.empty" = "Elektu aplikaĵon por vidi fenestrojn";
+"preview.none" = "Neniu fenestro por antaŭrigardi";
+
+/* VoiceOver */
+"accessibility.selected" = "Elektita. Premu Enter aŭ lasu la ekigan klavon por ŝalti.";
+"accessibility.select" = "Elekti sen tuja ŝalto.";
+
+/* Onboarding */
+"onboarding.title" = "Orbit";
+"onboarding.description" = "Viaj kurantaj aplikaĵoj, je unu ringo.\nTenu, elektu, lasu.";
+"onboarding.start" = "Komenci";
+
+/* Fallbacks */
+"app.unnamed" = "Sennoma aplikaĵo";

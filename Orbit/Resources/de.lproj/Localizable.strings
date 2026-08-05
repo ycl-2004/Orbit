@@ -1,0 +1,94 @@
+/* Orbit — de */
+
+/* Menu bar */
+"statusMenu.permission.granted" = "Kurzbefehl aktiv";
+"statusMenu.permission.missing" = "Kurzbefehl braucht Zugriff";
+"statusMenu.hint.hold" = "%@ gedrückt halten, um den Ring zu öffnen";
+"statusMenu.grantAccess" = "Bedienungshilfen öffnen …";
+"statusMenu.preferences" = "Einstellungen...";
+"statusMenu.quit" = "Orbit beenden";
+
+/* Settings — window and permissions */
+"prefs.windowTitle" = "Einstellungen";
+"prefs.access.granted" = "Orbit hat Zugriff auf die Bedienungshilfen";
+"prefs.access.missing" = "Orbit benötigt Zugriff auf die Bedienungshilfen";
+"prefs.access.grant" = "Erlauben …";
+
+/* Settings — summoning */
+"prefs.group.trigger" = "Aufrufen";
+"prefs.trigger.key" = "Aufrufen mit";
+"prefs.trigger.clearKey" = "Auswahl-aufheben-Taste";
+"prefs.trigger.holdTime" = "Haltedauer";
+"prefs.trigger.holdTimeValue" = "%d ms";
+"prefs.trigger.letterKeys" = "Buchstaben-Kurzbefehle";
+"prefs.trigger.numberKeys" = "Zahlen-Kurzbefehle";
+"prefs.trigger.keysNote" = "Pfeiltasten sind immer verfügbar. Aktiviere Buchstaben- oder Zahlen-Kurzbefehle nach Bedarf.";
+
+/* Settings — appearance */
+"prefs.group.appearance" = "Erscheinungsbild";
+"prefs.appearance.placement" = "Anzeigeposition";
+"prefs.appearance.cardSize" = "Kartengröße";
+"prefs.appearance.cardFinish" = "Kartenmaterial";
+
+/* Settings — window preview */
+"prefs.group.preview" = "Fenstervorschau";
+"prefs.preview.enabled" = "Fenstervorschau anzeigen";
+"prefs.preview.needsRecording" = "Bildschirmaufnahme-Berechtigung erforderlich. Starte Orbit danach neu.";
+"prefs.preview.openSystemSettings" = "Systemeinstellungen öffnen";
+"prefs.preview.note" = "Zeigt beim Auswählen einer App alle ihre Fenster rechts vom Ring. Erfordert die Bildschirmaufnahme-Berechtigung.";
+
+/* Settings — login */
+"prefs.group.startup" = "Anmeldung";
+"prefs.startup.launchAtLogin" = "Beim Login starten";
+
+/* Settings — shortcut reference */
+"prefs.group.cheatSheet" = "Kurzbefehl-Übersicht";
+"prefs.hint.hold" = "%@ gedrückt halten, um den Ring zu öffnen";
+"prefs.hint.move" = "Pfeiltasten oder Tabulator wechseln zwischen Apps";
+"prefs.hint.letters" = "Buchstabentaste springt zur passenden App";
+"prefs.hint.numbers" = "Zifferntasten 1–9 wählen direkt eine App";
+"prefs.hint.clear" = "%@ tippen, um die Auswahl aufzuheben";
+"prefs.hint.release" = "Auslösetaste loslassen: wechseln und schließen";
+
+/* Modifier keys */
+"triggerKey.option" = "Option";
+"triggerKey.command" = "Command";
+"triggerKey.control" = "Control";
+"triggerKey.shift" = "Shift";
+"triggerKey.disabled" = "Aus";
+
+/* Ring placement */
+"ringPlacement.screenCenter" = "Bildschirmmitte";
+"ringPlacement.cursor" = "Dem Zeiger folgen";
+
+/* Card size and finish */
+"cardSize.small" = "Klein";
+"cardSize.medium" = "Mittel";
+"cardSize.large" = "Groß";
+"cardSize.extraLarge" = "Sehr groß";
+"cardFinish.white" = "Weiß";
+"cardFinish.black" = "Schwarz";
+"cardFinish.system" = "System";
+
+/* Ring — center control */
+"center.cancel" = "Abbrechen";
+"center.confirm" = "Loslassen zum Wechseln";
+"center.quit" = "Hierher ziehen zum Beenden";
+"center.share" = "Hierher ziehen zum Teilen";
+"center.trash" = "Hierher ziehen für den Papierkorb";
+
+/* Ring — window preview panel */
+"preview.empty" = "App auswählen, um Fenster zu sehen";
+"preview.none" = "Keine Fenster zur Vorschau";
+
+/* VoiceOver */
+"accessibility.selected" = "Ausgewählt. Enter drücken oder Auslösetaste loslassen, um zu wechseln.";
+"accessibility.select" = "Auswählen, ohne zu wechseln.";
+
+/* Onboarding */
+"onboarding.title" = "Orbit";
+"onboarding.description" = "Alle laufenden Apps in einem Ring.\nTaste halten, auswählen, loslassen.";
+"onboarding.start" = "Loslegen";
+
+/* Fallbacks */
+"app.unnamed" = "Unbenannte App";

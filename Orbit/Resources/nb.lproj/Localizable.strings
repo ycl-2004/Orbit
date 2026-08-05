@@ -1,0 +1,94 @@
+/* Orbit — nb */
+
+/* Menu bar */
+"statusMenu.permission.granted" = "Snarvei aktiv";
+"statusMenu.permission.missing" = "Snarveien mangler tilgang";
+"statusMenu.hint.hold" = "Hold %@ for å åpne ringen";
+"statusMenu.grantAccess" = "Åpne Tilgjengelighet …";
+"statusMenu.preferences" = "Innstillinger...";
+"statusMenu.quit" = "Avslutt Orbit";
+
+/* Settings — window and permissions */
+"prefs.windowTitle" = "Innstillinger";
+"prefs.access.granted" = "Orbit har tilgang til Tilgjengelighet";
+"prefs.access.missing" = "Orbit trenger tilgang til Tilgjengelighet";
+"prefs.access.grant" = "Tillat …";
+
+/* Settings — summoning */
+"prefs.group.trigger" = "Fremhenting";
+"prefs.trigger.key" = "Hent frem med";
+"prefs.trigger.clearKey" = "Tøm valg";
+"prefs.trigger.holdTime" = "Holdetid";
+"prefs.trigger.holdTimeValue" = "%d ms";
+"prefs.trigger.letterKeys" = "Bokstavssnarveier";
+"prefs.trigger.numberKeys" = "Tall-snarveier";
+"prefs.trigger.keysNote" = "Piltastene er alltid tilgjengelige. Aktiver bokstav- eller tall-snarveier etter behov.";
+
+/* Settings — appearance */
+"prefs.group.appearance" = "Utseende";
+"prefs.appearance.placement" = "Plassering";
+"prefs.appearance.cardSize" = "Kortstørrelse";
+"prefs.appearance.cardFinish" = "Kortmateriale";
+
+/* Settings — window preview */
+"prefs.group.preview" = "Vindusforhåndsvisning";
+"prefs.preview.enabled" = "Vis vindusforhåndsvisning";
+"prefs.preview.needsRecording" = "Krever tillatelse til skjermopptak. Start Orbit på nytt etterpå.";
+"prefs.preview.openSystemSettings" = "Åpne Systeminnstillinger";
+"prefs.preview.note" = "Viser alle vinduene til valgt app til høyre for ringen. Krever tillatelse til skjermopptak.";
+
+/* Settings — login */
+"prefs.group.startup" = "Innlogging";
+"prefs.startup.launchAtLogin" = "Start ved innlogging";
+
+/* Settings — shortcut reference */
+"prefs.group.cheatSheet" = "Snarveisoversikt";
+"prefs.hint.hold" = "Hold %@ for å åpne ringen";
+"prefs.hint.move" = "Piltaster eller tabulator bytter mellom apper";
+"prefs.hint.letters" = "Trykk en bokstav for å hoppe til appen";
+"prefs.hint.numbers" = "Talltastene 1–9 velger en app direkte";
+"prefs.hint.clear" = "Trykk %@ for å fjerne valget";
+"prefs.hint.release" = "Slipp utløsertasten for å bytte og lukke";
+
+/* Modifier keys */
+"triggerKey.option" = "Option";
+"triggerKey.command" = "Command";
+"triggerKey.control" = "Control";
+"triggerKey.shift" = "Shift";
+"triggerKey.disabled" = "Av";
+
+/* Ring placement */
+"ringPlacement.screenCenter" = "Midt på skjermen";
+"ringPlacement.cursor" = "Følg pekeren";
+
+/* Card size and finish */
+"cardSize.small" = "Liten";
+"cardSize.medium" = "Mellom";
+"cardSize.large" = "Stor";
+"cardSize.extraLarge" = "Ekstra stor";
+"cardFinish.white" = "Hvit";
+"cardFinish.black" = "Svart";
+"cardFinish.system" = "System";
+
+/* Ring — center control */
+"center.cancel" = "Avbryt";
+"center.confirm" = "Slipp for å bytte";
+"center.quit" = "Slipp for å avslutte";
+"center.share" = "Slipp for å dele";
+"center.trash" = "Slipp for å legge i papirkurven";
+
+/* Ring — window preview panel */
+"preview.empty" = "Velg en app for å se vinduer";
+"preview.none" = "Ingen vinduer å forhåndsvise";
+
+/* VoiceOver */
+"accessibility.selected" = "Valgt. Trykk Enter eller slipp utløsertasten for å bytte.";
+"accessibility.select" = "Velg uten å bytte.";
+
+/* Onboarding */
+"onboarding.title" = "Orbit";
+"onboarding.description" = "De åpne appene dine i én ring.\nHold, velg, slipp.";
+"onboarding.start" = "Kom i gang";
+
+/* Fallbacks */
+"app.unnamed" = "Uten navn";

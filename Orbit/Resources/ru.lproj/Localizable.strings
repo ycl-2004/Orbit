@@ -1,0 +1,94 @@
+/* Orbit — ru */
+
+/* Menu bar */
+"statusMenu.permission.granted" = "Сочетание активно";
+"statusMenu.permission.missing" = "Сочетанию нужен доступ";
+"statusMenu.hint.hold" = "Удерживайте %@, чтобы открыть кольцо";
+"statusMenu.grantAccess" = "Открыть настройки универсального доступа…";
+"statusMenu.preferences" = "Настройки...";
+"statusMenu.quit" = "Выйти из Orbit";
+
+/* Settings — window and permissions */
+"prefs.windowTitle" = "Настройки";
+"prefs.access.granted" = "У Orbit есть доступ к универсальному доступу";
+"prefs.access.missing" = "Orbit нужен доступ к универсальному доступу";
+"prefs.access.grant" = "Разрешить…";
+
+/* Settings — summoning */
+"prefs.group.trigger" = "Вызов";
+"prefs.trigger.key" = "Вызывать клавишей";
+"prefs.trigger.clearKey" = "Клавиша сброса выбора";
+"prefs.trigger.holdTime" = "Длительность удержания";
+"prefs.trigger.holdTimeValue" = "%d мс";
+"prefs.trigger.letterKeys" = "Буквенные сочетания";
+"prefs.trigger.numberKeys" = "Числовые сочетания";
+"prefs.trigger.keysNote" = "Стрелки доступны всегда. Включайте буквенные или числовые сочетания по необходимости.";
+
+/* Settings — appearance */
+"prefs.group.appearance" = "Внешний вид";
+"prefs.appearance.placement" = "Положение";
+"prefs.appearance.cardSize" = "Размер карточек";
+"prefs.appearance.cardFinish" = "Материал карточек";
+
+/* Settings — window preview */
+"prefs.group.preview" = "Предпросмотр окон";
+"prefs.preview.enabled" = "Показывать предпросмотр окон";
+"prefs.preview.needsRecording" = "Требуется разрешение на запись экрана. После выдачи перезапустите Orbit.";
+"prefs.preview.openSystemSettings" = "Открыть Системные настройки";
+"prefs.preview.note" = "Показывает все окна выбранного приложения справа от кольца. Требуется разрешение на запись экрана.";
+
+/* Settings — login */
+"prefs.group.startup" = "Вход в систему";
+"prefs.startup.launchAtLogin" = "Запуск при входе";
+
+/* Settings — shortcut reference */
+"prefs.group.cheatSheet" = "Памятка по сочетаниям";
+"prefs.hint.hold" = "Удерживайте %@, чтобы открыть кольцо";
+"prefs.hint.move" = "Стрелки или Tab переключают приложения";
+"prefs.hint.letters" = "Буква переводит к нужному приложению";
+"prefs.hint.numbers" = "Клавиши 1–9 выбирают приложение напрямую";
+"prefs.hint.clear" = "Нажмите %@, чтобы снять выбор";
+"prefs.hint.release" = "Отпустите клавишу, чтобы переключиться и закрыть";
+
+/* Modifier keys */
+"triggerKey.option" = "Option";
+"triggerKey.command" = "Command";
+"triggerKey.control" = "Control";
+"triggerKey.shift" = "Shift";
+"triggerKey.disabled" = "Отключено";
+
+/* Ring placement */
+"ringPlacement.screenCenter" = "По центру экрана";
+"ringPlacement.cursor" = "Следовать за курсором";
+
+/* Card size and finish */
+"cardSize.small" = "Маленький";
+"cardSize.medium" = "Средний";
+"cardSize.large" = "Большой";
+"cardSize.extraLarge" = "Очень большой";
+"cardFinish.white" = "Белый";
+"cardFinish.black" = "Черный";
+"cardFinish.system" = "Системный";
+
+/* Ring — center control */
+"center.cancel" = "Отмена";
+"center.confirm" = "Отпустите для переключения";
+"center.quit" = "Перетащите, чтобы завершить";
+"center.share" = "Перетащите, чтобы поделиться";
+"center.trash" = "Перетащите в корзину";
+
+/* Ring — window preview panel */
+"preview.empty" = "Выберите приложение, чтобы увидеть окна";
+"preview.none" = "Нет окон для предпросмотра";
+
+/* VoiceOver */
+"accessibility.selected" = "Выбрано. Нажмите Enter или отпустите клавишу, чтобы переключиться.";
+"accessibility.select" = "Выбрать без переключения.";
+
+/* Onboarding */
+"onboarding.title" = "Orbit";
+"onboarding.description" = "Все запущенные приложения — в одном кольце.\nЗажмите, выберите, отпустите.";
+"onboarding.start" = "Начать";
+
+/* Fallbacks */
+"app.unnamed" = "Приложение без имени";

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="18"
+     height="18"
+     viewBox="0 0 18 18">
+  <title>Orbit menu bar icon</title>
+
+  <!--
+    macOS template image: pure black artwork on a transparent canvas.
+    Optical bounds are 1.5...16.5 pt, leaving menu-bar breathing room.
+  -->
+  <g fill="#000000">
+    <!-- Orbital path, kept at 1.5 pt for crisp 1x rendering. -->
+    <path d="M 4.1,5.0
+             C 7.4,2.3 12.8,3.1 15.0,6.7
+             C 17.1,10.1 14.5,14.6 10.4,15.1
+             C 7.5,15.5 5.2,14.3 3.9,12.4"
+          fill="none"
+          stroke="#000000"
+          stroke-width="1.5"
+          stroke-linecap="round"/>
+
+    <!-- Central hub from the full-color Orbit app icon. -->
+    <circle cx="9" cy="9" r="1.9"/>
+
+    <!-- Four simplified app nodes. Rounded squares echo the app-icon cards. -->
+    <rect x="5.15" y="3.25" width="1.9" height="1.9" rx="0.5"/>
+    <rect x="13.55" y="5.45" width="1.9" height="1.9" rx="0.5"/>
+    <rect x="10.55" y="13.55" width="1.9" height="1.9" rx="0.5"/>
+    <rect x="2.95" y="10.85" width="1.9" height="1.9" rx="0.5"/>
+  </g>
+</svg>

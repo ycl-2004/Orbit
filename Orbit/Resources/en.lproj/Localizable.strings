@@ -1,0 +1,94 @@
+/* Orbit — en */
+
+/* Menu bar */
+"statusMenu.permission.granted" = "Shortcut active";
+"statusMenu.permission.missing" = "Shortcut needs access";
+"statusMenu.hint.hold" = "Hold %@ to bring up the ring";
+"statusMenu.grantAccess" = "Open Accessibility Settings…";
+"statusMenu.preferences" = "Settings...";
+"statusMenu.quit" = "Quit Orbit";
+
+/* Settings — window and permissions */
+"prefs.windowTitle" = "Settings";
+"prefs.access.granted" = "Orbit has Accessibility access";
+"prefs.access.missing" = "Orbit needs Accessibility access";
+"prefs.access.grant" = "Grant…";
+
+/* Settings — summoning */
+"prefs.group.trigger" = "Summoning";
+"prefs.trigger.key" = "Summon with";
+"prefs.trigger.clearKey" = "Clear selection key";
+"prefs.trigger.holdTime" = "Hold time";
+"prefs.trigger.holdTimeValue" = "%d ms";
+"prefs.trigger.letterKeys" = "Letter shortcuts";
+"prefs.trigger.numberKeys" = "Number shortcuts";
+"prefs.trigger.keysNote" = "Arrow keys are always available; enable letter or number shortcuts as needed.";
+
+/* Settings — appearance */
+"prefs.group.appearance" = "Appearance";
+"prefs.appearance.placement" = "Appears at";
+"prefs.appearance.cardSize" = "Card size";
+"prefs.appearance.cardFinish" = "Card material";
+
+/* Settings — window preview */
+"prefs.group.preview" = "Window preview";
+"prefs.preview.enabled" = "Show window previews";
+"prefs.preview.needsRecording" = "Screen Recording permission is required. Restart Orbit after granting it.";
+"prefs.preview.openSystemSettings" = "Open System Settings";
+"prefs.preview.note" = "Shows every window of the selected app to the right of the ring. Requires the Screen Recording permission.";
+
+/* Settings — login */
+"prefs.group.startup" = "Login";
+"prefs.startup.launchAtLogin" = "Launch at login";
+
+/* Settings — shortcut reference */
+"prefs.group.cheatSheet" = "Shortcut reference";
+"prefs.hint.hold" = "Hold %@ to bring up the ring";
+"prefs.hint.move" = "Arrow keys or Tab move between apps";
+"prefs.hint.letters" = "Type a letter to jump to that app";
+"prefs.hint.numbers" = "Number keys 1–9 pick an app directly";
+"prefs.hint.clear" = "Tap %@ to drop the selection";
+"prefs.hint.release" = "Let go of the trigger key to switch and close";
+
+/* Modifier keys */
+"triggerKey.option" = "Option";
+"triggerKey.command" = "Command";
+"triggerKey.control" = "Control";
+"triggerKey.shift" = "Shift";
+"triggerKey.disabled" = "Disabled";
+
+/* Ring placement */
+"ringPlacement.screenCenter" = "Screen center";
+"ringPlacement.cursor" = "Follow cursor";
+
+/* Card size and finish */
+"cardSize.small" = "Small";
+"cardSize.medium" = "Medium";
+"cardSize.large" = "Large";
+"cardSize.extraLarge" = "Extra Large";
+"cardFinish.white" = "White";
+"cardFinish.black" = "Black";
+"cardFinish.system" = "System";
+
+/* Ring — center control */
+"center.cancel" = "Cancel";
+"center.confirm" = "Release to switch";
+"center.quit" = "Drop to quit";
+"center.share" = "Drop to Share";
+"center.trash" = "Drop to Trash";
+
+/* Ring — window preview panel */
+"preview.empty" = "Select an app to see its windows";
+"preview.none" = "No windows to preview";
+
+/* VoiceOver */
+"accessibility.selected" = "Selected. Press Enter or release the trigger key to activate.";
+"accessibility.select" = "Select without activating.";
+
+/* Onboarding */
+"onboarding.title" = "Orbit";
+"onboarding.description" = "Your running apps, one ring away.\nHold a key, pick, let go.";
+"onboarding.start" = "Get Started";
+
+/* Fallbacks */
+"app.unnamed" = "Untitled app";
