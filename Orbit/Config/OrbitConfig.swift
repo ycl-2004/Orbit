@@ -289,4 +289,12 @@ enum OrbitConfig {
     static let dissolveDuration: TimeInterval = 0.55
     static let terminateGracePeriod: TimeInterval = 0.45
     static let fileTrashHoldDuration: TimeInterval = 0.9
+
+    /// 拖拽离开中心之后，等这么久再把拖放状态复位。
+    ///
+    /// Long enough that a drop landing right after the "no longer targeted"
+    /// callback still finds the trash armed, short enough that a drag which
+    /// simply left never leaves the ring stuck in a state it cannot be
+    /// dismissed from.
+    static let fileDragExitGrace: TimeInterval = 0.2
 }

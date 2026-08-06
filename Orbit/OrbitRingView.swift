@@ -33,6 +33,7 @@ final class OrbitRingViewModel: ObservableObject {
     var onActivate: ((AppInfo, String?) -> Void)?
 
     private var fileTrashTask: DispatchWorkItem?
+    private var dragExitTask: DispatchWorkItem?
     /// Cursor position at the moment selection was explicitly cleared.
     private var hoverAnchor: CGPoint?
     /// Where the selection stood when it was cleared, so arrowing again picks
@@ -307,6 +308,8 @@ final class OrbitRingViewModel: ObservableObject {
 
     func setFileDragTargeted(_ targeted: Bool) {
         if targeted {
+            dragExitTask?.cancel()
+            dragExitTask = nil
             fileTrashTask?.cancel()
             fileTrashReady = false
             fileDropPhase = .hovering
@@ -318,15 +321,42 @@ final class OrbitRingViewModel: ObservableObject {
             }
             fileTrashTask = task
             DispatchQueue.main.asyncAfter(deadline: .now() + OrbitConfig.fileTrashHoldDuration, execute: task)
-        } else if !fileTrashReady {
+        } else {
             fileTrashTask?.cancel()
             fileTrashTask = nil
-            fileDropPhase = .idle
+            scheduleDragExitReset()
         }
+    }
+
+    /// 拖拽离开中心时把状态复位 —— 但要晚一拍。
+    ///
+    /// SwiftUI reports "no longer targeted" and "here are the dropped items" as
+    /// two separate callbacks whose order is not guaranteed, and `handleFileDrop`
+    /// needs `fileTrashReady` to still be standing when it runs. So the exit path
+    /// arms a short-fuse reset that a real drop cancels, instead of resetting on
+    /// the spot.
+    ///
+    /// Resetting must happen *somehow*, though: this used to bail out whenever the
+    /// trash was armed, which left `fileDropPhase` stuck on `.trashArmed` after a
+    /// drag that hovered long enough and then left without dropping. Both `cancel()`
+    /// and `triggerReleased()` require `.idle`, so the ring became impossible to
+    /// dismiss.
+    private func scheduleDragExitReset() {
+        dragExitTask?.cancel()
+
+        let task = DispatchWorkItem { [weak self] in
+            guard let self, self.fileDropPhase != .completing else { return }
+            self.fileTrashReady = false
+            self.fileDropPhase = .idle
+        }
+        dragExitTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + OrbitConfig.fileDragExitGrace, execute: task)
     }
 
     func handleFileDrop(_ providers: [NSItemProvider]) -> Bool {
         let shouldTrash = fileTrashReady
+        dragExitTask?.cancel()
+        dragExitTask = nil
         fileTrashTask?.cancel()
         fileTrashTask = nil
         fileDropPhase = .completing
@@ -396,12 +426,31 @@ final class OrbitRingViewModel: ObservableObject {
     }
 }
 
-enum OrbitCenterMode {
+enum OrbitCenterMode: CaseIterable {
     case cancel
     case confirm
     case quit
     case share
     case trash
+
+    /// 每个模式一个图标，而且要能自己说清自己是什么。
+    ///
+    /// `.quit` and `.trash` used to share `circle.dashed`, which meant the two
+    /// most destructive states on the ring — quit this app, throw these files
+    /// away — were drawn identically, and neither was drawn as the thing it did.
+    /// `.share` is specifically an AirDrop, so it gets the radiating glyph rather
+    /// than the generic share-sheet arrow; there is no AirDrop SF Symbol, and the
+    /// system's own AirDrop artwork is a full-colour rounded tile that cannot sit
+    /// inside a tinted circle.
+    var iconName: String {
+        switch self {
+        case .cancel: "xmark"
+        case .confirm: "arrow.right"
+        case .quit: "power"
+        case .trash: "trash"
+        case .share: "dot.radiowaves.left.and.right"
+        }
+    }
 }
 
 struct OrbitRingView: View {
@@ -886,14 +935,7 @@ private struct OrbitCenterControl: View {
         .accessibilityLabel(Text(centerLabel))
     }
 
-    private var centerIcon: String {
-        switch mode {
-        case .cancel: "xmark"
-        case .confirm: "arrow.right"
-        case .quit, .trash: "circle.dashed"
-        case .share: "square.and.arrow.up"
-        }
-    }
+    private var centerIcon: String { mode.iconName }
 
     private var centerLabel: String {
         switch mode {

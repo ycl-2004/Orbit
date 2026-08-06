@@ -158,6 +158,48 @@ struct OrbitTests {
         model.setFileDragTargeted(false)
     }
 
+    /// 悬停到黑洞出现、再把文件拖走而不放手，环必须还能关掉。
+    ///
+    /// The exit path used to bail out whenever the trash was armed, so
+    /// `fileDropPhase` stayed on `.trashArmed` forever. Both `cancel()` and
+    /// `triggerReleased()` require `.idle`, which left the ring floating over
+    /// everything with Escape, the trigger key and the hub all inert.
+    @Test @MainActor func draggingFilesAwayAfterTheTrashArmsStillLetsTheRingClose() async throws {
+        let model = OrbitRingViewModel(apps: [])
+        var didCancel = false
+        model.onCancel = { didCancel = true }
+
+        model.setFileDragTargeted(true)
+        try await Task.sleep(for: .seconds(OrbitConfig.fileTrashHoldDuration + 0.2))
+        #expect(model.centerMode == .trash)
+
+        // 文件离开了窗口，但用户并没有放手 —— 不会有 drop 回调来收拾状态。
+        model.setFileDragTargeted(false)
+        try await Task.sleep(for: .seconds(OrbitConfig.fileDragExitGrace + 0.2))
+        #expect(model.fileDropPhase == .idle)
+        #expect(model.centerMode == .cancel)
+
+        model.triggerReleased()
+        #expect(didCancel)
+    }
+
+    /// 中心区域的五个状态必须各画各的，而且画得出来。
+    ///
+    /// A symbol name SwiftUI cannot resolve fails silently — the hub just renders
+    /// empty — and two modes sharing one glyph is how "quit this app" and "throw
+    /// these files away" came to look identical.
+    @Test func everyCenterModeHasItsOwnResolvableIcon() {
+        var seen: Set<String> = []
+        for mode in OrbitCenterMode.allCases {
+            let name = mode.iconName
+            #expect(
+                NSImage(systemSymbolName: name, accessibilityDescription: nil) != nil,
+                "\(mode) 用了一个不存在的 SF Symbol: \(name)"
+            )
+            #expect(seen.insert(name).inserted, "\(mode) 和别的模式共用了图标 \(name)")
+        }
+    }
+
     @Test @MainActor func selectionDoesNotActivateUntilConfirmed() {
         let app = AppInfo(
             id: "test.orbit.app",
