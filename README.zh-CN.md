@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://github.com/ycl-2004/Orbit/releases/latest"><img src="https://img.shields.io/github/v/release/ycl-2004/Orbit?label=release&color=111111" alt="最新版本"></a>
   <a href="https://github.com/ycl-2004/Orbit/releases"><img src="https://img.shields.io/github/downloads/ycl-2004/Orbit/total?label=downloads&color=111111" alt="累计下载"></a>
-  <img src="https://img.shields.io/badge/macOS-26.0%2B-111111?logo=apple&logoColor=white" alt="需要 macOS 26.0 或更高版本">
+  <img src="https://img.shields.io/badge/macOS-14.0%2B-111111?logo=apple&logoColor=white" alt="需要 macOS 14.0 或更高版本">
   <img src="https://img.shields.io/badge/Swift-SwiftUI%20%C2%B7%20AppKit-F05138?logo=swift&logoColor=white" alt="使用 SwiftUI 与 AppKit 构建">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-free%20for%20personal%20use-111111" alt="个人免费使用"></a>
 </p>
@@ -44,7 +44,7 @@ AppKit 写的菜单栏应用，没有任何第三方依赖，也不联网——�
 
 ## 快速开始
 
-1. **[下载 `Orbit-macOS.zip`](https://github.com/ycl-2004/Orbit/releases/latest/download/Orbit-macOS.zip)** 并解压。需要 macOS 26.0 或更高版本。
+1. **[下载 `Orbit-macOS.zip`](https://github.com/ycl-2004/Orbit/releases/latest/download/Orbit-macOS.zip)** 并解压。需要 macOS 14.0 或更高版本。
 2. 把 `Orbit.app` 移到 `/Applications`。首次启动请按住 Control 点按它并选择**打开**——这个构建是 ad-hoc 签名、未经 Apple 公证的，直接双击会被拦截。
 3. 按提示授予**辅助功能（Accessibility）**权限，然后在任意界面长按 **Option（⌥）** 呼出环。
 
@@ -186,7 +186,7 @@ defaults delete app.orbit.local
 
 环境要求：
 
-- macOS 26.0 或更高版本（当前重建 Xcode 工程的部署目标）。
+- macOS 14.0 或更高版本（当前重建 Xcode 工程的部署目标）。
 - Xcode 26 或更高版本。
 - Accessibility 权限，用于全局修饰键触发。
 - 如果启用实时窗口预览，还需要 Screen Recording 权限。

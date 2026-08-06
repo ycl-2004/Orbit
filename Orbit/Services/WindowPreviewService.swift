@@ -145,12 +145,14 @@ final class WindowPreviewService {
         // Any of these can be brought to the front of the carousel, so all of
         // them are captured for that slot.
         let captureWidth = OrbitConfig.previewCaptureWidth
+        // NSScreen 只能在主线程读，所以在这里取好、带进后台去。
+        let scale = NSScreen.main?.backingScaleFactor ?? 2
 
         var previews: [WindowPreview] = []
         for window in windows {
             if Task.isCancelled { return previews }
 
-            let fresh = await capture(window, width: captureWidth)
+            let fresh = await Self.capture(window, width: captureWidth, scale: scale)
             if let fresh {
                 remember(fresh, for: window.windowID)
             }
@@ -168,13 +170,23 @@ final class WindowPreviewService {
                 1
             }
 
+            // 逐像素扫一遍整张图，不能占着主线程 —— 事件 tap 的回调也在这条线上，
+            // 主线程停一拍，全系统的键盘输入就跟着停一拍。
+            let variance: Double = if let image {
+                await Task.detached(priority: .userInitiated) {
+                    Self.contentVariance(image)
+                }.value
+            } else {
+                .greatestFiniteMagnitude
+            }
+
             previews.append(
                 WindowPreview(
                     id: window.windowID,
                     title: window.title ?? "",
                     image: image,
                     aspectRatio: ratio,
-                    contentVariance: image.map(Self.contentVariance) ?? .greatestFiniteMagnitude,
+                    contentVariance: variance,
                     isStale: fresh == nil && image != nil
                 )
             )
@@ -201,7 +213,7 @@ final class WindowPreviewService {
     /// ratio, handing back the remaining 13% as transparent columns. Any border
     /// drawn around such an image sits well clear of the picture, so trim the
     /// frame down to the pixels that carry content.
-    private static func trimmingTransparentEdges(_ image: CGImage) -> CGImage {
+    nonisolated private static func trimmingTransparentEdges(_ image: CGImage) -> CGImage {
         guard image.bitsPerPixel == 32,
               let data = image.dataProvider?.data,
               let bytes = CFDataGetBytePtr(data) else { return image }
@@ -251,7 +263,7 @@ final class WindowPreviewService {
 
     /// Standard deviation of luminance over a sparse sample. Near zero means a
     /// flat, contentless window.
-    private static func contentVariance(_ image: CGImage) -> Double {
+    nonisolated private static func contentVariance(_ image: CGImage) -> Double {
         guard let data = image.dataProvider?.data,
               let bytes = CFDataGetBytePtr(data),
               image.bitsPerPixel >= 24 else { return .greatestFiniteMagnitude }
@@ -286,10 +298,18 @@ final class WindowPreviewService {
     /// fails there with SCStreamError -3811. `SCStream` on the identical
     /// filter *can* reach those windows, at the cost of spinning up a stream,
     /// so it is the fallback rather than the default.
-    private func capture(_ window: SCWindow, width: Int) async -> CGImage? {
+    ///
+    /// `nonisolated` on purpose: this runs off the main actor so that
+    /// `trimmingTransparentEdges`, which walks every pixel of the captured frame,
+    /// never lands on the thread the event tap's callback shares. `scale` is
+    /// passed in because `NSScreen` may only be read from the main actor.
+    nonisolated private static func capture(
+        _ window: SCWindow,
+        width: Int,
+        scale: CGFloat
+    ) async -> CGImage? {
         // Never upscale: a small window asked for at grid resolution just
         // costs more pixels without carrying more detail.
-        let scale = NSScreen.main?.backingScaleFactor ?? 2
         let nativeWidth = Int((window.frame.width * scale).rounded())
         let targetWidth = max(1, min(width, nativeWidth))
 
@@ -323,33 +343,72 @@ final class WindowPreviewService {
 /// only way to reach windows on other Spaces.
 private final class SingleFrameStreamCapture: NSObject, SCStreamOutput, @unchecked Sendable {
     private let lock = NSLock()
-    private var continuation: CheckedContinuation<CGImage?, Never>?
-    private var stream: SCStream?
-    private var hasFinished = false
+    nonisolated(unsafe) private var continuation: CheckedContinuation<CGImage?, Never>?
+    nonisolated(unsafe) private var stream: SCStream?
+    nonisolated(unsafe) private var hasFinished = false
 
     /// Streams that never deliver a frame must not hang the preview panel.
     private static let timeout: TimeInterval = 2
 
+    /// 取消时立刻收工，不把两秒的超时耗满。
+    ///
+    /// The preview panel re-runs this whenever the selection moves, so a sweep
+    /// across the ring cancels one capture after another. Without a cancellation
+    /// handler each abandoned stream still held its slot for the full timeout, and
+    /// because windows are captured one after another those timeouts stacked up —
+    /// a couple of fullscreen apps was enough to freeze the panel for seconds.
     func image(filter: SCContentFilter, configuration: SCStreamConfiguration) async -> CGImage? {
-        await withCheckedContinuation { continuation in
-            self.continuation = continuation
-
-            let stream = SCStream(filter: filter, configuration: configuration, delegate: nil)
-            self.stream = stream
-
-            do {
-                try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: .global(qos: .userInitiated))
-                stream.startCapture { [weak self] error in
-                    if error != nil { self?.finish(with: nil) }
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                lock.lock()
+                guard !hasFinished else {
+                    lock.unlock()
+                    continuation.resume(returning: nil)
+                    return
                 }
-            } catch {
-                finish(with: nil)
-                return
-            }
+                self.continuation = continuation
+                lock.unlock()
 
-            DispatchQueue.global().asyncAfter(deadline: .now() + Self.timeout) { [weak self] in
-                self?.finish(with: nil)
+                let stream = SCStream(filter: filter, configuration: configuration, delegate: nil)
+
+                do {
+                    try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: .global(qos: .userInitiated))
+
+                    // Cancellation can win while the stream is being created or
+                    // while its output is being registered. Do not start a
+                    // stream whose continuation has already been resumed.
+                    lock.lock()
+                    guard !hasFinished else {
+                        lock.unlock()
+                        return
+                    }
+                    self.stream = stream
+                    lock.unlock()
+
+                    stream.startCapture { [weak self] error in
+                        if error != nil { self?.finish(with: nil) }
+                    }
+
+                    // A cancellation may arrive between the guarded setup and
+                    // startCapture. The post-start check closes that remaining
+                    // window instead of leaving an orphaned stream alive.
+                    lock.lock()
+                    let cancelledDuringStart = hasFinished
+                    lock.unlock()
+                    if cancelledDuringStart {
+                        stream.stopCapture { _ in }
+                    }
+                } catch {
+                    finish(with: nil)
+                    return
+                }
+
+                DispatchQueue.global().asyncAfter(deadline: .now() + Self.timeout) { [weak self] in
+                    self?.finish(with: nil)
+                }
             }
+        } onCancel: {
+            finish(with: nil)
         }
     }
 
@@ -362,7 +421,7 @@ private final class SingleFrameStreamCapture: NSObject, SCStreamOutput, @uncheck
         if let image { finish(with: image) }
     }
 
-    private func finish(with image: CGImage?) {
+    nonisolated private func finish(with image: CGImage?) {
         lock.lock()
         guard !hasFinished else {
             lock.unlock()

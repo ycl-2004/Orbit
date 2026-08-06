@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://github.com/ycl-2004/Orbit/releases/latest"><img src="https://img.shields.io/github/v/release/ycl-2004/Orbit?label=release&color=111111" alt="Latest release"></a>
   <a href="https://github.com/ycl-2004/Orbit/releases"><img src="https://img.shields.io/github/downloads/ycl-2004/Orbit/total?label=downloads&color=111111" alt="Total downloads"></a>
-  <img src="https://img.shields.io/badge/macOS-26.0%2B-111111?logo=apple&logoColor=white" alt="macOS 26.0 or later">
+  <img src="https://img.shields.io/badge/macOS-14.0%2B-111111?logo=apple&logoColor=white" alt="macOS 14.0 or later">
   <img src="https://img.shields.io/badge/Swift-SwiftUI%20%C2%B7%20AppKit-F05138?logo=swift&logoColor=white" alt="Built with SwiftUI and AppKit">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-free%20for%20personal%20use-111111" alt="Free for personal use"></a>
 </p>
@@ -46,7 +46,7 @@ on-device.
 
 ## Quick start
 
-1. **[Download `Orbit-macOS.zip`](https://github.com/ycl-2004/Orbit/releases/latest/download/Orbit-macOS.zip)** and unzip it. Requires macOS 26.0 or later.
+1. **[Download `Orbit-macOS.zip`](https://github.com/ycl-2004/Orbit/releases/latest/download/Orbit-macOS.zip)** and unzip it. Requires macOS 14.0 or later.
 2. Move `Orbit.app` to `/Applications`. On first launch, Control-click it and choose **Open** — the build is ad-hoc signed, not Apple-notarized, so a regular double-click is blocked.
 3. Grant **Accessibility** permission when asked, then hold **Option (⌥)** anywhere to summon the ring.
 
@@ -192,7 +192,7 @@ transfers are handed to macOS and never touch an Orbit-controlled server.
 
 Requirements:
 
-- macOS 26.0 or later for the current reconstructed Xcode project.
+- macOS 14.0 or later for the current reconstructed Xcode project.
 - Xcode 26 or later.
 - Accessibility permission for the global modifier-key trigger.
 - Screen Recording permission if live window previews are enabled.

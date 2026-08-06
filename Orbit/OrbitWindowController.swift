@@ -60,13 +60,11 @@ final class OrbitWindowController: NSObject {
         tearDownPanel()
 
         // Capture the real frontmost app before the Orbit panel enters the
-        // window list. This prevents Orbit from excluding the wrong app.
-        let frontmostPID = NSWorkspace.shared.frontmostApplication.flatMap { app in
-            WindowVisibilityChecker.hasVisibleWindow(processIdentifier: app.processIdentifier)
-                ? app.processIdentifier
-                : nil
-        }
-        let apps = AppListService.shared.getRunningApps(excludingProcessIdentifier: frontmostPID)
+        // window list. This prevents Orbit from excluding the wrong app. Whether
+        // it actually gets excluded is decided in AppListService, which already
+        // has the window table in hand.
+        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        let apps = AppListService.shared.getRunningApps(frontmostProcessIdentifier: frontmostPID)
         let ringModel = OrbitRingViewModel(apps: apps)
 
         ringModel.onCancel = { [weak self] in

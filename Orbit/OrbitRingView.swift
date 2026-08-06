@@ -368,20 +368,33 @@ final class OrbitRingViewModel: ObservableObject {
         fileTrashTask = nil
         fileDropPhase = .completing
 
-        var urls: [URL] = []
+        // 每个 provider 写自己那一格，而不是一起往同一个数组尾部挤。
+        //
+        // `loadDataRepresentation` calls back on whatever thread it likes, and
+        // several providers run at once, so appending from inside those closures
+        // is a data race on the array's buffer — dropping five files at once could
+        // lose one or crash outright. Slots also keep the files in the order they
+        // were dragged, instead of whatever order the callbacks happen to land in.
+        let fileProviders = providers.filter {
+            $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
+        }
+        let collected = DroppedURLs(count: fileProviders.count)
         let group = DispatchGroup()
 
-        for provider in providers where provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+        for (index, provider) in fileProviders.enumerated() {
             group.enter()
             provider.loadDataRepresentation(forTypeIdentifier: UTType.fileURL.identifier) { data, _ in
                 if let data, let url = URL(dataRepresentation: data, relativeTo: nil) {
-                    urls.append(url)
+                    collected.set(url, at: index)
                 }
                 group.leave()
             }
         }
 
         group.notify(queue: .main) { [weak self] in
+            // 所有 leave 都到齐了，`DispatchGroup` 保证这里读得到每一次写入。
+            let urls = collected.urls
+
             guard let self else { return }
             self.fileTrashReady = false
             self.fileDropPhase = .idle
@@ -430,6 +443,33 @@ final class OrbitRingViewModel: ObservableObject {
             guard OrbitConfig.letterShortcutsEnabled, let value else { return }
             select(letter: value)
         }
+    }
+}
+
+/// 一次拖放里收集到的文件 URL，按拖入顺序摆好。
+///
+/// One slot per provider, so the callbacks never touch the same element and the
+/// result keeps the drag's order. The lock guards the array's own storage, which
+/// concurrent writes to different indices would still race on.
+private final class DroppedURLs: @unchecked Sendable {
+    private let lock = NSLock()
+    private var slots: [URL?]
+
+    init(count: Int) {
+        slots = Array(repeating: nil, count: count)
+    }
+
+    func set(_ url: URL, at index: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard slots.indices.contains(index) else { return }
+        slots[index] = url
+    }
+
+    var urls: [URL] {
+        lock.lock()
+        defer { lock.unlock() }
+        return slots.compactMap { $0 }
     }
 }
 
