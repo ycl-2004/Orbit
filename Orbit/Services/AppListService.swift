@@ -29,24 +29,35 @@ final class AppListService {
         let workspace = NSWorkspace.shared
         let excludedPid = excludingProcessIdentifier ?? currentForegroundPid(in: workspace)
 
-        // Read once, not once per app: every call copies the whole window table.
-        let windowedPids = OrbitConfig.hideWindowlessApps
-            ? WindowVisibilityChecker.processesWithWindows()
-            : nil
-
         let listed = workspace.runningApplications
             .filter { shouldList($0, excluding: excludedPid) }
 
-        // Better a few useless cards than a ring with nothing on it: if the
-        // window filter would empty the list — one app open and it is the one
-        // in front, a window server that answered nothing — show the unfiltered
-        // set instead.
-        let windowed = listed.filter { windowedPids?.contains($0.processIdentifier) ?? true }
-        let survivors = windowed.isEmpty ? listed : windowed
+        let survivors = OrbitConfig.hideWindowlessApps
+            ? filterToWindowed(listed)
+            : listed
 
         return survivors
             .map(makeAppInfo)
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    /// 把没有窗口的应用剔掉。
+    ///
+    /// 兜底的触发条件是"问不出来"，不是"过滤结果为空"。
+    ///
+    /// Falling back on an empty result reads like the safer choice — a ring with
+    /// a few useless cards beats a ring with nothing on it — but it inverts the
+    /// setting exactly when the filter bites hardest: once the survivors are all
+    /// excluded for other reasons (the one windowed app being the frontmost one,
+    /// say), every windowless app comes straight back and the setting looks dead.
+    /// An empty answer the window server stands behind means the ring should be
+    /// empty, and the hub still cancels and still takes file drops.
+    private func filterToWindowed(_ apps: [NSRunningApplication]) -> [NSRunningApplication] {
+        // Read once, not once per app: every call copies the whole window table.
+        guard let windowedPids = WindowVisibilityChecker.processesWithWindows() else {
+            return apps
+        }
+        return apps.filter { windowedPids.contains($0.processIdentifier) }
     }
 
     /// 只有当前台应用确实有窗口时才把它排除掉。

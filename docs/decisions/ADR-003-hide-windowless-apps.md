@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-004](ADR-004-window-filter-failure-semantics.md)
+
+This ADR records the original window-filter decision. The empty-result fallback
+described below was later superseded because an empty window list is a valid,
+authoritative result rather than a query failure.
 
 ## Context
 

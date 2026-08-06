@@ -106,6 +106,46 @@ struct OrbitTests {
         ]))
     }
 
+    /// 关掉最后一个窗口的应用会在 0 层留下一个够大的无标题窗口：Sequel Ace 是
+    /// 500×500，Terminal 是 260×330。尺寸和层级都拦不住，只有标题能。
+    ///
+    /// This is the shape that puts a card on the ring whose preview then says
+    /// "No windows to preview". The title test only runs when Screen Recording
+    /// makes titles readable, so both answers have to hold.
+    @Test func untitledPlaceholderWindowsAreDroppedOnlyWhenTitlesAreReadable() {
+        func window(title: String? = nil) -> [String: Any] {
+            var window: [String: Any] = [
+                kCGWindowLayer as String: 0,
+                kCGWindowBounds as String: [
+                    "X": 0, "Y": 0, "Width": 500, "Height": 500,
+                ] as [String: Any],
+            ]
+            if let title { window[kCGWindowName as String] = title }
+            return window
+        }
+
+        // 读不到标题时只能放行，否则每个应用都会被当成没有窗口。
+        #expect(WindowVisibilityChecker.isRealWindow(window()))
+
+        #expect(!WindowVisibilityChecker.isRealWindow(window(), requiringTitle: true))
+        #expect(!WindowVisibilityChecker.isRealWindow(window(title: ""), requiringTitle: true))
+        #expect(WindowVisibilityChecker.isRealWindow(
+            window(title: "Orbit — -zsh — 80×24"),
+            requiringTitle: true
+        ))
+    }
+
+    /// "问不出来"必须和"没有窗口"分开。
+    ///
+    /// The fallback in `AppListService` keys off `nil`, and nothing else. Keying
+    /// it off an empty result is what let the title filter silently disable the
+    /// whole setting: the filtered list came back empty and every windowless app
+    /// was handed straight back.
+    @Test func anUnanswerableWindowListIsNotAnEmptyOne() {
+        // 窗口服务在这台机器上一定答得上来，哪怕答案里一个进程都没有。
+        #expect(WindowVisibilityChecker.processesWithWindows() != nil)
+    }
+
     /// 默认开启：`defaults.bool(forKey:)` 对没写过的键返回 false，正好是反的。
     @Test func windowlessAppsAreHiddenByDefault() {
         let previous = UserDefaults.standard.object(forKey: "hideWindowlessApps")

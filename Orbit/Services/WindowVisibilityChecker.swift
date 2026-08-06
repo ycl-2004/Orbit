@@ -46,14 +46,22 @@ enum WindowVisibilityChecker {
     /// Returns the whole set in one pass because `CGWindowListCopyWindowInfo`
     /// copies the entire window table on every call — asking once per app would
     /// mean one full copy per card.
-    static func processesWithWindows() -> Set<pid_t> {
+    ///
+    /// - Returns: 有窗口的那些进程；`nil` 表示窗口服务没有作答 —— 调用方必须把它
+    ///   和"谁都没有窗口"分开处理，否则一次查询失败会清空整个环。
+    static func processesWithWindows() -> Set<pid_t>? {
         let options: CGWindowListOption = [.excludeDesktopElements]
         guard let windows = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
-            return []
+            return nil
         }
 
+        // 标题是预览侧多出来的那一条过滤，而这里读不读得到取决于权限：没有屏幕录制
+        // 权限时别的应用的 `kCGWindowName` 一律是 nil。每次唤出问一次 TCC，而不是
+        // 每个窗口问一次，答案可用时才把判据收紧。
+        let titlesReadable = CGPreflightScreenCaptureAccess()
+
         var pids: Set<pid_t> = []
-        for window in windows where isRealWindow(window) {
+        for window in windows where isRealWindow(window, requiringTitle: titlesReadable) {
             guard let pid = window[kCGWindowOwnerPID as String] as? Int else { continue }
             pids.insert(pid_t(pid))
         }
@@ -66,16 +74,24 @@ enum WindowVisibilityChecker {
     /// shadows, 1×1 probes, fully transparent placeholders. Layer, alpha and
     /// size are what tell them apart from a document window.
     ///
-    /// - Note: `WindowPreviewService` additionally requires a non-empty title,
-    ///   which cannot be checked here — `kCGWindowName` needs the Screen
-    ///   Recording permission, and the ring works without it. So a rare app
-    ///   whose only window is untitled can still reach the ring and then show
-    ///   an empty preview.
-    static func isRealWindow(_ window: [String: Any]) -> Bool {
+    /// Size and layer cannot catch everything, though. Sequel Ace with its last
+    /// window closed keeps a 500×500 untitled surface on layer 0 — the same shape
+    /// loginwindow, Raycast and CC Switch all park there — and Terminal keeps a
+    /// 260×330 one. Both clear every bar above and put a card on the ring whose
+    /// preview then says "No windows to preview", because `WindowPreviewService`
+    /// applies one filter more: a non-empty title.
+    ///
+    /// `requiringTitle` applies that same test. Callers pass true only when
+    /// `CGPreflightScreenCaptureAccess()` says titles are readable — without that
+    /// permission every title reads as nil, and requiring one would empty the ring.
+    static func isRealWindow(_ window: [String: Any], requiringTitle: Bool = false) -> Bool {
         guard window[kCGWindowLayer as String] as? Int ?? 0 == Threshold.normalLayer else {
             return false
         }
         guard window[kCGWindowAlpha as String] as? Double ?? 1 > Threshold.minimumAlpha else {
+            return false
+        }
+        if requiringTitle, (window[kCGWindowName as String] as? String ?? "").isEmpty {
             return false
         }
         guard let boundsDict = window[kCGWindowBounds as String] as? [String: Any],
