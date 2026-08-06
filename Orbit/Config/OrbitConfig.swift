@@ -78,16 +78,25 @@ enum OrbitConfig {
         }
     }
 
+    /// 唤出 Orbit 的那个键。
+    ///
+    /// `.disabled` is deliberately not a legal answer here. It is a legal value of
+    /// the type — the clear-selection shortcut uses it to mean "off" — but as the
+    /// trigger it would make the ring unsummonable, since `handleFlagsChanged`
+    /// returns immediately on it. Healing the value on read also rescues anyone who
+    /// managed to store it before the settings picker stopped offering it.
     static var triggerModifier: TriggerModifier {
         get {
             guard let rawValue = defaults.string(forKey: "triggerModifier"),
-                  let modifier = TriggerModifier(rawValue: rawValue) else {
+                  let modifier = TriggerModifier(rawValue: rawValue),
+                  modifier != .disabled else {
                 return .option
             }
             return modifier
         }
         set {
-            defaults.set(newValue.rawValue, forKey: "triggerModifier")
+            let safeValue = newValue == .disabled ? .option : newValue
+            defaults.set(safeValue.rawValue, forKey: "triggerModifier")
         }
     }
 

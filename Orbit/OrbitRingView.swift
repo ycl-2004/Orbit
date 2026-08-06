@@ -294,13 +294,20 @@ final class OrbitRingViewModel: ObservableObject {
         app.terminate { [weak self] success in
             DispatchQueue.main.async {
                 guard let self else { return }
-                if success {
+                guard success else {
+                    self.dissolvingAppID = nil
+                    return
+                }
+
+                // 宽限期比消散动画短，所以退出成功之后还要把动画剩下的那一截等完
+                // 再抽走卡片 —— 否则碎片飞到一半，卡片就凭空不见了。
+                let remaining = max(0, OrbitConfig.dissolveDuration - OrbitConfig.terminateGracePeriod)
+                DispatchQueue.main.asyncAfter(deadline: .now() + remaining) {
                     self.apps.removeAll { $0.id == app.id }
+                    self.dissolvingAppID = nil
                     if self.apps.isEmpty {
                         self.onCancel?()
                     }
-                } else {
-                    self.dissolvingAppID = nil
                 }
             }
         }

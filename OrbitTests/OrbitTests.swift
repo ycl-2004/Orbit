@@ -183,6 +183,22 @@ struct OrbitTests {
         #expect(didCancel)
     }
 
+    /// 触发键设成 `.disabled` 会让环再也唤不出来，所以它连存都不该存得住。
+    @Test func triggerModifierNeverResolvesToDisabled() {
+        let previous = UserDefaults.standard.object(forKey: "triggerModifier")
+        defer { UserDefaults.standard.set(previous, forKey: "triggerModifier") }
+
+        UserDefaults.standard.set(TriggerModifier.disabled.rawValue, forKey: "triggerModifier")
+
+        #expect(OrbitConfig.triggerModifier != .disabled)
+        #expect(!TriggerModifier.assignable.contains(.disabled))
+
+        OrbitConfig.triggerModifier = .disabled
+        #expect(
+            UserDefaults.standard.string(forKey: "triggerModifier") == TriggerModifier.option.rawValue
+        )
+    }
+
     /// 中心区域的五个状态必须各画各的，而且画得出来。
     ///
     /// A symbol name SwiftUI cannot resolve fails silently — the hub just renders

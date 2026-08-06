@@ -83,8 +83,12 @@ struct SettingsView: View {
 
     private var triggerSection: some View {
         Section("prefs.group.trigger") {
+            // `assignable` rather than `allCases`: picking "Disabled" as the
+            // trigger would leave no way to summon the ring at all. The
+            // clear-selection picker below does offer it, where it means
+            // "no shortcut" rather than "no app".
             Picker("prefs.trigger.key", selection: $model.triggerModifier) {
-                ForEach(TriggerModifier.allCases) { modifier in
+                ForEach(TriggerModifier.assignable) { modifier in
                     Text(modifier.localizedName).tag(modifier)
                 }
             }
