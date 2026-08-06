@@ -29,6 +29,8 @@
 "prefs.appearance.placement" = "Appears at";
 "prefs.appearance.cardSize" = "Card size";
 "prefs.appearance.cardFinish" = "Card material";
+"prefs.appearance.hideWindowless" = "Hide apps with no windows";
+"prefs.appearance.hideWindowless.note" = "Apps that are running without any open window are left off the ring. Minimized and full-screen windows still count.";
 
 /* Settings — window preview */
 "prefs.group.preview" = "Window preview";

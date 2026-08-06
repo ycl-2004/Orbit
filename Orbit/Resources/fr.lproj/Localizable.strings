@@ -29,6 +29,8 @@
 "prefs.appearance.placement" = "Position d’affichage";
 "prefs.appearance.cardSize" = "Taille des cartes";
 "prefs.appearance.cardFinish" = "Matériau des cartes";
+"prefs.appearance.hideWindowless" = "Masquer les apps sans fenêtre";
+"prefs.appearance.hideWindowless.note" = "Les apps en cours d’exécution sans aucune fenêtre ouverte n’apparaissent pas dans l’anneau. Les fenêtres réduites et en plein écran comptent toujours.";
 
 /* Settings — window preview */
 "prefs.group.preview" = "Aperçu des fenêtres";

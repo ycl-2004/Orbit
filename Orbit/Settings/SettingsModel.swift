@@ -61,6 +61,10 @@ final class SettingsModel: ObservableObject {
         didSet { writeThrough { OrbitConfig.cardMaterial = cardMaterial } }
     }
 
+    @Published var hideWindowlessApps: Bool = OrbitConfig.hideWindowlessApps {
+        didSet { writeThrough { OrbitConfig.hideWindowlessApps = hideWindowlessApps } }
+    }
+
     // MARK: - 窗口预览
 
     @Published var windowPreviewEnabled: Bool = OrbitConfig.windowPreviewEnabled {
@@ -108,6 +112,7 @@ final class SettingsModel: ObservableObject {
             ringPlacement = OrbitConfig.ringPlacement
             cardSize = OrbitConfig.cardSize
             cardMaterial = OrbitConfig.cardMaterial
+            hideWindowlessApps = OrbitConfig.hideWindowlessApps
             windowPreviewEnabled = OrbitConfig.windowPreviewEnabled
             launchAtLogin = LoginItemService.reload()
             hasAccessibility = HotKeyService.checkAccessibilityPermission()

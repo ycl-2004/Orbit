@@ -136,6 +136,12 @@ struct SettingsView: View {
                     Text(material.localizedName).tag(material)
                 }
             }
+
+            Toggle("prefs.appearance.hideWindowless", isOn: $model.hideWindowlessApps)
+
+            Text("prefs.appearance.hideWindowless.note")
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
     }
 

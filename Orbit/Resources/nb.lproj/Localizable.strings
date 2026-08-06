@@ -29,6 +29,8 @@
 "prefs.appearance.placement" = "Plassering";
 "prefs.appearance.cardSize" = "Kortstørrelse";
 "prefs.appearance.cardFinish" = "Kortmateriale";
+"prefs.appearance.hideWindowless" = "Skjul apper uten vinduer";
+"prefs.appearance.hideWindowless.note" = "Apper som kjører uten et åpent vindu, vises ikke i ringen. Minimerte vinduer og fullskjermvinduer teller fortsatt med.";
 
 /* Settings — window preview */
 "prefs.group.preview" = "Vindusforhåndsvisning";

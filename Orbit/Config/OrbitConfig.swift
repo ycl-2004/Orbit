@@ -133,6 +133,18 @@ enum OrbitConfig {
         set { defaults.set(newValue, forKey: "numericShortcutsEnabled") }
     }
 
+    /// Dock 给每个运行中的进程都点一个小圆点，哪怕它一个窗口都没开。Orbit 不该
+    /// 照抄这个口径：切到一个没有窗口的应用，屏幕上什么也不会发生，预览面板也只
+    /// 能显示"没有窗口可预览"。
+    ///
+    /// On by default, which is why this reads through `object(forKey:)` rather
+    /// than `bool(forKey:)` — the latter answers `false` for a key nobody has
+    /// written yet, and that is the opposite of what we want on first launch.
+    static var hideWindowlessApps: Bool {
+        get { defaults.object(forKey: "hideWindowlessApps") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "hideWindowlessApps") }
+    }
+
     /// Opt-in because window capture needs the Screen Recording permission,
     /// which the ring itself does not.
     static var windowPreviewEnabled: Bool {
@@ -263,6 +275,14 @@ enum OrbitConfig {
         let scale = NSScreen.main?.backingScaleFactor ?? 2
         return min(Int((previewCardMaximumWidth * scale).rounded()), previewMaximumCaptureWidth)
     }
+
+    /// 小到这个尺寸以下的窗口不算「一个真的窗口」。
+    ///
+    /// Autofill popovers, tooltip shadows and the placeholder surfaces apps keep
+    /// around all come back as real entries in the window list. Both the ring's
+    /// app list and the preview's window list measure against this same number,
+    /// so a card never promises a thumbnail the preview then refuses to show.
+    static let minimumRealWindowSize = CGSize(width: 200, height: 120)
 
     static let maxVisibleApps = 12
     static let dissolveParticleCount = 72

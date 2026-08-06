@@ -29,6 +29,8 @@
 "prefs.appearance.placement" = "表示位置";
 "prefs.appearance.cardSize" = "カードのサイズ";
 "prefs.appearance.cardFinish" = "カードの材質";
+"prefs.appearance.hideWindowless" = "ウインドウのないアプリを隠す";
+"prefs.appearance.hideWindowless.note" = "起動中でもウインドウを開いていないアプリはリングに表示しません。最小化されたウインドウやフルスクリーンのウインドウは対象に含まれます。";
 
 /* Settings — window preview */
 "prefs.group.preview" = "ウインドウプレビュー";

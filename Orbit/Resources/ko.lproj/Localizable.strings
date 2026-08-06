@@ -29,6 +29,8 @@
 "prefs.appearance.placement" = "표시 위치";
 "prefs.appearance.cardSize" = "카드 크기";
 "prefs.appearance.cardFinish" = "카드 재질";
+"prefs.appearance.hideWindowless" = "창이 없는 앱 숨기기";
+"prefs.appearance.hideWindowless.note" = "실행 중이지만 열린 창이 없는 앱은 링에 표시하지 않습니다. 최소화된 창과 전체 화면 창은 창으로 인정됩니다.";
 
 /* Settings — window preview */
 "prefs.group.preview" = "윈도우 미리보기";

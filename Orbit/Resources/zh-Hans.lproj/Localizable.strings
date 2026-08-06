@@ -29,6 +29,8 @@
 "prefs.appearance.placement" = "唤出位置";
 "prefs.appearance.cardSize" = "卡片大小";
 "prefs.appearance.cardFinish" = "卡片材质";
+"prefs.appearance.hideWindowless" = "隐藏没有窗口的应用";
+"prefs.appearance.hideWindowless.note" = "正在运行但一个窗口都没打开的应用不会出现在环上。最小化和全屏的窗口仍然算数。";
 
 /* Settings — window preview */
 "prefs.group.preview" = "窗口预览";

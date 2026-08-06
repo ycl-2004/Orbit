@@ -129,7 +129,10 @@ final class WindowPreviewService {
                 .filter { $0.owningApplication?.processID == pid }
                 .filter { $0.windowLayer == 0 }
                 .filter { !($0.title ?? "").isEmpty }
-                .filter { $0.frame.width >= 200 && $0.frame.height >= 120 }
+                .filter {
+                    $0.frame.width >= OrbitConfig.minimumRealWindowSize.width
+                        && $0.frame.height >= OrbitConfig.minimumRealWindowSize.height
+                }
                 .sorted { lhs, rhs in
                     // Whatever the user is actually looking at goes first.
                     if lhs.isOnScreen != rhs.isOnScreen { return lhs.isOnScreen }
