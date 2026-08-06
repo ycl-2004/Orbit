@@ -29,8 +29,22 @@ final class AppListService {
         let workspace = NSWorkspace.shared
         let excludedPid = excludingProcessIdentifier ?? currentForegroundPid(in: workspace)
 
-        return workspace.runningApplications
+        // Read once, not once per app: every call copies the whole window table.
+        let windowedPids = OrbitConfig.hideWindowlessApps
+            ? WindowVisibilityChecker.processesWithWindows()
+            : nil
+
+        let listed = workspace.runningApplications
             .filter { shouldList($0, excluding: excludedPid) }
+
+        // Better a few useless cards than a ring with nothing on it: if the
+        // window filter would empty the list — one app open and it is the one
+        // in front, a window server that answered nothing — show the unfiltered
+        // set instead.
+        let windowed = listed.filter { windowedPids?.contains($0.processIdentifier) ?? true }
+        let survivors = windowed.isEmpty ? listed : windowed
+
+        return survivors
             .map(makeAppInfo)
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }

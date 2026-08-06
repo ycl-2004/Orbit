@@ -64,6 +64,57 @@ struct OrbitTests {
         #expect(!FileDropPhase.completing.isReceiving)
     }
 
+    /// 窗口表里绝大多数条目都不是「用户心里的那种窗口」。
+    ///
+    /// This predicate decides whether an app reaches the ring at all, so each
+    /// rejected shape here is an app that would otherwise show up as a card
+    /// with nothing behind it.
+    @Test func onlyRealWindowsCountTowardsAnAppHavingWindows() {
+        func window(
+            layer: Int = 0,
+            alpha: Double = 1,
+            width: CGFloat = 400,
+            height: CGFloat = 300
+        ) -> [String: Any] {
+            [
+                kCGWindowLayer as String: layer,
+                kCGWindowAlpha as String: alpha,
+                kCGWindowBounds as String: [
+                    "X": 0, "Y": 0, "Width": width, "Height": height,
+                ] as [String: Any],
+            ]
+        }
+
+        #expect(WindowVisibilityChecker.isRealWindow(window()))
+        // 菜单栏、Dock、悬浮面板都在非 0 层。
+        #expect(!WindowVisibilityChecker.isRealWindow(window(layer: 25)))
+        // 完全透明的窗口在屏幕上等于不存在。
+        #expect(!WindowVisibilityChecker.isRealWindow(window(alpha: 0)))
+        // 自动填充气泡这类小面板不足以让一个应用值得切过去。
+        #expect(!WindowVisibilityChecker.isRealWindow(window(width: 120, height: 80)))
+        #expect(!WindowVisibilityChecker.isRealWindow([:]))
+    }
+
+    /// 尺寸门槛必须和预览侧共用一个来源，否则会出现「环上有卡片、预览说没窗口」。
+    @Test func windowSizeThresholdIsSharedWithThePreview() {
+        let size = OrbitConfig.minimumRealWindowSize
+        #expect(WindowVisibilityChecker.isRealWindow([
+            kCGWindowLayer as String: 0,
+            kCGWindowBounds as String: [
+                "X": 0, "Y": 0, "Width": size.width, "Height": size.height,
+            ] as [String: Any],
+        ]))
+    }
+
+    /// 默认开启：`defaults.bool(forKey:)` 对没写过的键返回 false，正好是反的。
+    @Test func windowlessAppsAreHiddenByDefault() {
+        let previous = UserDefaults.standard.object(forKey: "hideWindowlessApps")
+        UserDefaults.standard.removeObject(forKey: "hideWindowlessApps")
+        defer { UserDefaults.standard.set(previous, forKey: "hideWindowlessApps") }
+
+        #expect(OrbitConfig.hideWindowlessApps)
+    }
+
     @Test func firstLetterFoldsAccentsAndNonLatinNames() {
         func app(named name: String) -> AppInfo {
             AppInfo(

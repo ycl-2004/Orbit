@@ -29,6 +29,8 @@
 "prefs.appearance.placement" = "Положение";
 "prefs.appearance.cardSize" = "Размер карточек";
 "prefs.appearance.cardFinish" = "Материал карточек";
+"prefs.appearance.hideWindowless" = "Скрывать приложения без окон";
+"prefs.appearance.hideWindowless.note" = "Запущенные приложения, у которых не открыто ни одного окна, не появляются в кольце. Свёрнутые и полноэкранные окна по-прежнему учитываются.";
 
 /* Settings — window preview */
 "prefs.group.preview" = "Предпросмотр окон";

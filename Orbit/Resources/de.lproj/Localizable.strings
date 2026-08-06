@@ -29,6 +29,8 @@
 "prefs.appearance.placement" = "Anzeigeposition";
 "prefs.appearance.cardSize" = "Kartengröße";
 "prefs.appearance.cardFinish" = "Kartenmaterial";
+"prefs.appearance.hideWindowless" = "Apps ohne Fenster ausblenden";
+"prefs.appearance.hideWindowless.note" = "Apps, die laufen, aber kein Fenster geöffnet haben, erscheinen nicht im Ring. Minimierte Fenster und Vollbildfenster zählen weiterhin.";
 
 /* Settings — window preview */
 "prefs.group.preview" = "Fenstervorschau";

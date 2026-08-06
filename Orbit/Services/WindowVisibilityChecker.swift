@@ -34,6 +34,58 @@ enum WindowVisibilityChecker {
         }
     }
 
+    /// 当前拥有窗口的所有进程。
+    ///
+    /// Deliberately drops `.optionOnScreenOnly`, which is the one thing that
+    /// separates this from `hasVisibleWindow`: a minimized window, a window on
+    /// another Space and a fullscreen app are all off-screen, and all three are
+    /// things a person still wants to switch back to. What this answers is the
+    /// narrower question "does anything at all belong to this app", so that an
+    /// app with no windows whatsoever can be left off the ring.
+    ///
+    /// Returns the whole set in one pass because `CGWindowListCopyWindowInfo`
+    /// copies the entire window table on every call — asking once per app would
+    /// mean one full copy per card.
+    static func processesWithWindows() -> Set<pid_t> {
+        let options: CGWindowListOption = [.excludeDesktopElements]
+        guard let windows = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
+            return []
+        }
+
+        var pids: Set<pid_t> = []
+        for window in windows where isRealWindow(window) {
+            guard let pid = window[kCGWindowOwnerPID as String] as? Int else { continue }
+            pids.insert(pid_t(pid))
+        }
+        return pids
+    }
+
+    /// 一个窗口条目是不是「用户心里的那种窗口」。
+    ///
+    /// The window list is full of bookkeeping surfaces: autofill panels, menu
+    /// shadows, 1×1 probes, fully transparent placeholders. Layer, alpha and
+    /// size are what tell them apart from a document window.
+    ///
+    /// - Note: `WindowPreviewService` additionally requires a non-empty title,
+    ///   which cannot be checked here — `kCGWindowName` needs the Screen
+    ///   Recording permission, and the ring works without it. So a rare app
+    ///   whose only window is untitled can still reach the ring and then show
+    ///   an empty preview.
+    static func isRealWindow(_ window: [String: Any]) -> Bool {
+        guard window[kCGWindowLayer as String] as? Int ?? 0 == Threshold.normalLayer else {
+            return false
+        }
+        guard window[kCGWindowAlpha as String] as? Double ?? 1 > Threshold.minimumAlpha else {
+            return false
+        }
+        guard let boundsDict = window[kCGWindowBounds as String] as? [String: Any],
+              let bounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary) else {
+            return false
+        }
+        return bounds.width >= OrbitConfig.minimumRealWindowSize.width
+            && bounds.height >= OrbitConfig.minimumRealWindowSize.height
+    }
+
     private static func isVisibleWindow(_ window: [String: Any], ownedBy pid: pid_t) -> Bool {
         guard window[kCGWindowOwnerPID as String] as? Int == Int(pid) else {
             return false
