@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest a change to how Orbit works
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Orbit deliberately does one thing. The strongest requests describe the
+        moment the current behavior got in your way, not just the feature.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What were you trying to do?
+      description: The situation where Orbit slowed you down or did the wrong thing.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What should Orbit do instead?
+      description: Include where it would live — the ring, the center target, Settings, the menu bar.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What did you try instead?
+      description: Existing settings, other tools, or workarounds — and why they fell short.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and this has not been requested.
+          required: true
+        - label: I checked Settings and this cannot already be configured.
+          required: true

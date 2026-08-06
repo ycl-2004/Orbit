@@ -1,0 +1,91 @@
+name: Bug report
+description: Something in Orbit does not work the way it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The fields below are the ones that actually
+        determine whether a bug is reproducible — please fill them in.
+
+  - type: input
+    id: orbit-version
+    attributes:
+      label: Orbit version
+      description: Menu bar icon → Settings, or the release you downloaded.
+      placeholder: "1.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      description: "Apple menu → About This Mac"
+      placeholder: "26.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: architecture
+    attributes:
+      label: Mac
+      options:
+        - Apple Silicon
+        - Intel
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: How did you install Orbit?
+      options:
+        - Downloaded the release zip
+        - Built from source in Xcode
+        - scripts/install.sh
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: permissions
+    attributes:
+      label: Permissions granted
+      description: System Settings → Privacy & Security
+      options:
+        - label: Accessibility
+        - label: Screen Recording (only needed for window previews)
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Hold Option over Safari
+        2. Arrow right twice
+        3. Release
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: Attach a screenshot or short recording if the problem is visual or timing-dependent.
+    validations:
+      required: true
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Relevant settings
+      description: Trigger key, clear-selection key, window previews on/off, ring placement, long-press threshold — anything you changed from the defaults.
+    validations:
+      required: false

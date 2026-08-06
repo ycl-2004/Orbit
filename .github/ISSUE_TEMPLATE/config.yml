@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Installation and permission questions
+    url: https://github.com/ycl-2004/Orbit#faq
+    about: Gatekeeper warnings, Accessibility and Screen Recording permissions, and uninstalling are covered in the README FAQ.
+  - name: Download the latest build
+    url: https://github.com/ycl-2004/Orbit/releases/latest
+    about: Check whether your problem is already fixed in the newest release before filing.
+  - name: Contributing guide
+    url: https://github.com/ycl-2004/Orbit/blob/main/CONTRIBUTING.md
+    about: Build, test, and pull request conventions.
