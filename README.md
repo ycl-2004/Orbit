@@ -105,6 +105,15 @@ release is still `v1.3.0`; source-only improvements are recorded under
 - While the ring is open, drag a file onto the center target and release for AirDrop; keep it over the target for 0.9 seconds until it changes to Trash, then release to move it to the macOS Trash. The file interaction keeps Orbit open until it finishes.
 - Click the menu bar icon for settings, permissions, and quit.
 
+## App Intro
+
+The standalone App Intro / Welcome artwork explains Orbit's core loop at a glance:
+hold Option, choose an app, and release to switch.
+
+<p align="center">
+  <img src="photos/AppIntro.png" alt="Orbit App Intro and Welcome artwork" width="509">
+</p>
+
 ## Screenshots
 
 <details>
@@ -122,8 +131,10 @@ release is still `v1.3.0`; source-only improvements are recorded under
 | --- | --- |
 | ![Window preview](photos/07-window-preview.png) | ![Window selection](photos/08-window-selection.png) |
 
-These screenshots show the current Orbit flows on macOS. The source PNGs live in
-`photos/` so the README stays aligned with the checked-in product captures.
+These screenshots show the current Orbit flows on macOS. They are cropped to the
+product canvas with the macOS menu bar and desktop chrome removed, then normalized
+to 1556×900 for consistent documentation. The source PNGs live in `photos/` so the
+README stays aligned with the checked-in product captures.
 
 </details>
 

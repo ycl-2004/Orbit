@@ -102,6 +102,15 @@ open /Applications/Orbit.app
 - Orbit 打开后，把文件拖到中心目标并立即松手会触发 AirDrop；在中心停留 0.9 秒，目标变成废纸篓后再松手，会把文件移入 macOS 废纸篓。文件处理完成前 Orbit 会保持打开。
 - 点击菜单栏图标可以打开设置、权限页面或退出应用。
 
+## App Intro / 欢迎介绍页
+
+这张独立的 App Intro / Welcome 介绍图用一页说明 Orbit 的核心流程：按住
+Option、选择应用、松手切换。它保留竖版构图，单独作为产品介绍视觉。
+
+<p align="center">
+  <img src="photos/AppIntro.png" alt="Orbit App Intro 与欢迎介绍页" width="509">
+</p>
+
 ## 截图
 
 <details>
@@ -119,7 +128,8 @@ open /Applications/Orbit.app
 | --- | --- |
 | ![窗口预览](photos/07-window-preview.png) | ![窗口选择](photos/08-window-selection.png) |
 
-这些截图展示了当前 macOS 版本的 Orbit 功能流程。真实 PNG 保存在 `photos/` 中，
+这些截图展示了当前 macOS 版本的 Orbit 功能流程。它们已经裁掉 macOS 菜单栏和桌面
+外框，并统一为 1556×900，方便在文档中保持一致。真实 PNG 保存在 `photos/` 中，
 README 与仓库内的产品截图保持同步。
 
 </details>
