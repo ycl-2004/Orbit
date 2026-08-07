@@ -31,11 +31,11 @@
 </p>
 
 <p align="center">
-  <img src="photos/demo.gif" alt="Orbit 环、窗口预览、文件拖放与设置" width="720">
+  <img src="photos/AppIntro.png" alt="Orbit App Intro 与欢迎介绍页" width="509">
 </p>
 
 <p align="center">
-  <sub>由 <code>photos/</code> 中的产品截图合成的功能巡览，之后会替换为真实录屏。</sub>
+  <sub>App Intro / Welcome：按住 Option、选择应用、松手切换。</sub>
 </p>
 
 按住一个修饰键，正在运行的应用就环绕在鼠标周围。朝目标方向一甩、松手，切换完成。
@@ -102,31 +102,22 @@ open /Applications/Orbit.app
 - Orbit 打开后，把文件拖到中心目标并立即松手会触发 AirDrop；在中心停留 0.9 秒，目标变成废纸篓后再松手，会把文件移入 macOS 废纸篓。文件处理完成前 Orbit 会保持打开。
 - 点击菜单栏图标可以打开设置、权限页面或退出应用。
 
-## App Intro / 欢迎介绍页
-
-这张独立的 App Intro / Welcome 介绍图用一页说明 Orbit 的核心流程：按住
-Option、选择应用、松手切换。它保留竖版构图，单独作为产品介绍视觉。
-
-<p align="center">
-  <img src="photos/AppIntro.png" alt="Orbit App Intro 与欢迎介绍页" width="509">
-</p>
-
 ## 截图
 
-<details>
+<details open>
 <summary>环形切换、文件操作、窗口预览与设置（共 8 张）</summary>
 
 | Orbit 环 | 文件分享 | 文件删除 |
 | --- | --- | --- |
-| ![Orbit 环](photos/01-orbit-ring.png) | ![文件分享](photos/02-file-share.png) | ![文件删除](photos/03-file-delete.png) |
+| ![Orbit 环](photos/01-orbit-ring.png?v=da051c6) | ![文件分享](photos/02-file-share.png?v=da051c6) | ![文件删除](photos/03-file-delete.png?v=da051c6) |
 
 | 退出应用 | 设置 | 欢迎页 |
 | --- | --- | --- |
-| ![退出应用](photos/04-app-exit.png) | ![设置](photos/05-settings.png) | ![欢迎页](photos/06-welcome.png) |
+| ![退出应用](photos/04-app-exit.png?v=da051c6) | ![设置](photos/05-settings.png?v=da051c6) | ![欢迎页](photos/06-welcome.png?v=da051c6) |
 
 | 窗口预览 | 选择具体窗口 |
 | --- | --- |
-| ![窗口预览](photos/07-window-preview.png) | ![窗口选择](photos/08-window-selection.png) |
+| ![窗口预览](photos/07-window-preview.png?v=da051c6) | ![窗口选择](photos/08-window-selection.png?v=da051c6) |
 
 这些截图展示了当前 macOS 版本的 Orbit 功能流程。它们已经裁掉 macOS 菜单栏和桌面
 外框，并统一为 1556×900，方便在文档中保持一致。真实 PNG 保存在 `photos/` 中，
@@ -264,7 +255,7 @@ xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
 - `OrbitTests/` — 交互与选择逻辑的单元测试。
 - `OrbitUITests/` — UI 测试目标。
 - `Orbit.xcodeproj/` — 共享 Xcode 工程和 workspace 数据。
-- `photos/` — README 截图、演示动图和辅助图片。
+- `photos/` — README 截图、App Intro 介绍图和辅助图片。
 - `scripts/` — 安装、发布打包与演示动图生成脚本。
 - `docs/decisions/` — 产品与工程决策记录。
 

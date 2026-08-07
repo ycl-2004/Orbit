@@ -31,11 +31,11 @@
 </p>
 
 <p align="center">
-  <img src="photos/demo.gif" alt="Orbit ring, window previews, file drop, and settings" width="720">
+  <img src="photos/AppIntro.png" alt="Orbit App Intro and Welcome artwork" width="509">
 </p>
 
 <p align="center">
-  <sub>A tour composed from the product screenshots in <code>photos/</code>. A live screen recording will replace it.</sub>
+  <sub>App Intro / Welcome — hold Option, choose an app, and release to switch.</sub>
 </p>
 
 Hold a modifier key and every running app appears in a ring around your cursor.
@@ -105,31 +105,22 @@ release is still `v1.3.0`; source-only improvements are recorded under
 - While the ring is open, drag a file onto the center target and release for AirDrop; keep it over the target for 0.9 seconds until it changes to Trash, then release to move it to the macOS Trash. The file interaction keeps Orbit open until it finishes.
 - Click the menu bar icon for settings, permissions, and quit.
 
-## App Intro
-
-The standalone App Intro / Welcome artwork explains Orbit's core loop at a glance:
-hold Option, choose an app, and release to switch.
-
-<p align="center">
-  <img src="photos/AppIntro.png" alt="Orbit App Intro and Welcome artwork" width="509">
-</p>
-
 ## Screenshots
 
-<details>
+<details open>
 <summary>Ring, file actions, window previews, and settings (8 screenshots)</summary>
 
 | Orbit Ring | File Share | File Delete |
 | --- | --- | --- |
-| ![Orbit ring](photos/01-orbit-ring.png) | ![File share](photos/02-file-share.png) | ![File delete](photos/03-file-delete.png) |
+| ![Orbit ring](photos/01-orbit-ring.png?v=da051c6) | ![File share](photos/02-file-share.png?v=da051c6) | ![File delete](photos/03-file-delete.png?v=da051c6) |
 
 | App Exit | Settings | Welcome |
 | --- | --- | --- |
-| ![App exit](photos/04-app-exit.png) | ![Settings](photos/05-settings.png) | ![Welcome](photos/06-welcome.png) |
+| ![App exit](photos/04-app-exit.png?v=da051c6) | ![Settings](photos/05-settings.png?v=da051c6) | ![Welcome](photos/06-welcome.png?v=da051c6) |
 
 | Window Preview | Window Selection |
 | --- | --- |
-| ![Window preview](photos/07-window-preview.png) | ![Window selection](photos/08-window-selection.png) |
+| ![Window preview](photos/07-window-preview.png?v=da051c6) | ![Window selection](photos/08-window-selection.png?v=da051c6) |
 
 These screenshots show the current Orbit flows on macOS. They are cropped to the
 product canvas with the macOS menu bar and desktop chrome removed, then normalized
@@ -277,7 +268,7 @@ public documentation remain tracked.
 - `OrbitTests/` — unit tests for interaction and selection behavior.
 - `OrbitUITests/` — UI test targets.
 - `Orbit.xcodeproj/` — shared Xcode project and workspace data.
-- `photos/` — README screenshots, the demo animation, and supporting artwork.
+- `photos/` — README screenshots, the App Intro artwork, and supporting images.
 - `scripts/` — install, release packaging, and demo GIF helpers.
 - `docs/decisions/` — product and engineering decision records.
 
