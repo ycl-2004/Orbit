@@ -46,6 +46,9 @@ final class OrbitRingViewModel: ObservableObject {
 
     private var fileTrashTask: DispatchWorkItem?
     private var dragExitTask: DispatchWorkItem?
+    /// A trigger release can arrive while the dropped URLs are still being
+    /// read. Defer dismissal until that asynchronous file operation finishes.
+    private var dismissAfterFileDrop = false
     /// Cursor position at the moment selection was explicitly cleared.
     private var hoverAnchor: CGPoint?
     /// Where the selection stood when it was cleared, so arrowing again picks
@@ -315,7 +318,11 @@ final class OrbitRingViewModel: ObservableObject {
     }
 
     func triggerReleased() {
-        guard draggedAppID == nil, fileDropPhase == .idle else { return }
+        guard draggedAppID == nil else { return }
+        guard fileDropPhase == .idle else {
+            dismissAfterFileDrop = true
+            return
+        }
         if selectedID == nil {
             onCancel?()
         } else {
@@ -380,7 +387,9 @@ final class OrbitRingViewModel: ObservableObject {
     /// window still exists. Finder and Orbit are never candidates.
     private func cleanupWindowlessApps() {
         guard let windowedPIDs = WindowVisibilityChecker.processesWithWindows() else {
-            onCancel?()
+            // Keep the ring alive while the trigger is held. An unavailable
+            // window list means "nothing can be safely cleaned", not "the
+            // user asked to dismiss Orbit".
             return
         }
 
@@ -388,7 +397,9 @@ final class OrbitRingViewModel: ObservableObject {
             !app.isOrbit && !app.isFinder && !windowedPIDs.contains(app.processIdentifier)
         }
         guard !candidates.isEmpty else {
-            onCancel?()
+            // Orbit itself is intentionally not a cleanup candidate. Leave
+            // the ring visible so releasing the trigger remains the only
+            // dismissal path for this gesture.
             return
         }
 
@@ -414,16 +425,15 @@ final class OrbitRingViewModel: ObservableObject {
         guard bulkCleanupPendingIDs.isEmpty else { return }
 
         let succeededIDs = bulkCleanupSucceededIDs
-        let failed = succeededIDs.count < bulkDissolvingAppIDs.count
         let remaining = max(0, OrbitConfig.dissolveDuration - OrbitConfig.terminateGracePeriod)
         DispatchQueue.main.asyncAfter(deadline: .now() + remaining) { [weak self] in
             guard let self else { return }
             self.apps.removeAll { succeededIDs.contains($0.id) }
             self.bulkDissolvingAppIDs = []
             self.bulkCleanupSucceededIDs = []
-            if !failed {
-                self.onCancel?()
-            }
+            // Do not dismiss after the Orbit cleanup gesture. The trigger key
+            // is still held at this point; `triggerReleased()` will close the
+            // ring when the user intentionally lets go.
         }
     }
 
@@ -469,6 +479,10 @@ final class OrbitRingViewModel: ObservableObject {
             guard let self, self.fileDropPhase != .completing else { return }
             self.fileTrashReady = false
             self.fileDropPhase = .idle
+            if self.dismissAfterFileDrop {
+                self.dismissAfterFileDrop = false
+                self.onCancel?()
+            }
         }
         dragExitTask = task
         DispatchQueue.main.asyncAfter(deadline: .now() + OrbitConfig.fileDragExitGrace, execute: task)
@@ -512,8 +526,12 @@ final class OrbitRingViewModel: ObservableObject {
             guard let self else { return }
             self.fileTrashReady = false
             self.fileDropPhase = .idle
+            let shouldDismiss = self.dismissAfterFileDrop
+            self.dismissAfterFileDrop = false
             guard !urls.isEmpty else {
-                self.onCancel?()
+                if shouldDismiss {
+                    self.onCancel?()
+                }
                 return
             }
 
@@ -525,10 +543,12 @@ final class OrbitRingViewModel: ObservableObject {
                 service.perform(withItems: urls)
             }
 
-            // The file operation owns the ring's lifetime. This also handles
-            // the case where the user releases the trigger key while Finder is
-            // still delivering the dropped URL asynchronously.
-            self.onCancel?()
+            // Keep the ring visible while the trigger is still held. If the
+            // trigger was released during URL loading, close now that the
+            // asynchronous file operation has reached a stable state.
+            if shouldDismiss {
+                self.onCancel?()
+            }
         }
 
         return true
@@ -1232,7 +1252,7 @@ private struct OrbitCenterControl: View {
         case .confirm: OrbitPalette.burgundy.opacity(0.92)
         case .quit, .trash: .black
         case .cleanup: .black.opacity(0.9)
-        case .share: OrbitPalette.denim.opacity(0.96)
+        case .share: OrbitPalette.ivory.opacity(0.96)
         }
     }
 
@@ -1242,7 +1262,7 @@ private struct OrbitCenterControl: View {
         case .confirm: OrbitPalette.burgundy
         case .quit, .trash: OrbitPalette.coral
         case .cleanup: OrbitPalette.burgundy
-        case .share: OrbitPalette.burgundy.opacity(0.65)
+        case .share: OrbitPalette.burgundy.opacity(0.82)
         }
     }
 

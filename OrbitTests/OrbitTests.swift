@@ -174,6 +174,21 @@ struct OrbitTests {
         #expect(!hidden.apps.contains(where: { $0.isOrbit }))
     }
 
+    @Test @MainActor func orbitCleanupKeepsRingOpenUntilTriggerRelease() {
+        let model = OrbitRingViewModel(apps: [.orbit], showsPreview: false)
+        var didCancel = false
+        model.onCancel = { didCancel = true }
+
+        model.beginAppDrag(.orbit)
+        model.updateAppDrag(.orbit, offset: .zero, overCenter: true)
+        model.finishAppDrag(.orbit)
+
+        #expect(!didCancel)
+
+        model.triggerReleased()
+        #expect(didCancel)
+    }
+
     @Test func firstLetterFoldsAccentsAndNonLatinNames() {
         func app(named name: String) -> AppInfo {
             AppInfo(
@@ -215,6 +230,20 @@ struct OrbitTests {
 
         // Do not leave the hold timer running after the test.
         model.setFileDragTargeted(false)
+    }
+
+    @Test @MainActor func triggerReleaseAfterFileDropExitDismissesAfterReset() async throws {
+        let model = OrbitRingViewModel(apps: [])
+        var didCancel = false
+        model.onCancel = { didCancel = true }
+
+        model.setFileDragTargeted(true)
+        model.triggerReleased()
+        #expect(!didCancel)
+
+        model.setFileDragTargeted(false)
+        try await Task.sleep(for: .seconds(OrbitConfig.fileDragExitGrace + 0.2))
+        #expect(didCancel)
     }
 
     /// 悬停到黑洞出现、再把文件拖走而不放手，环必须还能关掉。

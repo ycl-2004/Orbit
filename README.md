@@ -63,7 +63,7 @@ Screen Recording permission is requested only if you turn on window previews.
 
 - **Spatial, not sequential.** Apps sit at fixed angles around the cursor, so you build muscle memory for direction instead of counting Command-Tab presses.
 - **Switch to a window, not just an app.** With previews on, arrow left/right picks the exact window of the selected app before you release.
-- **The center is a drop target.** Drag an app card in to quit it; drag a file in to AirDrop it, or hold to send it to the Trash.
+- **The center is a drop target.** Drag an app card in to quit it; the optional Orbit card safely cleans up ordinary apps with no open windows, while Orbit and Finder stay protected. Drag a file in to AirDrop it, or hold to send it to the Trash.
 - **Nothing leaves your Mac.** No accounts, no telemetry, no network calls. Native SwiftUI/AppKit with zero third-party packages.
 
 ## Features
@@ -77,6 +77,7 @@ Screen Recording permission is requested only if you turn on window previews.
 **Center target actions**
 
 - Drag an app into the center to quit it, with a pixel-dissolve animation.
+- Orbit can appear as an optional special card; drag it to the center to request a normal quit for eligible windowless apps. Orbit and Finder are never candidates.
 - Drag files into the center to AirDrop them, or keep holding to move them to the Trash.
 
 **Configuration**
