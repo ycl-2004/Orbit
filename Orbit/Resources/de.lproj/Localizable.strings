@@ -138,6 +138,11 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "Alle laufenden Apps in einem Ring.\nTaste halten, auswählen, loslassen.";
 "onboarding.start" = "Loslegen";
+"onboarding.kicker" = "Ruhiger durch deinen Mac navigieren.";
+"onboarding.step.hold" = "Option halten";
+"onboarding.step.choose" = "App auswählen";
+"onboarding.step.release" = "Zum Wechseln loslassen";
+"onboarding.trigger.note" = "Option ist die Standardtaste";
 
 /* Fallbacks */
 "app.orbit" = "Orbit";

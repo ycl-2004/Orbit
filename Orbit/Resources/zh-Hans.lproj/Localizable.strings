@@ -138,6 +138,11 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "正在运行的应用，一环即达。\n按住、选中、松手。";
 "onboarding.start" = "上手试试";
+"onboarding.kicker" = "更从容地穿梭于 Mac 之间。";
+"onboarding.step.hold" = "按住 Option";
+"onboarding.step.choose" = "选择应用";
+"onboarding.step.release" = "松手切换";
+"onboarding.trigger.note" = "默认使用 Option 作为触发键";
 
 /* Fallbacks */
 "app.orbit" = "Orbit";

@@ -138,6 +138,11 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "실행 중인 앱을 하나의 링에.\n누르고, 고르고, 놓으세요.";
 "onboarding.start" = "시작하기";
+"onboarding.kicker" = "Mac을 더 차분하게 오가는 방법.";
+"onboarding.step.hold" = "Option 누르기";
+"onboarding.step.choose" = "앱 선택하기";
+"onboarding.step.release" = "놓아서 전환하기";
+"onboarding.trigger.note" = "Option이 기본 트리거 키입니다";
 
 /* Fallbacks */
 "app.orbit" = "Orbit";

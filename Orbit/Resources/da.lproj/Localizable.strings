@@ -138,6 +138,11 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "Dine åbne apps i én ring.\nHold, vælg, slip.";
 "onboarding.start" = "Kom i gang";
+"onboarding.kicker" = "En roligere måde at bevæge sig gennem din Mac på.";
+"onboarding.step.hold" = "Hold Option";
+"onboarding.step.choose" = "Vælg en app";
+"onboarding.step.release" = "Slip for at skifte";
+"onboarding.trigger.note" = "Option er standardtasten";
 
 /* Fallbacks */
 "app.orbit" = "Orbit";

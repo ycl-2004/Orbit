@@ -138,6 +138,11 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "起動中のアプリを、ひとつのリングに。\n押して、選んで、離すだけ。";
 "onboarding.start" = "はじめる";
+"onboarding.kicker" = "Mac の操作を、もっと落ち着いて。";
+"onboarding.step.hold" = "Option を押す";
+"onboarding.step.choose" = "アプリを選ぶ";
+"onboarding.step.release" = "離して切り替え";
+"onboarding.trigger.note" = "Option が標準の起動キーです";
 
 /* Fallbacks */
 "app.orbit" = "Orbit";

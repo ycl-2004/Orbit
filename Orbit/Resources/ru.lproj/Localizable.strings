@@ -138,6 +138,11 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "Все запущенные приложения — в одном кольце.\nЗажмите, выберите, отпустите.";
 "onboarding.start" = "Начать";
+"onboarding.kicker" = "Более спокойный способ работать с Mac.";
+"onboarding.step.hold" = "Зажмите Option";
+"onboarding.step.choose" = "Выберите приложение";
+"onboarding.step.release" = "Отпустите для переключения";
+"onboarding.trigger.note" = "Option — клавиша запуска по умолчанию";
 
 /* Fallbacks */
 "app.orbit" = "Orbit";

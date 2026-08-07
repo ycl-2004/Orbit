@@ -138,6 +138,11 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "Vos apps ouvertes, à un anneau près.\nMaintenez, choisissez, relâchez.";
 "onboarding.start" = "C'est parti";
+"onboarding.kicker" = "Une façon plus sereine de parcourir votre Mac.";
+"onboarding.step.hold" = "Maintenir Option";
+"onboarding.step.choose" = "Choisir une app";
+"onboarding.step.release" = "Relâcher pour basculer";
+"onboarding.trigger.note" = "Option est la touche de déclenchement";
 
 /* Fallbacks */
 "app.orbit" = "Orbit";

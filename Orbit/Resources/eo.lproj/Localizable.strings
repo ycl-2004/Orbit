@@ -138,6 +138,11 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "Viaj kurantaj aplikaĵoj, je unu ringo.\nTenu, elektu, lasu.";
 "onboarding.start" = "Komenci";
+"onboarding.kicker" = "Pli trankvila maniero navigi vian Mac.";
+"onboarding.step.hold" = "Tenu Option";
+"onboarding.step.choose" = "Elektu aplikaĵon";
+"onboarding.step.release" = "Lasu por ŝanĝi";
+"onboarding.trigger.note" = "Option estas la defaŭlta klavo";
 
 /* Fallbacks */
 "app.orbit" = "Orbit";

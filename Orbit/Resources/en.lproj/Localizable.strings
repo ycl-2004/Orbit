@@ -138,6 +138,11 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "Your running apps, one ring away.\nHold a key, pick, let go.";
 "onboarding.start" = "Get Started";
+"onboarding.kicker" = "A calmer way to move through your Mac.";
+"onboarding.step.hold" = "Hold Option";
+"onboarding.step.choose" = "Choose an app";
+"onboarding.step.release" = "Release to switch";
+"onboarding.trigger.note" = "Option is the default trigger key";
 
 /* Fallbacks */
 "app.orbit" = "Orbit";
