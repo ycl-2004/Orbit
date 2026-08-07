@@ -65,7 +65,21 @@ final class OrbitWindowController: NSObject {
         // has the window table in hand.
         let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let apps = AppListService.shared.getRunningApps(frontmostProcessIdentifier: frontmostPID)
-        let ringModel = OrbitRingViewModel(apps: apps)
+
+        // 一次唤出只挑一次屏幕，尺寸和摆放共用它。以前尺寸问 `NSScreen.main`、
+        // 摆放问光标所在屏，双屏时两者根本不是同一块。
+        let targetScreen = screen(containing: location)
+
+        // 开着「唤出即选中最近应用」时，按住再松开就等价于 ⌘Tab。
+        let preselecting = OrbitConfig.preselectRecentApp
+            ? AppListService.mostRecent(among: apps, rank: AppActivationHistory.shared.rank(of:))?.id
+            : nil
+
+        let ringModel = OrbitRingViewModel(
+            apps: apps,
+            screen: targetScreen,
+            preselecting: preselecting
+        )
 
         ringModel.onCancel = { [weak self] in
             self?.dismissImmediately()
@@ -75,7 +89,7 @@ final class OrbitWindowController: NSObject {
         }
 
         model = ringModel
-        panel = makePanel(at: anchor(for: location), model: ringModel)
+        panel = makePanel(at: anchor(for: location, on: targetScreen), model: ringModel, on: targetScreen)
         panel?.orderFrontRegardless()
         panel?.makeKey()
     }
@@ -127,11 +141,11 @@ final class OrbitWindowController: NSObject {
         }
     }
 
-    private func makePanel(at location: CGPoint, model: OrbitRingViewModel) -> OrbitPanel {
+    private func makePanel(at location: CGPoint, model: OrbitRingViewModel, on screen: NSScreen?) -> OrbitPanel {
         // The panel grows with the number of cards, and again when the preview
         // panel is enabled, so ask the model for it.
         let size = model.panelSize
-        let frame = frame(for: size, centeredAt: location)
+        let frame = frame(for: size, centeredAt: location, on: screen)
         let panel = OrbitPanel(
             contentRect: frame,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -153,12 +167,12 @@ final class OrbitWindowController: NSObject {
     /// The cursor only selects which screen the ring belongs to; whether the
     /// ring then follows the cursor or snaps to that screen's center is a
     /// user preference.
-    private func anchor(for cursorLocation: CGPoint) -> CGPoint {
+    private func anchor(for cursorLocation: CGPoint, on screen: NSScreen?) -> CGPoint {
         switch OrbitConfig.ringPlacement {
         case .cursor:
             return cursorLocation
         case .screenCenter:
-            guard let visibleFrame = screen(containing: cursorLocation)?.visibleFrame else {
+            guard let visibleFrame = screen?.visibleFrame else {
                 return cursorLocation
             }
             return CGPoint(x: visibleFrame.midX, y: visibleFrame.midY)
@@ -169,8 +183,8 @@ final class OrbitWindowController: NSObject {
         NSScreen.screens.first(where: { $0.frame.contains(location) }) ?? NSScreen.main
     }
 
-    private func frame(for size: CGSize, centeredAt location: CGPoint) -> NSRect {
-        let visibleFrame = screen(containing: location)?.visibleFrame ?? NSRect(origin: .zero, size: size)
+    private func frame(for size: CGSize, centeredAt location: CGPoint, on screen: NSScreen?) -> NSRect {
+        let visibleFrame = screen?.visibleFrame ?? NSRect(origin: .zero, size: size)
         let minimumX = visibleFrame.minX + 8
         let maximumX = max(minimumX, visibleFrame.maxX - size.width - 8)
         let minimumY = visibleFrame.minY + 8

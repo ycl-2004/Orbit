@@ -31,6 +31,10 @@ private func orbitEventTapCallback(
             service.handleFlagsChanged(flags)
         case .keyDown:
             service.handleKeyDown(keyCode: keyCode)
+        // 按住触发键的同时点鼠标或滚滚轮 —— ⌥ 拖拽复制、⌥ 点下载、⌥ 滚动缩放 ——
+        // 说明这一次按住是别的手势的一部分，不是在召唤 Orbit。
+        case .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel:
+            service.abandonPendingSummon()
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             if let tap = service.eventTap {
                 CGEvent.tapEnable(tap: tap, enable: true)
@@ -103,9 +107,14 @@ final class HotKeyService {
         guard !listening else { return }
         guard Self.checkAccessibilityPermission() else { return }
 
-        let flagsChangedMask = CGEventMask(1) << CGEventType.flagsChanged.rawValue
-        let keyDownMask = CGEventMask(1) << CGEventType.keyDown.rawValue
-        let mask = flagsChangedMask | keyDownMask
+        // 鼠标和滚轮只用来"撤销一次待发的召唤"，从不被吞掉。刻意不订阅
+        // mouseMoved/mouseDragged：按住 ⌥ 光是移动鼠标仍然是一次合法的召唤，
+        // 而且那两个事件每秒上百次，白白让每一次都过一遍 tap。
+        let types: [CGEventType] = [
+            .flagsChanged, .keyDown,
+            .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel
+        ]
+        let mask = types.reduce(CGEventMask(0)) { $0 | (CGEventMask(1) << $1.rawValue) }
 
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
@@ -198,8 +207,26 @@ final class HotKeyService {
         }
     }
 
+    /// 按住触发键期间碰了别的输入，就把这次待发的召唤作废。
+    ///
+    /// ⌥ 长按 150ms 无条件唤出，是 Orbit 最容易被误触发的地方：⌥+←/→ 按词移动
+    /// 光标、⌥+delete 删词、⌥ 拖拽复制文件，全都要按住 ⌥ 远超 150ms。以前只有
+    /// "松开触发键"和"按下第二个修饰键"能撤销计时器，普通按键根本不参与判定，
+    /// 于是圆环会在打字打到一半时跳出来，并从那一刻起开始吞掉后面每一次按键。
+    ///
+    /// 作废之后要重新按一次触发键才能召唤，这跟所有长按手势的约定一致。已经开着
+    /// 的环不受影响 —— 那时候按键是命令，不是打字。
+    fileprivate func abandonPendingSummon() {
+        guard !orbitHasOpened, triggerPressed else { return }
+        triggerPressed = false
+        cancelPendingPress()
+    }
+
     fileprivate func handleKeyDown(keyCode: Int64) {
-        guard orbitHasOpened else { return }
+        guard orbitHasOpened else {
+            abandonPendingSummon()
+            return
+        }
 
         switch keyCode {
         case 53:

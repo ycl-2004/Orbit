@@ -17,8 +17,19 @@
 "prefs.access.missing" = "Orbit a besoin de l'accès à l'accessibilité";
 "prefs.access.grant" = "Autoriser…";
 
+/* Settings — language */
+"prefs.group.language" = "Langue";
+"prefs.language.picker" = "Langue de l’interface";
+"prefs.language.restartNote" = "Orbit doit redémarrer pour que la nouvelle langue apparaisse.";
+"prefs.language.restart" = "Redémarrer Orbit";
+"language.system" = "Suivre le système";
+
 /* Settings — ring */
 "prefs.group.ring" = "Anneau";
+"prefs.ring.order" = "Ordre des cartes";
+"prefs.ring.preselect" = "Présélectionner la dernière app";
+"prefs.ring.order.note" = "Les apps retenues pour l’anneau sont toujours choisies selon l’usage récent. Ceci ne règle que leur disposition.";
+"prefs.ring.preselect.note" = "Invoquez puis relâchez pour revenir directement, comme ⌘Tab. Désactivé, relâcher sans choisir ferme simplement l’anneau.";
 "prefs.ring.showOrbitCard" = "Afficher Orbit dans l’anneau";
 "prefs.ring.showOrbitCard.note" = "Afficher Orbit comme carte pour quitter les apps sans fenêtre ouverte.";
 
@@ -50,6 +61,8 @@
 /* Settings — window preview */
 "prefs.group.preview" = "Aperçu des fenêtres";
 "prefs.preview.enabled" = "Afficher l’aperçu des fenêtres";
+"prefs.preview.size" = "Taille de l’aperçu";
+"prefs.preview.sizeValue" = "%d %%";
 "prefs.preview.needsRecording" = "Autorisation d’enregistrement de l’écran requise. Redémarrez Orbit ensuite.";
 "prefs.preview.openSystemSettings" = "Ouvrir Réglages Système";
 "prefs.preview.note" = "Affiche toutes les fenêtres de l’app sélectionnée à droite de l’anneau. Nécessite l’autorisation d’enregistrement de l’écran.";
@@ -75,6 +88,8 @@
 "triggerKey.disabled" = "Désactivé";
 
 /* Ring placement */
+"ringOrder.recent" = "Utilisées récemment";
+"ringOrder.alphabetical" = "Par nom";
 "ringPlacement.screenCenter" = "Centre de l’écran";
 "ringPlacement.cursor" = "Suivre le curseur";
 

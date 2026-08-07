@@ -17,8 +17,19 @@
 "prefs.access.missing" = "Orbit 需要辅助功能权限";
 "prefs.access.grant" = "去授权…";
 
+/* Settings — language */
+"prefs.group.language" = "语言";
+"prefs.language.picker" = "界面语言";
+"prefs.language.restartNote" = "重新启动 Orbit 后新语言才会生效。";
+"prefs.language.restart" = "重新启动 Orbit";
+"language.system" = "跟随系统";
+
 /* Settings — ring */
 "prefs.group.ring" = "环形界面";
+"prefs.ring.order" = "卡片顺序";
+"prefs.ring.preselect" = "预先选中上一个应用";
+"prefs.ring.order.note" = "哪些应用能上环，始终由最近使用决定。这里只决定它们怎么排列。";
+"prefs.ring.preselect.note" = "唤出后直接松手即可切回上一个应用，和 ⌘Tab 一样。关闭时，没选就松手只会关掉环。";
 "prefs.ring.showOrbitCard" = "在环上显示 Orbit";
 "prefs.ring.showOrbitCard.note" = "显示 Orbit 清理卡片，用于关闭没有打开窗口的应用。";
 
@@ -50,6 +61,8 @@
 /* Settings — window preview */
 "prefs.group.preview" = "窗口预览";
 "prefs.preview.enabled" = "显示窗口预览";
+"prefs.preview.size" = "预览大小";
+"prefs.preview.sizeValue" = "%d%%";
 "prefs.preview.needsRecording" = "需要屏幕录制权限。授权后请重新启动 Orbit。";
 "prefs.preview.openSystemSettings" = "打开系统设置";
 "prefs.preview.note" = "选中应用时，在环形右侧显示它所有窗口的截图。需要屏幕录制权限。";
@@ -75,6 +88,8 @@
 "triggerKey.disabled" = "关闭";
 
 /* Ring placement */
+"ringOrder.recent" = "最近使用";
+"ringOrder.alphabetical" = "按名称";
 "ringPlacement.screenCenter" = "屏幕中央";
 "ringPlacement.cursor" = "跟随光标";
 

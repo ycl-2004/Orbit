@@ -17,8 +17,19 @@
 "prefs.access.missing" = "Orbit benötigt Zugriff auf die Bedienungshilfen";
 "prefs.access.grant" = "Erlauben …";
 
+/* Settings — language */
+"prefs.group.language" = "Sprache";
+"prefs.language.picker" = "Sprache der Oberfläche";
+"prefs.language.restartNote" = "Orbit muss neu gestartet werden, damit die neue Sprache erscheint.";
+"prefs.language.restart" = "Orbit neu starten";
+"language.system" = "Systemeinstellung folgen";
+
 /* Settings — ring */
 "prefs.group.ring" = "Ring";
+"prefs.ring.order" = "Kartenreihenfolge";
+"prefs.ring.preselect" = "Zuletzt genutzte App vorauswählen";
+"prefs.ring.order.note" = "Welche Apps in den Ring kommen, entscheidet immer die zuletzt erfolgte Nutzung. Hier wird nur ihre Anordnung gewählt.";
+"prefs.ring.preselect.note" = "Aufrufen und loslassen wechselt direkt zurück, so wie ⌘Tab. Aus: Loslassen ohne Auswahl schließt nur den Ring.";
 "prefs.ring.showOrbitCard" = "Orbit im Ring anzeigen";
 "prefs.ring.showOrbitCard.note" = "Orbit als Karte zum Beenden von Apps ohne offene Fenster anzeigen.";
 
@@ -50,6 +61,8 @@
 /* Settings — window preview */
 "prefs.group.preview" = "Fenstervorschau";
 "prefs.preview.enabled" = "Fenstervorschau anzeigen";
+"prefs.preview.size" = "Vorschaugröße";
+"prefs.preview.sizeValue" = "%d %%";
 "prefs.preview.needsRecording" = "Bildschirmaufnahme-Berechtigung erforderlich. Starte Orbit danach neu.";
 "prefs.preview.openSystemSettings" = "Systemeinstellungen öffnen";
 "prefs.preview.note" = "Zeigt beim Auswählen einer App alle ihre Fenster rechts vom Ring. Erfordert die Bildschirmaufnahme-Berechtigung.";
@@ -75,6 +88,8 @@
 "triggerKey.disabled" = "Aus";
 
 /* Ring placement */
+"ringOrder.recent" = "Zuletzt benutzt";
+"ringOrder.alphabetical" = "Nach Name";
 "ringPlacement.screenCenter" = "Bildschirmmitte";
 "ringPlacement.cursor" = "Dem Zeiger folgen";
 

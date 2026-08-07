@@ -17,8 +17,19 @@
 "prefs.access.missing" = "Orbit mangler adgang til Tilgængelighed";
 "prefs.access.grant" = "Tillad …";
 
+/* Settings — language */
+"prefs.group.language" = "Sprog";
+"prefs.language.picker" = "Grænsefladens sprog";
+"prefs.language.restartNote" = "Orbit skal genstartes, før det nye sprog vises.";
+"prefs.language.restart" = "Genstart Orbit";
+"language.system" = "Følg systemet";
+
 /* Settings — ring */
 "prefs.group.ring" = "Ring";
+"prefs.ring.order" = "Kortrækkefølge";
+"prefs.ring.preselect" = "Vælg den seneste app på forhånd";
+"prefs.ring.order.note" = "Hvilke apps der kommer med i ringen, afgøres altid af nylig brug. Her vælges kun, hvordan de placeres.";
+"prefs.ring.preselect.note" = "Fremkald og slip for at skifte direkte tilbage, ligesom ⌘Tab. Slået fra lukker et slip uden valg blot ringen.";
 "prefs.ring.showOrbitCard" = "Vis Orbit i ringen";
 "prefs.ring.showOrbitCard.note" = "Vis Orbit som et ryddekort til apps uden åbne vinduer.";
 
@@ -50,6 +61,8 @@
 /* Settings — window preview */
 "prefs.group.preview" = "Vinduesvisning";
 "prefs.preview.enabled" = "Vis vinduesvisning";
+"prefs.preview.size" = "Forhåndsvisningens størrelse";
+"prefs.preview.sizeValue" = "%d %%";
 "prefs.preview.needsRecording" = "Kræver tilladelse til skærmoptagelse. Genstart Orbit bagefter.";
 "prefs.preview.openSystemSettings" = "Åbn Systemindstillinger";
 "prefs.preview.note" = "Viser alle vinduer for den valgte app til højre for ringen. Kræver tilladelse til skærmoptagelse.";
@@ -75,6 +88,8 @@
 "triggerKey.disabled" = "Fra";
 
 /* Ring placement */
+"ringOrder.recent" = "Senest brugte";
+"ringOrder.alphabetical" = "Efter navn";
 "ringPlacement.screenCenter" = "Skærmens midte";
 "ringPlacement.cursor" = "Følg markøren";
 

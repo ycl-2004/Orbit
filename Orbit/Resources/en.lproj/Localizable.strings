@@ -17,8 +17,19 @@
 "prefs.access.missing" = "Orbit needs Accessibility access";
 "prefs.access.grant" = "Grant…";
 
+/* Settings — language */
+"prefs.group.language" = "Language";
+"prefs.language.picker" = "Interface language";
+"prefs.language.restartNote" = "Orbit needs to restart before the new language appears.";
+"prefs.language.restart" = "Restart Orbit";
+"language.system" = "Follow system";
+
 /* Settings — ring */
 "prefs.group.ring" = "Ring";
+"prefs.ring.order" = "Card order";
+"prefs.ring.preselect" = "Preselect the last app";
+"prefs.ring.order.note" = "Which apps make it onto the ring is always decided by recent use. This only chooses how they are arranged.";
+"prefs.ring.preselect.note" = "Summon and let go to switch straight back, the way ⌘Tab does. Off, releasing without choosing dismisses the ring.";
 "prefs.ring.showOrbitCard" = "Show Orbit in the ring";
 "prefs.ring.showOrbitCard.note" = "Show Orbit as a cleanup card for apps without open windows.";
 
@@ -50,6 +61,8 @@
 /* Settings — window preview */
 "prefs.group.preview" = "Window preview";
 "prefs.preview.enabled" = "Show window previews";
+"prefs.preview.size" = "Preview size";
+"prefs.preview.sizeValue" = "%d%%";
 "prefs.preview.needsRecording" = "Screen Recording permission is required. Restart Orbit after granting it.";
 "prefs.preview.openSystemSettings" = "Open System Settings";
 "prefs.preview.note" = "Shows every window of the selected app to the right of the ring. Requires the Screen Recording permission.";
@@ -75,6 +88,8 @@
 "triggerKey.disabled" = "Disabled";
 
 /* Ring placement */
+"ringOrder.recent" = "Recently used";
+"ringOrder.alphabetical" = "By name";
 "ringPlacement.screenCenter" = "Screen center";
 "ringPlacement.cursor" = "Follow cursor";
 

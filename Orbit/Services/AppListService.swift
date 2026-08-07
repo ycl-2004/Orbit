@@ -54,16 +54,66 @@ final class AppListService {
             listed
         }
 
-        let apps = survivors
-            .map(makeAppInfo)
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        let history = AppActivationHistory.shared
+        let ranked = Self.byRecency(survivors.map(makeAppInfo), rank: history.rank(of:))
 
+        // 名额和摆放是两件事。
+        //
+        // Which twelve get on the ring is always decided by recency — sorting by
+        // name and then truncating is what let a first letter decide whether an
+        // app could be switched to at all. How those twelve are then arranged is
+        // a taste question the user answers in Settings.
+        //
         // Orbit is a menu-bar app and intentionally does not pass the normal
-        // activation-policy filter above. Add it explicitly when the user has
-        // chosen to represent Orbit in its own ring.
-        guard OrbitConfig.showOrbitCard else { return apps }
-        return (apps + [.orbit])
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        // activation-policy filter above, so it is added by hand and takes one of
+        // the slots. It goes last whatever the order: its card is a cleanup
+        // target, never the app you are switching to.
+        let showsOrbit = OrbitConfig.showOrbitCard
+        let slots = showsOrbit ? OrbitConfig.maxVisibleApps - 1 : OrbitConfig.maxVisibleApps
+        let admitted = Array(ranked.prefix(max(slots, 0)))
+
+        let ordered = switch OrbitConfig.ringOrder {
+        case .recent: admitted
+        case .alphabetical: admitted.sorted {
+            $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        }
+        }
+
+        return showsOrbit ? ordered + [.orbit] : ordered
+    }
+
+    /// 环上最近用过的那个应用，也就是"按住、松开"该切过去的那个。
+    ///
+    /// 单独算而不是取列表第一个：按名字摆放时第一张卡跟最近使用没有关系。
+    /// Orbit 自己的卡片永远不是答案 —— 它不是一个可以切过去的应用。
+    static func mostRecent(among apps: [AppInfo], rank: (String) -> Int?) -> AppInfo? {
+        apps
+            .filter { !$0.isOrbit }
+            .compactMap { app in rank(app.id).map { (app, $0) } }
+            .min { $0.1 < $1.1 }?
+            .0
+    }
+
+    /// 最近用过的排前面，从没见过的按名字排在它们后面。
+    ///
+    /// 环上只放得下 `maxVisibleApps` 张卡，所以这个顺序同时决定了"谁上得了环"。
+    /// 按名字排再截断，等于让首字母决定一个应用能不能被切换到 —— 开着二十个应用
+    /// 时，名字排在后面的那些永远够不着，界面上也没有任何地方说它们被藏了。
+    ///
+    /// `rank` 由调用方注入，既让这段排序能单独测，也让它不必知道历史是从哪来的。
+    static func byRecency(_ apps: [AppInfo], rank: (String) -> Int?) -> [AppInfo] {
+        apps.sorted { left, right in
+            switch (rank(left.id), rank(right.id)) {
+            case let (leftRank?, rightRank?):
+                return leftRank < rightRank
+            case (_?, nil):
+                return true
+            case (nil, _?):
+                return false
+            case (nil, nil):
+                return left.name.localizedStandardCompare(right.name) == .orderedAscending
+            }
+        }
     }
 
     /// 只有当前台应用确实有窗口时才把它排除掉。

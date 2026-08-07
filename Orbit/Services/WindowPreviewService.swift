@@ -22,6 +22,9 @@ struct WindowPreview: Identifiable, Sendable {
     /// the panel then falls back to showing the title alone.
     let image: CGImage?
     let aspectRatio: CGFloat
+    /// 这张图是按哪个像素密度截的。跟着图走，因为只有捕获它的那次调用知道
+    /// 圆环当时在哪块屏上 —— 展示它的卡片再去问 `NSScreen.main` 就会答错。
+    let scale: CGFloat
     /// Luminance spread; near zero means the window rendered as a flat block.
     let contentVariance: Double
     /// True when the image came from cache because a fresh capture failed.
@@ -116,7 +119,9 @@ final class WindowPreviewService {
     /// keeps around is the pair (`windowLayer == 0`, non-empty title) — menu
     /// bar shadows, autofill panels and placeholder windows all come back
     /// untitled or on a higher layer.
-    func previews(forProcessIdentifier pid: pid_t) async -> [WindowPreview] {
+    /// - Parameter scale: 目标屏的像素密度，由调用方给出 —— 这个服务不该假设
+    ///   圆环出现在主屏上。
+    func previews(forProcessIdentifier pid: pid_t, scale: CGFloat) async -> [WindowPreview] {
         guard Self.hasScreenRecordingPermission() else { return [] }
 
         let windows: [SCWindow]
@@ -144,9 +149,7 @@ final class WindowPreviewService {
 
         // Any of these can be brought to the front of the carousel, so all of
         // them are captured for that slot.
-        let captureWidth = OrbitConfig.previewCaptureWidth
-        // NSScreen 只能在主线程读，所以在这里取好、带进后台去。
-        let scale = NSScreen.main?.backingScaleFactor ?? 2
+        let captureWidth = OrbitConfig.previewCaptureWidth(scale: scale)
 
         var previews: [WindowPreview] = []
         for window in windows {
@@ -186,6 +189,7 @@ final class WindowPreviewService {
                     title: window.title ?? "",
                     image: image,
                     aspectRatio: ratio,
+                    scale: scale,
                     contentVariance: variance,
                     isStale: fresh == nil && image != nil
                 )

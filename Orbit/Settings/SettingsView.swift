@@ -89,15 +89,72 @@ private struct GeneralSettingsPane: View {
             }
 
             Section {
+                Picker("prefs.language.picker", selection: $model.appLanguage) {
+                    Text("language.system").tag(String?.none)
+                    Divider()
+                    ForEach(AppLanguage.supported, id: \.self) { code in
+                        // 语言名用它自己的写法，不跟着界面语言走 —— 见 AppLanguage.autonym。
+                        Text(AppLanguage.autonym(code)).tag(String?.some(code))
+                    }
+                }
+                .pickerStyle(.menu)
+
+                if model.languageNeedsRestart {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "arrow.clockwise.circle.fill")
+                            .foregroundStyle(.orange)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("prefs.language.restartNote")
+                            Button("prefs.language.restart") {
+                                model.restart()
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+                    }
+                    .font(.callout)
+                }
+            } header: {
+                Text("prefs.group.language")
+            }
+
+            Section {
+                Picker("prefs.ring.order", selection: $model.ringOrder) {
+                    ForEach(RingOrder.allCases) { order in
+                        Text(order.localizedName).tag(order)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Toggle("prefs.ring.preselect", isOn: $model.preselectRecentApp)
+
                 Toggle("prefs.ring.showOrbitCard", isOn: $model.showOrbitCard)
             } header: {
                 Text("prefs.group.ring")
             } footer: {
-                Text("prefs.ring.showOrbitCard.note")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("prefs.ring.order.note")
+                    Text("prefs.ring.preselect.note")
+                    Text("prefs.ring.showOrbitCard.note")
+                }
             }
 
             Section {
                 Toggle("prefs.preview.enabled", isOn: $model.windowPreviewEnabled)
+
+                HStack(spacing: 12) {
+                    Text("prefs.preview.size")
+                    Slider(value: $model.previewScale, in: 0.7 ... 1.5, step: 0.05)
+                    Text(String(
+                        format: NSLocalizedString("prefs.preview.sizeValue", comment: "Percent"),
+                        Int((model.previewScale * 100).rounded())
+                    ))
+                    .frame(width: 58, alignment: .trailing)
+                    .monospacedDigit()
+                }
+                // 预览不显示时，它有多大不是一个还活着的偏好。
+                .disabled(!model.windowPreviewEnabled)
 
                 if model.windowPreviewEnabled && !model.hasScreenRecording {
                     HStack(alignment: .top, spacing: 8) {

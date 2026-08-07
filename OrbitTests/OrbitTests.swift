@@ -155,6 +155,110 @@ struct OrbitTests {
         #expect(OrbitConfig.hideWindowlessApps)
     }
 
+    /// 下拉里列出的每一种语言，CFBundle 都必须真的能解析到 bundle 里的
+    /// `.lproj`。写错一个标签（`zh-Hant` 打成 `zh-TW`）不会报任何错，用户选了
+    /// 之后界面纹丝不动，而且无从查起。
+    @Test func everyOfferedLanguageResolvesToABundledLocalization() {
+        for code in AppLanguage.supported {
+            let resolved = Bundle.preferredLocalizations(
+                from: Bundle.main.localizations,
+                forPreferences: [code]
+            ).first
+            #expect(resolved == code, "\(code) 没有解析到自己的 .lproj，实际拿到 \(resolved ?? "nil")")
+        }
+    }
+
+    /// 「系统设置 › 语言与地区 › 应用程序」写进来的是带地区的完整标签。直接比对
+    /// 一个都对不上，下拉会显示成"跟随系统"，而实际上并不是。
+    @Test func regionTaggedLanguagesFromSystemSettingsAreRecognised() {
+        #expect(AppLanguage.normalize("zh-Hant") == "zh-Hant")
+        #expect(AppLanguage.normalize("zh-Hant-TW") == "zh-Hant")
+        #expect(AppLanguage.normalize("en-CA") == "en")
+        #expect(AppLanguage.normalize(nil) == nil)
+        // 没做的语言不该被硬凑到某个做了的上面去。
+        #expect(AppLanguage.normalize("sv") == nil)
+    }
+
+    /// 排序只看 id 和 name，其余字段给个能过编译的值就行。
+    private func listed(_ id: String, _ name: String) -> AppInfo {
+        AppInfo(
+            id: id,
+            name: name,
+            icon: NSImage(size: NSSize(width: 1, height: 1)),
+            bundleURL: nil,
+            processIdentifier: 0
+        )
+    }
+
+    /// 环上只放得下十二张卡，所以排序顺便决定了谁上得了环。按名字排再截断，
+    /// 等于让首字母决定一个应用能不能被切换到。
+    @Test func recentlyUsedAppsSortAheadOfEverythingElse() {
+        let recent = ["com.c", "com.a"]
+        let apps = [
+            listed("com.z", "Zed"),
+            listed("com.a", "Alpha"),
+            listed("com.m", "Mid"),
+            listed("com.c", "Charlie")
+        ]
+
+        let sorted = AppListService.byRecency(apps) { recent.firstIndex(of: $0) }
+
+        // 有记录的按记录的先后，没记录的跟在后面按名字。
+        #expect(sorted.map(\.id) == ["com.c", "com.a", "com.m", "com.z"])
+    }
+
+    /// 一条记录都没有时——Orbit 刚装好的第一次唤出——顺序必须退回按名字，
+    /// 而不是退回成传进来的那个随机顺序。
+    @Test func anEmptyHistoryLeavesTheListAlphabetical() {
+        let apps = [
+            listed("com.z", "Zed"),
+            listed("com.a", "Alpha"),
+            listed("com.m", "Mid")
+        ]
+
+        let sorted = AppListService.byRecency(apps) { _ in nil }
+
+        #expect(sorted.map(\.name) == ["Alpha", "Mid", "Zed"])
+    }
+
+    /// 「按住、松开」要切回去的那个应用，跟卡片摆在哪没有关系 —— 按名字摆时，
+    /// 第一张卡通常不是最近用过的那个。
+    @Test func theMostRecentAppIsFoundRegardlessOfCardOrder() {
+        let recent = ["com.c", "com.a"]
+        let alphabetical = [
+            listed("com.a", "Alpha"),
+            listed("com.c", "Charlie"),
+            listed("com.m", "Mid")
+        ]
+
+        let recentApp = AppListService.mostRecent(among: alphabetical) { recent.firstIndex(of: $0) }
+
+        #expect(recentApp?.id == "com.c")
+    }
+
+    /// Orbit 自己的卡片是清理目标，不是一个可以切过去的应用；即使它排在最前面，
+    /// 预选也绝不能落在它身上。
+    @Test func orbitsOwnCardIsNeverThePreselection() {
+        let apps = [AppInfo.orbit, listed("com.a", "Alpha")]
+
+        let recentApp = AppListService.mostRecent(among: apps) { _ in 0 }
+
+        #expect(recentApp?.isOrbit == false)
+        #expect(recentApp?.id == "com.a")
+    }
+
+    /// 预选一个不在环上的应用，会让中心显示确认态、松手却什么也切不过去。
+    @Test @MainActor func preselectingAnAppThatIsNotOnTheRingSelectsNothing() {
+        let model = OrbitRingViewModel(
+            apps: [listed("com.a", "Alpha")],
+            showsPreview: false,
+            preselecting: "com.not.here"
+        )
+
+        #expect(model.selectedID == nil)
+        #expect(model.centerMode == .cancel)
+    }
+
     @Test @MainActor func orbitCardCanBeShownOrHiddenFromTheRing() {
         let previous = UserDefaults.standard.object(forKey: "showOrbitCard")
         defer {

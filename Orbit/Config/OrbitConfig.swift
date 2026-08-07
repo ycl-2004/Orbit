@@ -54,6 +54,25 @@ enum RingPlacement: String, CaseIterable, Identifiable {
     }
 }
 
+/// 卡片在环上按什么顺序排。
+///
+/// 两种都有道理，而且互相排斥：`.recent` 让"刚才那个应用"永远是第一张卡，代价是
+/// 每张卡的角度会随使用变化；`.alphabetical` 让 Slack 永远停在同一个方向，可以
+/// 练出肌肉记忆，代价是十二张卡的名额由首字母决定。
+///
+/// 只有 `.recent` 时截断才是按最近使用截的 —— 但即使选了 `.alphabetical`，进环的
+/// 那十二个也仍然按最近使用挑选，只是挑完再按名字摆。名额和摆放是两件事。
+enum RingOrder: String, CaseIterable, Identifiable {
+    case recent
+    case alphabetical
+
+    var id: String { rawValue }
+
+    var localizedName: String {
+        NSLocalizedString("ringOrder.\(rawValue)", comment: "Ring order name")
+    }
+}
+
 enum OrbitConfig {
     enum CardMaterial: String, CaseIterable, Identifiable {
         case white
@@ -161,6 +180,72 @@ enum OrbitConfig {
     static var showOrbitCard: Bool {
         get { defaults.object(forKey: "showOrbitCard") as? Bool ?? true }
         set { defaults.set(newValue, forKey: "showOrbitCard") }
+    }
+
+    /// 界面语言，`nil` 表示跟随系统。
+    ///
+    /// 真正起作用的是 `AppleLanguages`：CFBundle 在启动时读它来决定加载哪个
+    /// `.lproj`，所以改完必须重启 Orbit 才生效。「系统设置 › 通用 › 语言与地区 ›
+    /// 应用程序」写的也是这一个键，两边因此天然同步。
+    ///
+    /// 读的时候必须只看 Orbit 自己那份 plist。`UserDefaults.standard` 的搜索链里
+    /// 包含 `NSGlobalDomain`，而那里一定有一个系统级的 `AppleLanguages` —— 用
+    /// `defaults.array(forKey:)` 去读，会在用户从没选过语言的情况下读出系统语言，
+    /// 于是下拉里显示的是某个具体语言而不是"跟随系统"。
+    static var appLanguage: String? {
+        get {
+            guard let identifier = Bundle.main.bundleIdentifier,
+                  let domain = defaults.persistentDomain(forName: identifier),
+                  let languages = domain["AppleLanguages"] as? [String] else {
+                return nil
+            }
+            return AppLanguage.normalize(languages.first)
+        }
+        set {
+            if let newValue {
+                defaults.set([newValue], forKey: "AppleLanguages")
+            } else {
+                defaults.removeObject(forKey: "AppleLanguages")
+            }
+        }
+    }
+
+    static var ringOrder: RingOrder {
+        get {
+            guard let rawValue = defaults.string(forKey: "ringOrder"),
+                  let order = RingOrder(rawValue: rawValue) else {
+                return .recent
+            }
+            return order
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: "ringOrder")
+        }
+    }
+
+    /// 唤出时就选中最近用过的那个应用，于是「按住、松开」等价于 ⌘Tab。
+    ///
+    /// 默认关闭，而且必须默认关闭：开着的时候，任何一次误召唤只要松手就会把应用
+    /// 切走。Orbit 原本的约定是"唤出即取消态"，松手什么也不会发生 —— 那是一个
+    /// 安全的默认值，不该在一次更新里被悄悄换掉。想要 ⌘Tab 的人打开它就是了。
+    static var preselectRecentApp: Bool {
+        get { defaults.bool(forKey: "preselectRecentApp") }
+        set { defaults.set(newValue, forKey: "preselectRecentApp") }
+    }
+
+    /// 预览面板的缩放倍率。1.0 就是原本的尺寸。
+    ///
+    /// 放大不是简单地把上限调高：在常见屏幕上真正卡住卡片的不是
+    /// `previewCardMaximumWidth`，而是"窗口的一半"。所以这个倍率同时参与决定
+    /// 窗口该多宽 —— 见 `OrbitRingViewModel.previewDemand`。
+    static var previewScale: CGFloat {
+        get {
+            let value = defaults.object(forKey: "previewScale") as? Double ?? 1
+            return CGFloat(min(max(value, 0.7), 1.5))
+        }
+        set {
+            defaults.set(Double(min(max(newValue, 0.7), 1.5)), forKey: "previewScale")
+        }
     }
 
     /// Opt-in because window capture needs the Screen Recording permission,
@@ -411,9 +496,16 @@ enum OrbitConfig {
     /// Capture at the size the foreground carousel card really occupies, in
     /// device pixels. Every window takes a turn in front, so they are all
     /// captured for that slot rather than for the smaller neighbouring ones.
-    static var previewCaptureWidth: Int {
-        let scale = NSScreen.main?.backingScaleFactor ?? 2
-        return min(Int((previewCardMaximumWidth * scale).rounded()), previewMaximumCaptureWidth)
+    ///
+    /// The scale is the *target screen's*, passed in rather than read from
+    /// `NSScreen.main`: the ring can be summoned onto a display whose density
+    /// differs from the main one, and guessing wrong costs either memory or
+    /// sharpness.
+    static func previewCaptureWidth(scale: CGFloat) -> Int {
+        // 用户放大了预览就得多采样，否则放大出来的是一张糊图。上限仍然由
+        // `previewMaximumCaptureWidth` 兜着。
+        let target = previewCardMaximumWidth * previewScale * scale
+        return min(Int(target.rounded()), previewMaximumCaptureWidth)
     }
 
     /// 小到这个尺寸以下的窗口不算「一个真的窗口」。

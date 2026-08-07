@@ -63,7 +63,30 @@ final class OrbitRingViewModel: ObservableObject {
     /// around this, so it must not change while the ring is on screen.
     let showsPreview: Bool
 
-    init(apps: [AppInfo], showsPreview: Bool? = nil) {
+    /// 圆环这一次要出现在哪块屏幕上。
+    ///
+    /// 光标决定去哪块屏，但尺寸以前一律问 `NSScreen.main` —— 那是"持有键盘焦点的
+    /// 窗口所在屏"，而面板尺寸是在 `makeKey()` 之前算的，所以它答的永远是主屏。
+    /// 副屏更大时圆环挤在一小块里，副屏更小时面板比屏还宽、直接被切掉一块，而
+    /// 摆放逻辑却老老实实用的是光标所在屏。两边必须问同一块屏。
+    let visibleFrame: CGRect
+    /// 目标屏的像素密度。截图按它取样：在 1x 外接屏上按 2x 截是白烧一倍内存，
+    /// 在 2x 屏上按 1x 截是糊。
+    let backingScaleFactor: CGFloat
+
+    /// - Parameter preselecting: 唤出时就选中的应用，`nil` 表示以取消态开场。
+    ///   由调用方决定，因为"最近用过的是谁"是应用列表那边的知识，而不是环的。
+    init(
+        apps: [AppInfo],
+        showsPreview: Bool? = nil,
+        screen: NSScreen? = nil,
+        preselecting: String? = nil
+    ) {
+        let target = screen ?? NSScreen.main
+        self.visibleFrame = target?.visibleFrame
+            ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
+        self.backingScaleFactor = target?.backingScaleFactor ?? 2
+
         let sourceApps = OrbitConfig.showOrbitCard ? apps : apps.filter { !$0.isOrbit }
         let limited = Array(sourceApps.prefix(OrbitConfig.maxVisibleApps))
         if let orbit = sourceApps.first(where: { $0.isOrbit }), !limited.contains(where: { $0.isOrbit }), !limited.isEmpty {
@@ -76,8 +99,14 @@ final class OrbitRingViewModel: ObservableObject {
         // The ring is positioned around the current pointer. SwiftUI can emit
         // an initial `onHover` as soon as the panel appears, even though the
         // user has not moved the pointer. Treat that first location as an
-        // anchor so the opening state remains the Cancel default.
+        // anchor so the opening state remains whatever it opened as.
         self.hoverAnchor = NSEvent.mouseLocation
+
+        // 只认真的在环上的卡片：预选一个被截断掉的应用，会让中心显示确认态，
+        // 松手却什么都切不过去。
+        if let preselecting, self.apps.contains(where: { $0.id == preselecting }) {
+            self.selectedID = preselecting
+        }
     }
 
     var selectedApp: AppInfo? {
@@ -153,7 +182,7 @@ final class OrbitRingViewModel: ObservableObject {
     /// pinned to both edges. The centre line the two halves share is a layout
     /// reference only; nothing is ever drawn on it.
     private var layoutWidth: CGFloat {
-        let visibleWidth = NSScreen.main?.visibleFrame.width ?? 1440
+        let visibleWidth = visibleFrame.width
         let maximum = canvasSize + OrbitConfig.previewPanelMaximumWidth + OrbitConfig.previewGap * 2
         // A full twelve-card fan makes a disc wider than the ratio leaves room
         // for, and a disc that overruns its half would sit on the carousel.
@@ -163,11 +192,34 @@ final class OrbitRingViewModel: ObservableObject {
         return max(
             canvasSize,
             min(
-                max(visibleWidth * OrbitConfig.layoutWidthRatio, discDemand),
+                max(visibleWidth * OrbitConfig.layoutWidthRatio, discDemand, previewDemand),
                 visibleWidth - OrbitConfig.screenMargin * 2,
                 maximum
             )
         )
+    }
+
+    /// 预览想要的卡片宽度，只由屏幕和用户设的倍率决定。
+    ///
+    /// 刻意不看 `columnWidth`：那一半的宽度是由这个数推出来的，反过来读它就成了
+    /// 环。这里量的是"在默认版式下这一半有多宽"，于是倍率 1.0 复现的正好是今天
+    /// 的尺寸，一个像素不差。
+    private var desiredPreviewCardWidth: CGFloat {
+        let half = visibleFrame.width * OrbitConfig.layoutWidthRatio / 2
+        let usable = half - OrbitConfig.previewGap * 2
+        let base = min(OrbitConfig.previewCardMaximumWidth, usable / OrbitConfig.previewCarouselSpan)
+        return max(120, base * OrbitConfig.previewScale)
+    }
+
+    /// 放大预览要靠窗口变宽，不然那一半装不下。
+    ///
+    /// 跟 `discDemand` 同一个套路：版式比例是用来把圆环从屏幕角落里拉回来的，不是
+    /// 用来决定东西能有多大。缩小时不反过来收窄窗口 —— 那会让圆环跟着挪位置，
+    /// 而改预览大小不该动到环。
+    private var previewDemand: CGFloat {
+        guard showsPreview else { return 0 }
+        let half = desiredPreviewCardWidth * OrbitConfig.previewCarouselSpan + OrbitConfig.previewGap * 2
+        return half * 2
     }
 
     /// Total size of the panel that hosts the ring, plus the preview when it
@@ -179,7 +231,7 @@ final class OrbitRingViewModel: ObservableObject {
         // A short fan must not squash the carousel: the window grows past the
         // canvas when the ring alone would not give the stage room. The ring
         // stays centered in whatever height that comes to.
-        let screenHeight = NSScreen.main?.visibleFrame.height ?? 900
+        let screenHeight = visibleFrame.height
         let stageHeight = previewCardWidth / OrbitConfig.previewStageAspectRatio + 120
         return CGSize(
             width: layoutWidth,
@@ -192,7 +244,9 @@ final class OrbitRingViewModel: ObservableObject {
     /// with it the page control, holds still while arrowing through.
     var previewCardWidth: CGFloat {
         let usable = columnWidth - OrbitConfig.previewGap * 2
-        return max(160, min(OrbitConfig.previewCardMaximumWidth, usable / OrbitConfig.previewCarouselSpan))
+        // 想要多大是一回事，那一半真的装得下多少是另一回事：屏幕不够宽时，
+        // 窗口涨不到 `previewDemand`，卡片就得让步。
+        return max(120, min(desiredPreviewCardWidth, usable / OrbitConfig.previewCarouselSpan))
     }
 
     /// Outer diameter of the band the fan sits on, measured from the cards.
@@ -276,7 +330,7 @@ final class OrbitRingViewModel: ObservableObject {
         isLoadingPreviews = true
         previewState = .loading
         let captured = await WindowPreviewService.shared
-            .previews(forProcessIdentifier: app.processIdentifier)
+            .previews(forProcessIdentifier: app.processIdentifier, scale: backingScaleFactor)
         guard !Task.isCancelled else { return }
 
         previews = Array(captured.prefix(OrbitConfig.maxVisiblePreviews))
@@ -1093,7 +1147,7 @@ private struct OrbitPreviewWindowCard: View {
         if let image = preview.image {
             // Frames are captured in device pixels, so declare that scale
             // rather than letting SwiftUI read them as points and resample.
-            Image(decorative: image, scale: NSScreen.main?.backingScaleFactor ?? 2)
+            Image(decorative: image, scale: preview.scale)
                 .resizable()
                 .interpolation(.high)
                 .opacity(preview.isStale ? 0.75 : 1)

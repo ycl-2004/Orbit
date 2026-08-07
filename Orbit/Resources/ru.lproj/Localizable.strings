@@ -17,8 +17,19 @@
 "prefs.access.missing" = "Orbit нужен доступ к универсальному доступу";
 "prefs.access.grant" = "Разрешить…";
 
+/* Settings — language */
+"prefs.group.language" = "Язык";
+"prefs.language.picker" = "Язык интерфейса";
+"prefs.language.restartNote" = "Чтобы новый язык вступил в силу, перезапустите Orbit.";
+"prefs.language.restart" = "Перезапустить Orbit";
+"language.system" = "Как в системе";
+
 /* Settings — ring */
 "prefs.group.ring" = "Кольцо";
+"prefs.ring.order" = "Порядок карточек";
+"prefs.ring.preselect" = "Заранее выбирать прошлое приложение";
+"prefs.ring.order.note" = "Какие приложения попадут в кольцо, всегда решает недавнее использование. Здесь выбирается только их расположение.";
+"prefs.ring.preselect.note" = "Вызовите и отпустите, чтобы сразу вернуться назад, как с ⌘Tab. Если выключено, отпускание без выбора просто закрывает кольцо.";
 "prefs.ring.showOrbitCard" = "Показывать Orbit в кольце";
 "prefs.ring.showOrbitCard.note" = "Показывать Orbit как карточку для закрытия приложений без открытых окон.";
 
@@ -50,6 +61,8 @@
 /* Settings — window preview */
 "prefs.group.preview" = "Предпросмотр окон";
 "prefs.preview.enabled" = "Показывать предпросмотр окон";
+"prefs.preview.size" = "Размер предпросмотра";
+"prefs.preview.sizeValue" = "%d %%";
 "prefs.preview.needsRecording" = "Требуется разрешение на запись экрана. После выдачи перезапустите Orbit.";
 "prefs.preview.openSystemSettings" = "Открыть Системные настройки";
 "prefs.preview.note" = "Показывает все окна выбранного приложения справа от кольца. Требуется разрешение на запись экрана.";
@@ -75,6 +88,8 @@
 "triggerKey.disabled" = "Отключено";
 
 /* Ring placement */
+"ringOrder.recent" = "Недавние";
+"ringOrder.alphabetical" = "По имени";
 "ringPlacement.screenCenter" = "По центру экрана";
 "ringPlacement.cursor" = "Следовать за курсором";
 

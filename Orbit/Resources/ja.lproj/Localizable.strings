@@ -17,8 +17,19 @@
 "prefs.access.missing" = "Orbit にはアクセシビリティ権限が必要です";
 "prefs.access.grant" = "許可する…";
 
+/* Settings — language */
+"prefs.group.language" = "言語";
+"prefs.language.picker" = "表示言語";
+"prefs.language.restartNote" = "新しい言語は Orbit を再起動すると反映されます。";
+"prefs.language.restart" = "Orbit を再起動";
+"language.system" = "システムに従う";
+
 /* Settings — ring */
 "prefs.group.ring" = "リング";
+"prefs.ring.order" = "カードの並び";
+"prefs.ring.preselect" = "直前のアプリを選択した状態で開く";
+"prefs.ring.order.note" = "リングに載るアプリは常に最近の使用状況で決まります。ここで選ぶのは並べ方だけです。";
+"prefs.ring.preselect.note" = "呼び出してそのまま離すと ⌘Tab と同じように直前のアプリへ戻ります。オフのときは、選ばずに離すとリングが閉じるだけです。";
 "prefs.ring.showOrbitCard" = "リングに Orbit を表示";
 "prefs.ring.showOrbitCard.note" = "開いているウインドウがないアプリを終了するためのカードとして Orbit を表示します。";
 
@@ -50,6 +61,8 @@
 /* Settings — window preview */
 "prefs.group.preview" = "ウインドウプレビュー";
 "prefs.preview.enabled" = "ウインドウプレビューを表示";
+"prefs.preview.size" = "プレビューの大きさ";
+"prefs.preview.sizeValue" = "%d%%";
 "prefs.preview.needsRecording" = "画面収録の許可が必要です。許可後は Orbit を再起動してください。";
 "prefs.preview.openSystemSettings" = "システム設定を開く";
 "prefs.preview.note" = "アプリを選択すると、そのすべてのウインドウをリングの右側に表示します。画面収録の許可が必要です。";
@@ -75,6 +88,8 @@
 "triggerKey.disabled" = "オフ";
 
 /* Ring placement */
+"ringOrder.recent" = "最近使った順";
+"ringOrder.alphabetical" = "名前順";
 "ringPlacement.screenCenter" = "画面中央";
 "ringPlacement.cursor" = "カーソルに追従";
 

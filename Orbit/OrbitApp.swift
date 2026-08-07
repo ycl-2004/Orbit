@@ -36,6 +36,8 @@ final class OrbitAppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
 
         installStatusItem()
+        // 越早开始记越好：环上放得下哪些应用，取决于这份历史有多长。
+        AppActivationHistory.shared.start()
         observeSummonRequests()
         resumeEventTapIfPermitted()
         presentWelcomeIfNeeded()

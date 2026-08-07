@@ -17,8 +17,19 @@
 "prefs.access.missing" = "Orbit bezonas alireblecan permeson";
 "prefs.access.grant" = "Permesi…";
 
+/* Settings — language */
+"prefs.group.language" = "Lingvo";
+"prefs.language.picker" = "Lingvo de la interfaco";
+"prefs.language.restartNote" = "Orbit devas rekomenci antaŭ ol la nova lingvo aperas.";
+"prefs.language.restart" = "Rekomenci Orbit";
+"language.system" = "Sekvi la sistemon";
+
 /* Settings — ring */
 "prefs.group.ring" = "Ringo";
+"prefs.ring.order" = "Ordo de la kartoj";
+"prefs.ring.preselect" = "Antaŭelekti la lastan aplikaĵon";
+"prefs.ring.order.note" = "Kiuj aplikaĵoj eniras la ringon ĉiam dependas de lastatempa uzo. Ĉi tio elektas nur ilian aranĝon.";
+"prefs.ring.preselect.note" = "Alvoku kaj lasu por reiri rekte, kiel ⌘Tab. Malŝaltite, lasi sen elekti nur fermas la ringon.";
 "prefs.ring.showOrbitCard" = "Montri Orbit en la ringo";
 "prefs.ring.showOrbitCard.note" = "Montri Orbit kiel purigan karton por aplikaĵoj sen malfermitaj fenestroj.";
 
@@ -50,6 +61,8 @@
 /* Settings — window preview */
 "prefs.group.preview" = "Fenestra antaŭrigardo";
 "prefs.preview.enabled" = "Montri fenestran antaŭrigardon";
+"prefs.preview.size" = "Grando de la antaŭrigardo";
+"prefs.preview.sizeValue" = "%d %%";
 "prefs.preview.needsRecording" = "Bezonas ekranregistran permeson. Poste rekomencu Orbit.";
 "prefs.preview.openSystemSettings" = "Malfermi Sistemajn Agordojn";
 "prefs.preview.note" = "Montras ĉiujn fenestrojn de la elektita aplikaĵo dekstre de la ringo. Bezonas ekranregistran permeson.";
@@ -75,6 +88,8 @@
 "triggerKey.disabled" = "Malŝaltita";
 
 /* Ring placement */
+"ringOrder.recent" = "Lastatempe uzitaj";
+"ringOrder.alphabetical" = "Laŭ nomo";
 "ringPlacement.screenCenter" = "Centro de la ekrano";
 "ringPlacement.cursor" = "Sekvi la kursoron";
 

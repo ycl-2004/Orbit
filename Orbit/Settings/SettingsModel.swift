@@ -90,6 +90,54 @@ final class SettingsModel: ObservableObject {
         didSet { writeThrough { OrbitConfig.showOrbitCard = showOrbitCard } }
     }
 
+    // MARK: - 界面语言
+
+    /// 打开设置窗口那一刻的语言。重启提示要不要出现，比的是它。
+    private let languageAtLaunch = OrbitConfig.appLanguage
+
+    /// `nil` = 跟随系统。
+    @Published var appLanguage: String? = OrbitConfig.appLanguage {
+        didSet { writeThrough { OrbitConfig.appLanguage = appLanguage } }
+    }
+
+    /// 语言换过了，但那次切换还没生效。
+    ///
+    /// 比的是"打开设置时是什么"而不是"上一次的值是什么"：来回切一圈又换回原样
+    /// 的人不需要重启，此时再催他一次是在撒谎。
+    var languageNeedsRestart: Bool {
+        appLanguage != languageAtLaunch
+    }
+
+    /// 重开一个新实例，然后让这一个退出。
+    ///
+    /// 顺序不能反：先退出就没人负责把新的拉起来了。`.accessory` 应用没有窗口要
+    /// 保存，重启对用户几乎无感 —— 这也是敢把语言做成应用内设置的前提。
+    func restart() {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(
+            at: Bundle.main.bundleURL,
+            configuration: configuration
+        ) { _, _ in
+            DispatchQueue.main.async {
+                NSApp.terminate(nil)
+            }
+        }
+    }
+
+    /// Slider 要的是 Double，配置项存的是 CGFloat。
+    @Published var previewScale: Double = Double(OrbitConfig.previewScale) {
+        didSet { writeThrough { OrbitConfig.previewScale = CGFloat(previewScale) } }
+    }
+
+    @Published var ringOrder: RingOrder = OrbitConfig.ringOrder {
+        didSet { writeThrough { OrbitConfig.ringOrder = ringOrder } }
+    }
+
+    @Published var preselectRecentApp: Bool = OrbitConfig.preselectRecentApp {
+        didSet { writeThrough { OrbitConfig.preselectRecentApp = preselectRecentApp } }
+    }
+
     // MARK: - 窗口预览
 
     @Published var windowPreviewEnabled: Bool = OrbitConfig.windowPreviewEnabled {
@@ -142,6 +190,9 @@ final class SettingsModel: ObservableObject {
             ringBackdropColor = OrbitConfig.ringBackdropColor
             hideWindowlessApps = OrbitConfig.hideWindowlessApps
             showOrbitCard = OrbitConfig.showOrbitCard
+            ringOrder = OrbitConfig.ringOrder
+            previewScale = Double(OrbitConfig.previewScale)
+            preselectRecentApp = OrbitConfig.preselectRecentApp
             windowPreviewEnabled = OrbitConfig.windowPreviewEnabled
             launchAtLogin = LoginItemService.reload()
             hasAccessibility = HotKeyService.checkAccessibilityPermission()

@@ -17,8 +17,19 @@
 "prefs.access.missing" = "Orbit에 손쉬운 사용 권한이 필요합니다";
 "prefs.access.grant" = "허용…";
 
+/* Settings — language */
+"prefs.group.language" = "언어";
+"prefs.language.picker" = "인터페이스 언어";
+"prefs.language.restartNote" = "새 언어는 Orbit을 다시 실행해야 적용됩니다.";
+"prefs.language.restart" = "Orbit 다시 실행";
+"language.system" = "시스템 설정 따르기";
+
 /* Settings — ring */
 "prefs.group.ring" = "링";
+"prefs.ring.order" = "카드 순서";
+"prefs.ring.preselect" = "직전 앱을 미리 선택";
+"prefs.ring.order.note" = "링에 오를 앱은 항상 최근 사용 기준으로 정해집니다. 여기서는 배열 방식만 고릅니다.";
+"prefs.ring.preselect.note" = "호출한 뒤 그대로 놓으면 ⌘Tab처럼 직전 앱으로 바로 돌아갑니다. 끄면 고르지 않고 놓았을 때 링만 닫힙니다.";
 "prefs.ring.showOrbitCard" = "링에 Orbit 표시";
 "prefs.ring.showOrbitCard.note" = "열린 윈도우가 없는 앱을 종료하는 정리 카드로 Orbit을 표시합니다.";
 
@@ -50,6 +61,8 @@
 /* Settings — window preview */
 "prefs.group.preview" = "윈도우 미리보기";
 "prefs.preview.enabled" = "윈도우 미리보기 표시";
+"prefs.preview.size" = "미리보기 크기";
+"prefs.preview.sizeValue" = "%d%%";
 "prefs.preview.needsRecording" = "화면 기록 권한이 필요합니다. 허용한 후 Orbit을 다시 실행하세요.";
 "prefs.preview.openSystemSettings" = "시스템 설정 열기";
 "prefs.preview.note" = "앱을 선택하면 링 오른쪽에 해당 앱의 모든 윈도우를 표시합니다. 화면 기록 권한이 필요합니다.";
@@ -75,6 +88,8 @@
 "triggerKey.disabled" = "사용 안 함";
 
 /* Ring placement */
+"ringOrder.recent" = "최근 사용순";
+"ringOrder.alphabetical" = "이름순";
 "ringPlacement.screenCenter" = "화면 중앙";
 "ringPlacement.cursor" = "커서 따라가기";
 
