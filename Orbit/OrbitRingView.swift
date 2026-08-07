@@ -49,7 +49,9 @@ final class OrbitRingViewModel: ObservableObject {
     /// A trigger release can arrive while the dropped URLs are still being
     /// read. Defer dismissal until that asynchronous file operation finishes.
     private var dismissAfterFileDrop = false
-    /// Cursor position at the moment selection was explicitly cleared.
+    /// Cursor position that hover must move away from before it can select.
+    /// This starts at the moment the ring opens, so the card underneath the
+    /// pointer does not become selected just because the panel appeared there.
     private var hoverAnchor: CGPoint?
     /// Where the selection stood when it was cleared, so arrowing again picks
     /// up from there instead of starting over.
@@ -71,6 +73,11 @@ final class OrbitRingViewModel: ObservableObject {
         }
         self.showsPreview = showsPreview
             ?? OrbitConfig.windowPreviewEnabled
+        // The ring is positioned around the current pointer. SwiftUI can emit
+        // an initial `onHover` as soon as the panel appears, even though the
+        // user has not moved the pointer. Treat that first location as an
+        // anchor so the opening state remains the Cancel default.
+        self.hoverAnchor = NSEvent.mouseLocation
     }
 
     var selectedApp: AppInfo? {
@@ -217,9 +224,9 @@ final class OrbitRingViewModel: ObservableObject {
         selectedID = app.id
     }
 
-    /// Hovering re-selects a card, which would undo an explicit deselect the
-    /// moment the card resizes under a stationary cursor. Ignore hover until
-    /// the pointer actually moves.
+    /// Hovering re-selects a card, which would undo an explicit deselect or
+    /// select a card as soon as the ring opens under a stationary cursor.
+    /// Ignore hover until the pointer actually moves away from the anchor.
     func selectFromHover(_ app: AppInfo) {
         if let anchor = hoverAnchor {
             let now = NSEvent.mouseLocation
