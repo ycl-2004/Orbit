@@ -328,17 +328,37 @@ enum OrbitConfig {
         (ringRadius(cardCount: cardCount) + cardSize.height * 0.5 + 72) * 2
     }
 
-    /// 卡片背后那块圆形舞台的半径。
+    /// 磨砂轨道的径向厚度：一张卡片那么宽，不是一张卡片那么高。
     ///
-    /// Every card centre sits exactly `ringRadius` from the hub, so one circle
-    /// centred on the hub contains the whole fan as soon as it clears a single
-    /// card's half-diagonal — grown by the 1.1 scale the selected card takes,
-    /// since that card is the one that would otherwise poke out. Sizing it from
-    /// the cards rather than from the canvas is what keeps the disc from
-    /// cropping the fan at some card counts and swimming around it at others.
+    /// 轨道是卡片脚下的一条环形跑道，不是一块把卡片整个裹住的玻璃。Sizing it to
+    /// clear a card's corners means the band has to be wider than a card is
+    /// tall, and at that width it stops reading as a track and starts reading
+    /// as the plate it replaced — it was the thickness, not the tint, that made
+    /// the old backdrop feel like it took over the screen. A card is rotated so
+    /// its long axis points at the hub, so a band one card *wide* leaves the
+    /// top and bottom of each card standing slightly proud of it, which is what
+    /// gives the ring its depth and keeps the hollow in the middle wide open.
+    static var ringTrackThickness: CGFloat {
+        cardSize.dimension
+    }
+
+    /// 轨道在扇面两端各多走出去的角度。
+    ///
+    /// The band ends in a round cap of half its thickness, so a cap centred on
+    /// the last card's own centre would stop short of that card's outer edge
+    /// and leave it hanging off the end. Sliding the centre out by the
+    /// difference lands the cap just past the card — far enough that the track
+    /// runs out from under the fan rather than being cut off at it, close
+    /// enough that no empty glass trails behind the last app. This is also what
+    /// gives a single-app ring a band at all, since its fan spans no angle.
+    static func ringTrackEndPadding(cardCount: Int) -> Double {
+        let overhang = cardSize.dimension * 0.55 - ringTrackThickness / 2 + 8
+        return Double(max(overhang, 8) / ringRadius(cardCount: cardCount))
+    }
+
+    /// 轨道最外圈到中心的距离，也就是窗口排版必须让出来的地方。
     static func ringBackdropRadius(cardCount: Int) -> CGFloat {
-        let cardReach = hypot(cardSize.dimension, cardSize.height) / 2 * 1.1
-        return ringRadius(cardCount: cardCount) + cardReach + 18
+        ringRadius(cardCount: cardCount) + ringTrackThickness / 2
     }
 
     /// Widest the preview half is allowed to get.

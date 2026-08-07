@@ -195,9 +195,22 @@ final class OrbitRingViewModel: ObservableObject {
         return max(160, min(OrbitConfig.previewCardMaximumWidth, usable / OrbitConfig.previewCarouselSpan))
     }
 
-    /// Diameter of the disc the fan sits on, measured from the cards.
+    /// Outer diameter of the band the fan sits on, measured from the cards.
     var backdropDiameter: CGFloat {
         OrbitConfig.ringBackdropRadius(cardCount: apps.count) * 2
+    }
+
+    /// 轨道要盖住的那段角度：正好是首尾两张卡片之间，两端各多留一点。
+    ///
+    /// The fan is symmetric about `fanAxis` whichever way it is walked, so its
+    /// extent is the axis plus and minus half the span — no need to ask the
+    /// cards for their angles one by one.
+    var backdropArc: ClosedRange<Double> {
+        let span = apps.count > 1
+            ? OrbitConfig.ringStep(cardCount: apps.count) * Double(apps.count - 1)
+            : 0
+        let padding = OrbitConfig.ringTrackEndPadding(cardCount: apps.count)
+        return (fanAxis - span / 2 - padding)...(fanAxis + span / 2 + padding)
     }
 
     /// Read once per showing, like `showsPreview`: the disc must not appear or
@@ -711,12 +724,17 @@ struct OrbitRingView: View {
     private var ringCanvas: some View {
         ZStack {
             if model.showsBackdrop {
-                OrbitRingBackdrop(diameter: model.backdropDiameter)
-                    .position(
-                        x: model.canvasSize / 2,
-                        y: model.canvasSize / 2
-                    )
-                    .zIndex(-1)
+                OrbitRingBackdrop(
+                    radius: model.ringRadius,
+                    thickness: OrbitConfig.ringTrackThickness,
+                    arc: model.backdropArc,
+                    tint: OrbitPalette.backdrop
+                )
+                .position(
+                    x: model.canvasSize / 2,
+                    y: model.canvasSize / 2
+                )
+                .zIndex(-1)
             }
 
             ForEach(Array(model.apps.enumerated()), id: \.element.id) { index, app in
@@ -776,75 +794,6 @@ struct OrbitRingView: View {
         .background(Color.clear)
         .animation(.spring(response: 0.26, dampingFraction: 0.8), value: model.selectedID)
         .animation(.spring(response: 0.26, dampingFraction: 0.8), value: model.centerMode)
-    }
-}
-
-/// 卡片背后的圆形舞台：给整把扇子一个视觉落点，而不是再多一块不透明面板。
-///
-/// Centred on the hub, because that is where the cancel button already is and
-/// every card sits the same distance from it. The earlier version was both
-/// smaller than the fan and nudged off the hub, so the cards cut across a hard
-/// accent stroke and the whole thing read as a pink plate laid under the ring.
-/// Here the edge is a material rim that fades as it comes round, and the accent
-/// only survives as a wash and an outer halo.
-private struct OrbitRingBackdrop: View {
-    let diameter: CGFloat
-
-    private var accent: Color { OrbitPalette.backdrop }
-
-    var body: some View {
-        ZStack {
-            // No edge at all on the halo: it is what ties the disc to the
-            // desktop behind it, and any rim here would just read as a second
-            // circle outside the first.
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [accent.opacity(0.16), accent.opacity(0.05), .clear],
-                        center: .center,
-                        startRadius: diameter * 0.32,
-                        endRadius: diameter * 0.68
-                    )
-                )
-                .frame(width: diameter * 1.3, height: diameter * 1.3)
-                .blur(radius: 26)
-
-            Circle()
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    // Lit from the top-left, the same direction the cards are
-                    // lit from, so the disc sits in the same room as them.
-                    Circle().fill(
-                        LinearGradient(
-                            colors: [
-                                .white.opacity(0.20),
-                                accent.opacity(0.05),
-                                accent.opacity(0.13)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                )
-                .overlay(
-                    Circle().strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                .white.opacity(0.50),
-                                accent.opacity(0.14),
-                                .clear
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-                )
-                .frame(width: diameter, height: diameter)
-                .shadow(color: .black.opacity(0.10), radius: 30, y: 14)
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
     }
 }
 
@@ -1315,32 +1264,21 @@ private struct OrbitCenterControl: View {
             if isVisible {
                 VStack(spacing: 8) {
                     ZStack {
-                        Circle()
-                            .fill(centerFill)
+                        hub
                             .frame(
                                 width: OrbitConfig.centerRadius * 2,
                                 height: OrbitConfig.centerRadius * 2
                             )
-                            .overlay(Circle().stroke(centerStroke, lineWidth: 2))
-                            .overlay(
-                                Circle()
-                                    .stroke(centerStroke.opacity(0.20), lineWidth: 6)
-                                    .scaleEffect(1.12)
-                            )
-                            .shadow(
-                                color: centerStroke.opacity(0.28),
-                                radius: 12,
-                                y: 5
-                            )
 
                         Image(systemName: centerIcon)
-                            .font(.system(size: 28, weight: .semibold))
-                            .foregroundStyle(centerIconColor)
+                            .font(.system(size: 26, weight: .medium))
+                            .foregroundStyle(.white)
                     }
 
                     Text(centerLabel)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.primary)
+                        // 默认状态不该跟卡片抢视线，进入某个动作之后才回到主色。
+                        .foregroundStyle(mode == .cancel ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .background(.regularMaterial, in: Capsule())
@@ -1371,27 +1309,58 @@ private struct OrbitCenterControl: View {
         }
     }
 
-    private var centerFill: Color {
+    /// 中心是一颗石墨磨砂玻璃，不是一块纯色塑料按钮。
+    ///
+    /// 每个状态都共用同一层底，颜色只作为染层叠在上面。Painting each state its
+    /// own solid colour is what made the hub jump between near-black, burgundy
+    /// and ivory as a drag crossed it, and it is why Cancel — a state that means
+    /// nothing is happening — was the loudest thing on screen. One base means
+    /// the states differ by a hue rather than by a step in brightness, and it
+    /// keeps the hub on the same material as the track and the preview.
+    ///
+    /// The tints also have to stay dark enough for a white glyph: `coral` and
+    /// `denim` are pale on their own, and the two states that wear them —
+    /// quitting an app, throwing files away — are the two that can least afford
+    /// an icon that is hard to read.
+    private var hub: some View {
+        ZStack {
+            Circle().fill(.regularMaterial)
+            Circle().fill(.black.opacity(0.46))
+            Circle().fill(centerTint)
+        }
+        .overlay(Circle().strokeBorder(.white.opacity(0.30), lineWidth: 1))
+        // 只有真的能按下去的状态才发光，默认状态安静。
+        .overlay {
+            if let glow = centerGlow {
+                Circle()
+                    .stroke(glow.opacity(0.22), lineWidth: 6)
+                    .scaleEffect(1.12)
+            }
+        }
+        .shadow(
+            color: centerGlow?.opacity(0.26) ?? .black.opacity(0.18),
+            radius: centerGlow == nil ? 10 : 12,
+            y: centerGlow == nil ? 4 : 5
+        )
+    }
+
+    private var centerTint: Color {
         switch mode {
-        case .cancel: .black.opacity(0.82)
-        case .confirm: OrbitPalette.burgundy.opacity(0.92)
-        case .quit, .trash: .black
-        case .cleanup: .black.opacity(0.9)
-        case .share: OrbitPalette.ivory.opacity(0.96)
+        case .cancel: .clear
+        case .confirm: OrbitPalette.burgundy.opacity(0.62)
+        case .quit, .trash: OrbitPalette.coral.opacity(0.50)
+        case .cleanup: OrbitPalette.burgundy.opacity(0.40)
+        case .share: OrbitPalette.denim.opacity(0.46)
         }
     }
 
-    private var centerStroke: Color {
+    /// `nil` 表示这个状态不发光。
+    private var centerGlow: Color? {
         switch mode {
-        case .cancel: .white.opacity(0.65)
-        case .confirm: OrbitPalette.burgundy
+        case .cancel: nil
+        case .confirm, .cleanup: OrbitPalette.burgundy
         case .quit, .trash: OrbitPalette.coral
-        case .cleanup: OrbitPalette.burgundy
-        case .share: OrbitPalette.burgundy.opacity(0.82)
+        case .share: OrbitPalette.denim
         }
-    }
-
-    private var centerIconColor: Color {
-        mode == .share ? OrbitPalette.burgundy : .white
     }
 }

@@ -328,9 +328,9 @@ private struct AppearancePreview: View {
                 backdrop
                 card
             }
-            // Sized for the disc, not the card: the row has to reserve the
+            // Sized for the band, not the card: the row has to reserve the
             // space the backdrop takes, or it draws over the label beside it.
-            .frame(width: stageDimension, height: stageDimension)
+            .frame(width: stageSize.width, height: stageSize.height)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Orbit")
@@ -346,43 +346,47 @@ private struct AppearancePreview: View {
         .padding(.vertical, 6)
     }
 
-    /// A slice of the real disc, built from the same opacities the ring uses,
-    /// so the colour is judged as it will actually appear rather than as a
-    /// solid swatch.
+    /// 真实轨道上、正好托着一张卡片的那一小段。
+    ///
+    /// The ring's own band is far too large to show whole here — the C only
+    /// reads once the stage is about four cards tall, which no settings row
+    /// can afford. Drawing the stretch behind a single card through the very
+    /// same view is the part that matters: the glass, the wash and the rim are
+    /// then the ring's by construction rather than by a copied number.
     @ViewBuilder
     private var backdrop: some View {
         if let backdropColor {
-            Circle()
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    Circle().fill(
-                        LinearGradient(
-                            colors: [
-                                .white.opacity(0.20),
-                                backdropColor.opacity(0.05),
-                                backdropColor.opacity(0.13)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                }
-                .overlay {
-                    Circle().strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                .white.opacity(0.50),
-                                backdropColor.opacity(0.14),
-                                .clear
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-                }
-                .frame(width: stageDimension, height: stageDimension)
+            OrbitRingBackdrop(
+                radius: trackRadius,
+                thickness: trackThickness,
+                arc: (-.pi / 2 - trackHalfSweep)...(-.pi / 2 + trackHalfSweep),
+                tint: backdropColor
+            )
+            // 弧顶在圆心正上方 `trackRadius` 处，所以把圆心压到卡片下面那么远，
+            // 弧顶就正好落在卡片身上。
+            .offset(y: trackRadius)
         }
+    }
+
+    /// Flat enough that the row shows a piece of track rather than a wedge,
+    /// curved enough that it is the same shape as the real thing.
+    private var trackRadius: CGFloat {
+        previewDimension * 3
+    }
+
+    /// 跟真实轨道同一条规则：一张卡片那么宽。
+    ///
+    /// 弧顶朝上，所以这里的「径向」是竖直方向 — 也就是这张不旋转的预览卡片的长边
+    /// 方向，正如环上那些卡片的长边指向中心。The card standing a little proud of
+    /// the band top and bottom is the real ring's proportion, not a mistake.
+    private var trackThickness: CGFloat {
+        previewDimension
+    }
+
+    /// Runs a little past the card at both ends, the way the real band runs
+    /// past the first and last app.
+    private var trackHalfSweep: Double {
+        Double(20 / trackRadius)
     }
 
     private var card: some View {
@@ -414,11 +418,19 @@ private struct AppearancePreview: View {
         .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
     }
 
-    /// The disc has to clear the card's corners once the card is rotated on the
-    /// real ring, so it is sized off the card's diagonal the same way
-    /// `OrbitConfig.ringBackdropRadius` is.
-    private var stageDimension: CGFloat {
-        hypot(previewDimension, previewDimension * 1.2) + 16
+    /// Room for whichever is larger, the card or the piece of band behind it.
+    /// With the backdrop switched off there is no band to reserve space for.
+    private var stageSize: CGSize {
+        let card = CGSize(
+            width: previewDimension + 16,
+            height: previewDimension * 1.2 + 16
+        )
+        guard backdropColor != nil else { return card }
+        let bandLength = trackThickness + 2 * trackRadius * CGFloat(sin(trackHalfSweep))
+        return CGSize(
+            width: max(card.width, bandLength + 8),
+            height: max(card.height, trackThickness + 8)
+        )
     }
 
     /// Keep the preview proportional to a real ring card while making the
