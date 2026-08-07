@@ -28,7 +28,7 @@ jobs:
       - name: Validate version, tag, architecture, and test counts
         run: bash scripts/ci_validate.sh
 
-      - name: Require signing and notarization credentials
+      - name: Determine signing mode
         env:
           CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
           CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -37,14 +37,16 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: |
-          for value in CERTIFICATE CERTIFICATE_PASSWORD SIGNING_IDENTITY APPLE_ID APPLE_TEAM_ID APPLE_APP_PASSWORD; do
-            if [[ -z "${!value}" ]]; then
-              echo "Missing required release secret: $value" >&2
-              exit 1
-            fi
-          done
+          if [[ -n "$CERTIFICATE" && -n "$CERTIFICATE_PASSWORD" && -n "$SIGNING_IDENTITY" && -n "$APPLE_ID" && -n "$APPLE_TEAM_ID" && -n "$APPLE_APP_PASSWORD" ]]; then
+            echo "RELEASE_SIGNING_MODE=developer-id" >> "$GITHUB_ENV"
+            echo "Developer ID signing and notarization enabled."
+          else
+            echo "RELEASE_SIGNING_MODE=ad-hoc" >> "$GITHUB_ENV"
+            echo "Apple Developer secrets are not configured; publishing Universal 2 ad-hoc release."
+          fi
 
       - name: Import Developer ID certificate
+        if: env.RELEASE_SIGNING_MODE == 'developer-id'
         env:
           CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
           CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -68,6 +70,7 @@ jobs:
         run: bash scripts/package_release.sh "${GITHUB_REF_NAME#v}"
 
       - name: Notarize release archive
+        if: env.RELEASE_SIGNING_MODE == 'developer-id'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -80,6 +83,7 @@ jobs:
             --wait
 
       - name: Staple and repackage notarized app
+        if: env.RELEASE_SIGNING_MODE == 'developer-id'
         run: |
           STAPLE_DIR="$RUNNER_TEMP/orbit-stapled"
           ditto -x -k dist/Orbit-macOS.zip "$STAPLE_DIR"

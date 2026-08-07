@@ -1,5 +1,18 @@
 # Orbit release notes
 
+## 1.4.1 — 2026-08-07
+
+### Changed
+
+- The downloadable release is now a verified Universal 2 archive containing both `arm64` and `x86_64`, while the existing `v1.4.0` tag remains unchanged.
+- The release pipeline now checks architecture, metadata, checksums, and test counts before publishing.
+- The Xcode project version is now `1.4.1`, build `4`.
+
+### Validation
+
+- The source contains 36 `OrbitTests` tests and 2 `OrbitUITests` methods; the unit test target passed in CI.
+- The published ZIP and SHA-256 file were generated from the latest `main` commit.
+
 ## 1.4.0 — 2026-08-07
 
 ### Added

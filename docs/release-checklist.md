@@ -15,7 +15,7 @@ bash scripts/ci_validate.sh
 Build the release archive, then verify its architecture and signature:
 
 ```bash
-bash scripts/package_release.sh 1.4.0
+bash scripts/package_release.sh 1.4.1
 bash scripts/verify_release.sh dist/Orbit-macOS.zip
 ```
 
@@ -26,15 +26,16 @@ architecture-specific filename is not appropriate for this artifact.
 
 GitHub Actions runs the metadata check, a Debug Universal 2 build, and the 36
 `OrbitTests` tests for every push and pull request. A version tag must match the
-Xcode `MARKETING_VERSION`, for example `v1.4.0`.
+Xcode `MARKETING_VERSION`, for example `v1.4.1`.
 
-Tags matching `v*` use `.github/workflows/release.yml`. That workflow requires
-the repository secrets `MACOS_CERTIFICATE_P12_BASE64`,
-`MACOS_CERTIFICATE_PASSWORD`, `MACOS_SIGNING_IDENTITY`, `APPLE_ID`,
-`APPLE_TEAM_ID`, and `APPLE_APP_PASSWORD`; it signs with Developer ID,
-notarizes with `notarytool`, staples the app, verifies Universal 2, and uploads
-the ZIP plus SHA-256 file. It intentionally fails before publishing if any
-credential is missing.
+Tags matching `v*` use `.github/workflows/release.yml`. With the repository
+secrets `MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD`,
+`MACOS_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_TEAM_ID`, and
+`APPLE_APP_PASSWORD`, it signs with Developer ID, notarizes with `notarytool`,
+staples the app, verifies Universal 2, and uploads the ZIP plus SHA-256 file.
+Without those secrets it still publishes a verified Universal 2 ad-hoc ZIP;
+users must use the documented Control-click **Open** flow until notarization is
+configured.
 
 ## Clean-machine installation regression
 
