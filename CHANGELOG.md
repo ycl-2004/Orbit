@@ -1,5 +1,24 @@
 # Orbit release notes
 
+## Unreleased — source build 1.3.0 (2)
+
+### Added
+
+- Settings now includes an interface-language picker with System plus 11 bundled locales: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, Russian, Danish, Norwegian Bokmål, and Esperanto.
+- The ring uses recent activation history to choose its visible app set, with a preference for Recently used or By name card order.
+- An optional recent-app preselection preference makes summon-and-release behave like Command-Tab; it remains off by default for a safe no-op release.
+- Preview size is configurable from 70% to 150%.
+
+### Changed
+
+- Window previews capture from the display where Orbit was summoned, preserving the intended sharpness across mixed-resolution displays.
+- A pending summon is canceled when another key, mouse button, or scroll gesture arrives before the hold completes.
+
+### Validation
+
+- The full clean test suite passed: 34 `OrbitTests` tests and 2 `OrbitUITests` tests, with 0 failures.
+- The current project metadata remains marketing version `1.3.0`, build `2`; the next published release version has not been selected.
+
 ## 1.3.0 — 2026-08-06
 
 ### Added
@@ -22,4 +41,4 @@
 ### Validation
 
 - Release build succeeds and the app signature verifies successfully.
-- The test run was attempted but could not complete because CoreSimulatorService became unavailable in the build environment.
+- At release time, the test run was attempted but could not complete because CoreSimulatorService became unavailable in the build environment; the current source validation is recorded in the Unreleased section above.

@@ -57,10 +57,14 @@ open /Applications/Orbit.app
 
 只有启用窗口预览时，Orbit 才会请求屏幕录制权限。
 
+当前 Xcode 工程版本为 `1.3.0（build 2）`。已发布版本仍是 `v1.3.0`；源码中
+尚未切出新 release 的改进统一记录在 [Unreleased](CHANGELOG.md) 中。
+
 ## 为什么用 Orbit
 
 - **靠方位，不靠顺序。** 应用固定在鼠标周围的各个角度上，你记住的是方向，而不是"要按几下 Command-Tab"。
 - **切到具体窗口，而不只是应用。** 开启预览后，松手前可以用左右方向键在选中应用的多个窗口里挑一个。
+- **既跟手又稳定。** Orbit 根据最近激活历史决定环里显示哪些应用，然后可以在设置中选择按最近使用或按名称排列这些卡片。
 - **中心就是拖放目标。** 把应用卡片拖进中心即可退出；可选的 Orbit 特殊卡片可以安全清理没有打开窗口的普通应用，Orbit 自己和 Finder 始终受到保护。把文件拖进去可以 AirDrop，长按则移入废纸篓。
 - **数据不出本机。** 无账号、无埋点、无网络请求。纯原生 SwiftUI/AppKit，零第三方包。
 
@@ -71,6 +75,8 @@ open /Applications/Orbit.app
 - 长按修饰键呼出环形应用切换器，默认触发键为 Option（⌥）。
 - 默认使用方向键导航；可在设置中按需启用字母和数字快捷键。
 - 可选的环旁窗口预览：在设置中打开"显示窗口预览"，并授予屏幕录制权限；macOS 授权后需要重启 Orbit。
+- **预选最近应用**默认关闭；打开后，呼出后直接松手的行为类似 Command-Tab。关闭时，没有明确选择就松手仍然是安全的无操作。
+- 长按尚未完成时，如果先按了其他键、鼠标按钮或滚轮，Orbit 会取消这次待触发状态，避免误打开环。
 
 **中心目标操作**
 
@@ -80,7 +86,9 @@ open /Applications/Orbit.app
 
 **个性化**
 
-- 支持调整触发键、取消选择键、字母/数字快捷键、长按阈值、环出现位置、卡片大小/材质和开机启动。
+- 支持调整界面语言、最近使用/按名称排列、是否预选最近应用、预览大小（70%–150%）、触发键、取消选择键、字母/数字快捷键、长按阈值、环出现位置、卡片大小/材质和开机启动。
+- 语言选择器包含 English、简体中文、繁體中文、日本語、한국어、Deutsch、Français、Русский、Dansk、Norsk bokmål 和 Esperanto。切换语言后会提示重启，让整个界面一致地重新加载。
+- 预览会根据 Orbit 被呼出的目标显示器取图，多显示器或不同分辨率组合下也能保持清晰和稳定。
 
 ## 使用方式
 
@@ -123,9 +131,9 @@ README 与仓库内的产品截图保持同步。
 
 - [ ] 经 Apple 公证的签名构建，首次启动不再需要绕过步骤
 - [ ] 通过 Homebrew Cask 分发
-- [ ] 自定义环上的应用排序与置顶
+- [ ] 独立于最近使用集合的置顶应用
 - [ ] 更多环形布局与外观选项
-- [ ] 本地化打磨（简体中文、繁体中文及更多语言）
+- [ ] 翻译校对与更多语言覆盖
 - [ ] 全流程的键盘操作与无障碍支持
 
 ## 参与贡献
@@ -155,6 +163,14 @@ README 与仓库内的产品截图保持同步。
 触发键时，macOS 不会通知 Orbit。**屏幕录制**权限只在你开启窗口预览时才请求，
 因为实时窗口缩略图属于屏幕内容；macOS 要求授权后重启 Orbit 才生效。所有画面都
 不会被保存或上传。
+
+</details>
+
+<details>
+<summary>如何切换 Orbit 的界面语言？</summary>
+
+点击菜单栏图标，进入**设置 → 语言**，选择**跟随系统**或 Orbit 自带的语言。
+选择变化后 Orbit 会显示重启提示；重启后所有视图和菜单都会使用新的语言。
 
 </details>
 
@@ -209,12 +225,20 @@ xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-运行单元测试：
+运行包含单元测试和 UI 测试的完整测试套件：
+
+```bash
+xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
+  -destination 'platform=macOS' -derivedDataPath .build/xcode clean test \
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+```
+
+只跑单元测试的快速循环：
 
 ```bash
 xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
   -destination 'platform=macOS' -derivedDataPath .build/xcode \
-  CODE_SIGNING_ALLOWED=NO test -only-testing:OrbitTests
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO test -only-testing:OrbitTests
 ```
 
 仓库会排除构建产物、DerivedData、Xcode 用户状态、本地环境文件、密钥、日志和本地工作流状态。
@@ -225,6 +249,8 @@ xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
 ## 项目结构
 
 - `Orbit/` — 应用源码、配置、资源和 asset catalog。
+- `Orbit/Config/AppLanguage.swift` 与 `Orbit/Settings/` — 语言和用户偏好行为。
+- `Orbit/Services/AppActivationHistory.swift` — 用于构建环形应用集合的最近激活历史。
 - `OrbitTests/` — 交互与选择逻辑的单元测试。
 - `OrbitUITests/` — UI 测试目标。
 - `Orbit.xcodeproj/` — 共享 Xcode 工程和 workspace 数据。
@@ -241,7 +267,8 @@ Orbit 是一个独立的原生 macOS 项目，围绕环形、手势优先的工�
 - 使用 `app.orbit.local` 作为可替换的 bundle identifier。
 - 不包含开发者 Team ID、签名证书或机器专属的 Xcode 状态文件。
 - 默认提供英文 README，并单独提供这份简体中文 README。
-- App 默认使用英文界面，同时保留简体中文、繁体中文及其他本地化资源。
+- 当前源码版本：`1.3.0（build 2）`。
+- App 默认使用英文界面；应用内语言选择器提供 English、简体中文、繁體中文、日本語、한국어、Deutsch、Français、Русский、Dansk、Norsk bokmål 和 Esperanto。
 
 ## 许可证
 

@@ -59,10 +59,15 @@ open /Applications/Orbit.app
 
 Screen Recording permission is requested only if you turn on window previews.
 
+The current Xcode project reports version `1.3.0 (build 2)`. The published
+release is still `v1.3.0`; source-only improvements are recorded under
+[Unreleased](CHANGELOG.md).
+
 ## Why Orbit
 
 - **Spatial, not sequential.** Apps sit at fixed angles around the cursor, so you build muscle memory for direction instead of counting Command-Tab presses.
 - **Switch to a window, not just an app.** With previews on, arrow left/right picks the exact window of the selected app before you release.
+- **Recent when it matters, stable when you want it.** Orbit chooses the visible app set from recent activation history, then lets you arrange those cards by Recently used or By name.
 - **The center is a drop target.** Drag an app card in to quit it; the optional Orbit card safely cleans up ordinary apps with no open windows, while Orbit and Finder stay protected. Drag a file in to AirDrop it, or hold to send it to the Trash.
 - **Nothing leaves your Mac.** No accounts, no telemetry, no network calls. Native SwiftUI/AppKit with zero third-party packages.
 
@@ -73,6 +78,8 @@ Screen Recording permission is requested only if you turn on window previews.
 - Radial app switcher summoned by holding a modifier key (default: Option ⌥).
 - Arrow-key navigation enabled by default; optional letter and number shortcuts can be turned on in Settings.
 - Optional window previews beside the ring. Enable **Show window previews** in Settings and grant Screen Recording permission; macOS requires an Orbit restart after granting it.
+- **Preselect the last app** is optional and off by default. When enabled, summon-and-release behaves like Command-Tab; when disabled, releasing without a selection remains a safe no-op.
+- A pending summon is canceled if another key, mouse button, or scroll gesture arrives before the hold completes, preventing accidental ring openings.
 
 **Center target actions**
 
@@ -82,7 +89,9 @@ Screen Recording permission is requested only if you turn on window previews.
 
 **Configuration**
 
-- Trigger and clear-selection keys, optional letter/number shortcuts, long-press threshold, ring placement, card size and material, and launch-at-login.
+- Interface language, recent/alphabetical card order, optional recent-app preselection, preview size (70%–150%), trigger and clear-selection keys, optional letter/number shortcuts, long-press threshold, ring placement, card size and material, and launch-at-login.
+- The language picker includes English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, Russian, Danish, Norwegian Bokmål, and Esperanto. Orbit asks to restart after a language change so the whole interface reloads consistently.
+- Preview capture uses the display where Orbit was summoned, which keeps mixed-resolution and multi-display setups sharp and predictable.
 
 ## Usage
 
@@ -126,9 +135,9 @@ argue for something.
 
 - [ ] Apple-notarized signed builds, so the first launch needs no workaround
 - [ ] Homebrew Cask distribution
-- [ ] Custom app ordering and pinning on the ring
+- [ ] Pinned favorites that are independent of recent-use membership
 - [ ] More ring layout and appearance options
-- [ ] Localization polish (Simplified Chinese, Traditional Chinese, and beyond)
+- [ ] Translation review and additional locale coverage
 - [ ] Full keyboard and accessibility coverage across every flow
 
 ## Contributing
@@ -160,6 +169,15 @@ macOS will not tell Orbit that you are holding the trigger key outside its own
 windows. **Screen Recording** is requested only when you enable window previews,
 because live window thumbnails are screen content. macOS requires an Orbit
 restart after you grant it. Nothing captured is stored or transmitted.
+
+</details>
+
+<details>
+<summary>How do I change Orbit's interface language?</summary>
+
+Open the menu bar icon, choose **Settings → Language**, and select **Follow
+System** or one of Orbit's bundled languages. Orbit shows a restart prompt after
+the selection changes; restart it for every view and menu to use the new locale.
 
 </details>
 
@@ -217,12 +235,20 @@ xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-To run the unit tests:
+To run the full test suite, including unit and UI tests:
+
+```bash
+xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
+  -destination 'platform=macOS' -derivedDataPath .build/xcode clean test \
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+```
+
+For a faster unit-test-only loop:
 
 ```bash
 xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
   -destination 'platform=macOS' -derivedDataPath .build/xcode \
-  CODE_SIGNING_ALLOWED=NO test -only-testing:OrbitTests
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO test -only-testing:OrbitTests
 ```
 
 The repository intentionally excludes generated build products, DerivedData,
@@ -235,6 +261,8 @@ public documentation remain tracked.
 ## Project layout
 
 - `Orbit/` — app source, configuration, resources, and asset catalog.
+- `Orbit/Config/AppLanguage.swift` and `Orbit/Settings/` — language and user preference behavior.
+- `Orbit/Services/AppActivationHistory.swift` — recent activation history used to build the ring.
 - `OrbitTests/` — unit tests for interaction and selection behavior.
 - `OrbitUITests/` — UI test targets.
 - `Orbit.xcodeproj/` — shared Xcode project and workspace data.
@@ -251,7 +279,8 @@ gesture-first workflow. This repository provides:
 - Portable placeholder bundle identifiers under `app.orbit.local`.
 - No developer Team ID, signing certificate, or machine-specific Xcode state.
 - English-first documentation with a separate Simplified Chinese version.
-- English is the default app localization; Simplified Chinese, Traditional Chinese, and other localized resources are included.
+- Current source build: `1.3.0 (build 2)`.
+- English is the default app localization; the in-app picker ships English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, Russian, Danish, Norwegian Bokmål, and Esperanto.
 
 ## License
 

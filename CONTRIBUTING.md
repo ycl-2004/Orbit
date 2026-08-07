@@ -22,7 +22,7 @@ they ask for exactly this.
 
 ## Development setup
 
-- macOS 26.0 or later (the deployment target of the current Xcode project).
+- macOS 14.0 or later (the deployment target of the current Xcode project).
 - Xcode 26 or later.
 - No third-party packages. Do not add a dependency without discussing it first.
 
@@ -41,10 +41,15 @@ xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
   -destination 'platform=macOS' -derivedDataPath .build/xcode \
   CODE_SIGNING_ALLOWED=NO build
 
-# Unit tests
+# Full test suite (unit + UI tests)
+xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
+  -destination 'platform=macOS' -derivedDataPath .build/xcode clean test \
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
+# Unit-test-only loop
 xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
   -destination 'platform=macOS' -derivedDataPath .build/xcode \
-  CODE_SIGNING_ALLOWED=NO test -only-testing:OrbitTests
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO test -only-testing:OrbitTests
 ```
 
 To try your build the way a user would run it, use `scripts/install.sh`. It
@@ -62,6 +67,9 @@ touches:
 - **Trigger:** hold the trigger modifier over a non-Orbit app; the ring appears near the cursor. Release to switch, Escape to cancel.
 - **Keyboard:** arrow keys and Tab move the selection; the clear-selection key removes the highlight; releasing then closes without switching.
 - **Window previews:** enable **Show window previews**, grant Screen Recording, **restart Orbit** (macOS requires it), then check left/right window selection on a multi-window app.
+- **Language:** select a bundled language or **Follow System** in Settings, confirm the restart prompt, then verify menus and settings reload in the selected locale.
+- **Ring preferences:** check Recently used vs. By name ordering, and verify optional recent-app preselection behaves like Command-Tab while the default remains a safe no-op.
+- **Preview size and displays:** change preview size from 70% to 150% and summon Orbit on each connected display when their scales differ.
 - **Center target:** drag an app card in to quit it; drag a file in and release for AirDrop; hold a file over the target past the delay until it becomes Trash.
 - **Settings:** the changed setting persists across an Orbit restart.
 
