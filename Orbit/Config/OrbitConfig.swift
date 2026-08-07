@@ -252,14 +252,14 @@ enum OrbitConfig {
     }
 
     static var centerRadius: CGFloat {
-        (cardSize.dimension * 0.36).rounded()
+        (cardSize.dimension * 0.42).rounded()
     }
 
     /// File drops need a forgiving target: a Finder drag should not require
     /// pixel-perfect aim at the compact visual hub. Keep the target inside the
     /// ring's hollow center so it does not steal the surrounding app cards.
     static var centerDropRadius: CGFloat {
-        centerRadius + 56
+        centerRadius + 60
     }
 
     /// Canvas has to hold the outermost card corner plus its shadow and the
@@ -271,7 +271,9 @@ enum OrbitConfig {
     /// Widest the preview panel is allowed to get.
     static let previewPanelMaximumWidth: CGFloat = 1040
     /// Breathing room between the fan's outer edge and the preview panel.
-    static let previewGap: CGFloat = 56
+    static let previewGap: CGFloat = 28
+    /// Pulls the fan toward the preview without changing the preview's size.
+    static let previewRingShift: CGFloat = 20
 
     /// The panel claims whatever the fan leaves on screen, up to its maximum.
     /// A fixed width cannot serve both ends of this: the ring canvas grows

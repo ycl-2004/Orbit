@@ -624,6 +624,7 @@ struct OrbitRingView: View {
     var body: some View {
         HStack(spacing: -model.previewOverlap) {
             ringCanvas
+                .offset(x: model.showsPreview ? OrbitConfig.previewRingShift : 0)
 
             if model.showsPreview {
                 OrbitPreviewPanel(model: model)
@@ -704,6 +705,13 @@ struct OrbitRingView: View {
 /// side, matching the way a person scans a small stack of related screens.
 private struct OrbitPreviewPanel: View {
     @ObservedObject var model: OrbitRingViewModel
+
+    /// The panel frame tucks under the fan, but its content only needs a small
+    /// nudge toward the open side. Keeping this below half the overlap avoids
+    /// recreating the large visual gap that the frame geometry is meant to fix.
+    private var contentOffset: CGFloat {
+        model.previewOverlap * 0.2
+    }
 
     private var selectedIndex: Int {
         guard model.previews.indices.contains(model.selectedWindowIndex) else { return 0 }
@@ -801,7 +809,7 @@ private struct OrbitPreviewPanel: View {
         }
         // Center the group on the visible part of the panel rather than on the
         // panel itself, whose left edge sits under the fan.
-        .offset(x: model.previewOverlap / 2)
+        .offset(x: contentOffset)
     }
 
     private var windowControls: some View {
@@ -941,7 +949,7 @@ private struct OrbitPreviewPanel: View {
                 .stroke(.white.opacity(0.24), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
-        .offset(x: model.previewOverlap / 2)
+        .offset(x: contentOffset)
     }
 }
 
@@ -1174,9 +1182,14 @@ private struct OrbitCenterControl: View {
                                 height: OrbitConfig.centerRadius * 2
                             )
                             .overlay(Circle().stroke(centerStroke, lineWidth: 2))
+                            .shadow(
+                                color: centerStroke.opacity(0.28),
+                                radius: 12,
+                                y: 5
+                            )
 
                         Image(systemName: centerIcon)
-                            .font(.system(size: 26, weight: .semibold))
+                            .font(.system(size: 28, weight: .semibold))
                             .foregroundStyle(centerIconColor)
                     }
 
