@@ -5,10 +5,10 @@ most valuable contributions are usually precise bug reports and focused fixes.
 
 ## Before you start
 
-**Open an issue first for anything beyond a small fix.** The source is not under
-a permissive open-source license — see [LICENSE](LICENSE) — so a large PR that
-was never discussed may not be mergeable, and neither of us wants that. Bug
-fixes, documentation, and localization corrections are always welcome.
+**Open an issue first for anything beyond a small fix.** Orbit is source-available
+rather than permissively open source — see [LICENSE](LICENSE) — so a large PR
+that was never discussed may not be mergeable, and neither of us wants that.
+Bug fixes, documentation, and localization corrections are always welcome.
 
 Good bug reports include:
 
@@ -112,6 +112,22 @@ a screen recording to build it from real footage.
 
 ## License of contributions
 
-By submitting a pull request you agree that your contribution is licensed under
-the terms in [LICENSE](LICENSE) and that the copyright holder may distribute it
-as part of Orbit.
+By submitting a pull request you confirm that you wrote the contribution or
+otherwise have the right to submit it, and that it is not encumbered by anyone
+else's license or employment agreement.
+
+You grant the copyright holder a perpetual, worldwide, irrevocable,
+royalty-free, sublicensable and transferable license to use, reproduce, modify,
+adapt, publish, distribute, and relicense your contribution — in whole or in
+part, as part of Orbit or a successor work — under any terms, including
+commercial terms.
+This is what allows Orbit to be licensed commercially later without having to
+track down every past contributor.
+
+Your contribution is distributed to users under [LICENSE](LICENSE), and you keep
+the copyright in what you wrote. Submitting a contribution does not grant you
+permission to create or distribute a rebranded or commercial Orbit build.
+
+If you are not comfortable granting that license, say so in the issue before you
+write the code — a bug report we fix ourselves is worth more than a PR neither
+of us can use.

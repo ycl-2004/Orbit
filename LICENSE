@@ -1,19 +1,45 @@
-Orbit License
+# Orbit Source-Available License
 
 Copyright (c) 2026 ycl-2004
 All rights reserved.
 
+This is a source-available license, not an OSI-approved open-source license.
+Rights not expressly granted below are reserved by the copyright holder.
+
+Definitions
+
+"Personal Use" means use by an individual, on any number of devices that
+individual personally operates, including a device provided by an employer or a
+school. Using Orbit while doing your job is Personal Use.
+
+"Organizational Deployment" means installing, distributing, or managing Orbit
+across devices belonging to or administered by an organization, whether or not
+that organization is operated for profit.
+
+"Commercial Use" means Organizational Deployment, selling or licensing Orbit,
+bundling Orbit into a product or service offered to others, or using Orbit as a
+component of a paid product or service.
+
 Compiled Application
 
 Permission is granted to download, install, and use the compiled Orbit
-application for personal, non-commercial purposes.
+application for Personal Use.
+
+Organizational Deployment and all other Commercial Use require a separate
+written license from the copyright holder.
 
 Source Code
 
-The source code in this repository is made available for viewing and reference.
-Unless separate written permission is granted by the copyright holder, you may
-not copy, modify, redistribute, sublicense, sell, or use the source code or a
-derivative work for commercial purposes.
+The source code in this repository is made available for viewing and reference
+only. Unless separate written permission is granted by the copyright holder, you
+may not copy, modify, redistribute, sublicense, sell, publish a modified build,
+or use the source code or a derivative work of the source code for Commercial
+Use.
+
+Publishing this repository on GitHub may allow users to view or fork it within
+GitHub under GitHub's Terms of Service. That platform permission does not grant
+permission to externally redistribute the source, publish modified builds,
+create derivative works of the source code, or use Orbit commercially.
 
 Distribution
 
@@ -21,10 +47,54 @@ You may share links to the official Orbit repository and its official release
 downloads. You may not rehost or redistribute the source code, modified builds,
 or compiled application without written permission from the copyright holder.
 
-No Warranty
+Product Identity
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING
-FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+The Orbit name, logo, and Orbit's own screenshots, artwork, and official release
+identity are not licensed for rebranding, endorsement claims, or competing
+distributions. Permission to use the compiled application does not grant
+trademark or branding rights. Third-party names, logos, and application icons
+that appear within Orbit or in its documentation remain the property of their
+respective owners and are not licensed by this license.
+
+Commercial Licensing
+
+Commercial Use, integration into a paid or business product, distribution of a
+derivative work of the source code, or any other use outside the rights granted
+above requires a separate written license from the copyright holder. Requests
+may be sent through the GitHub profile associated with this repository
+(https://github.com/ycl-2004).
+
+Termination
+
+The permissions granted by this license terminate automatically if you breach
+any of its terms. Upon termination you must stop using and delete all copies of
+Orbit in your possession. Sections that by their nature should survive
+termination — including Product Identity, No Warranty, and Severability —
+continue to apply.
+
+Reservation of Statutory Rights
+
+Nothing in this license restricts any act that cannot lawfully be restricted
+under applicable law, including any non-waivable right to observe, study, or
+test the functioning of the software, or to decompile it to the extent necessary
+to achieve interoperability.
+
+No Warranty and Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED
+"AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+AND NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY
+CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH
+THE SOFTWARE OR ITS USE.
+
+Nothing in this license excludes or limits liability for death or personal
+injury caused by negligence, for fraud or fraudulent misrepresentation, or for
+any other liability that cannot lawfully be excluded or limited. Where you deal
+as a consumer, your statutory rights are unaffected.
+
+Severability
+
+If any provision of this license is held to be unenforceable or invalid, that
+provision shall be enforced to the maximum extent permissible and the remaining
+provisions shall remain in full force and effect.

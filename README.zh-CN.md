@@ -14,7 +14,7 @@
   <a href="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml"><img src="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/macOS-14.0%2B-111111?logo=apple&logoColor=white" alt="需要 macOS 14.0 或更高版本">
   <img src="https://img.shields.io/badge/Swift-SwiftUI%20%C2%B7%20AppKit-F05138?logo=swift&logoColor=white" alt="使用 SwiftUI 与 AppKit 构建">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-free%20for%20personal%20use-111111" alt="个人免费使用"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-source--available%20%7C%20personal%20use-111111" alt="可查看源码，个人使用"></a>
 </p>
 
 <p align="center">
@@ -42,6 +42,11 @@
 按住一个修饰键，正在运行的应用就环绕在鼠标周围。朝目标方向一甩、松手，切换完成。
 不用扫列表，不用连按 Command-Tab，也不用满屏找窗口。Orbit 是一个用 SwiftUI 和
 AppKit 写的菜单栏应用，没有任何第三方依赖，也不联网——所有处理都在本机完成。
+
+> **可查看源码，但不是开放源码项目。** Orbit 公开源码是为了方便了解实现、反馈问题、
+> 讨论产品和个人参考。官方编译版供个人免费使用——包括在公司配发的电脑上使用。在组织内
+> 批量部署，以及复制或修改源码、再分发、重新命名、销售，都需要获得书面许可。
+> 详见 [LICENSE](LICENSE)。
 
 ## 快速开始
 
@@ -144,7 +149,8 @@ README 与仓库内的产品截图保持同步。
 
 - 构建、测试与 PR 规范见 **[CONTRIBUTING.md](CONTRIBUTING.md)**。
 - 第一次参与？可以从 **[good first issue](https://github.com/ycl-2004/Orbit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)** 开始。
-- 较大的改动请先开 issue 讨论。本仓库源码并非宽松开源许可，详见 [LICENSE](LICENSE)。
+- 较大的改动请先开 issue 讨论。Orbit 属于可查看源码项目，而不是采用宽松开源许可的项目；
+  代码贡献需要先经过维护者确认，详见 [LICENSE](LICENSE)。
 
 ## 常见问题
 
@@ -164,7 +170,7 @@ README 与仓库内的产品截图保持同步。
 **辅助功能**权限是全局修饰键触发所必需的——没有它，你在 Orbit 自身窗口之外按下
 触发键时，macOS 不会通知 Orbit。**屏幕录制**权限只在你开启窗口预览时才请求，
 因为实时窗口缩略图属于屏幕内容；macOS 要求授权后重启 Orbit 才生效。所有画面都
-不会被保存或上传。
+不会被保存或上传——Orbit 究竟读取和保留了什么，详见[隐私政策](PRIVACY.md)。
 
 </details>
 
@@ -277,15 +283,24 @@ Orbit 是一个独立的原生 macOS 项目，围绕环形、手势优先的工�
 - 当前源码版本：`1.4.1（build 4）`。
 - App 默认使用英文界面；应用内语言选择器提供 English、简体中文、繁體中文、日本語、한국어、Deutsch、Français、Русский、Dansk、Norsk bokmål 和 Esperanto。
 
-## 许可证
+## 许可证与商业使用
 
-编译后的 App 可供个人免费、非商业使用；源码按 [LICENSE](LICENSE) 中的条款
-开放查看。
+Orbit 采用可查看源码的授权方式，而不是 OSI 认可的开放源码许可证：
+
+- 官方编译版供**个人使用**，可安装在你个人使用的任意机器上，包括公司配发的电脑。上班时用 Orbit 完全没问题。
+- **组织内部署**——在公司或机构的机器上批量安装、统一管理 Orbit——需要单独的书面授权，无论该组织是否以营利为目的。
+- 源码可用于查看和参考。
+- 复制、修改、再分发、再许可、销售、重新命名，或分发源码的衍生作品，都需要获得书面许可。
+- Orbit 的名称、Logo，以及 Orbit 自有的截图和美术素材，不授权用于重新包装或竞争性分发。
+
+完整条款请见 [LICENSE](LICENSE)。如需商业授权或再分发授权，请通过本仓库关联的
+GitHub 个人主页联系版权持有人。
 
 ## 链接
 
 - [下载最新版本](https://github.com/ycl-2004/Orbit/releases/latest)
 - [Issues](https://github.com/ycl-2004/Orbit/issues)
 - [贡献指南](CONTRIBUTING.md)
+- [隐私政策](PRIVACY.md)
 - [决策记录](docs/decisions)
 - [English README](README.md)

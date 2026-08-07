@@ -14,7 +14,7 @@
   <a href="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml"><img src="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/macOS-14.0%2B-111111?logo=apple&logoColor=white" alt="macOS 14.0 or later">
   <img src="https://img.shields.io/badge/Swift-SwiftUI%20%C2%B7%20AppKit-F05138?logo=swift&logoColor=white" alt="Built with SwiftUI and AppKit">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-free%20for%20personal%20use-111111" alt="Free for personal use"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-source--available%20%7C%20personal%20use-111111" alt="Source-available for personal use"></a>
 </p>
 
 <p align="center">
@@ -44,6 +44,12 @@ Flick toward the one you want and release. No list to scan, no Command-Tab
 cycling, no window hunting. Orbit is a menu bar app built in SwiftUI and AppKit,
 with no third-party dependencies and no network access — everything stays
 on-device.
+
+> **Source-available, not open source.** Orbit's source is public for transparency,
+> review, issue discussion, and personal reference. The official compiled app is
+> free for personal use — including on your work machine. Deploying it across an
+> organization, copying or modifying the source, redistributing, rebranding, or
+> selling requires written permission. See [LICENSE](LICENSE).
 
 ## Quick start
 
@@ -149,7 +155,9 @@ Orbit version are the most useful thing you can send.
 
 - Read **[CONTRIBUTING.md](CONTRIBUTING.md)** for the build, test, and PR conventions.
 - New here? Start with a **[good first issue](https://github.com/ycl-2004/Orbit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)**.
-- Please open an issue before a large change. The source is not under a permissive open-source license — see [LICENSE](LICENSE).
+- Please open an issue before a large change. Orbit is source-available rather than
+  permissively open source, so proposed code contributions need maintainer review
+  before they can be accepted — see [LICENSE](LICENSE).
 
 ## FAQ
 
@@ -170,7 +178,8 @@ the [roadmap](#roadmap).
 macOS will not tell Orbit that you are holding the trigger key outside its own
 windows. **Screen Recording** is requested only when you enable window previews,
 because live window thumbnails are screen content. macOS requires an Orbit
-restart after you grant it. Nothing captured is stored or transmitted.
+restart after you grant it. Nothing captured is stored or transmitted — see the
+[privacy policy](PRIVACY.md) for exactly what Orbit reads and keeps.
 
 </details>
 
@@ -290,15 +299,26 @@ gesture-first workflow. This repository provides:
 - Current source build: `1.4.1 (build 4)`.
 - English is the default app localization; the in-app picker ships English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, Russian, Danish, Norwegian Bokmål, and Esperanto.
 
-## License
+## License and commercial use
 
-The compiled app is free for personal, non-commercial use. The source is
-available for reference under the terms in [LICENSE](LICENSE).
+Orbit uses a source-available license rather than an OSI-approved open-source
+license:
+
+- The official compiled app is free for **personal use**, on any machine you personally use — a machine your employer gave you included. Using Orbit while doing your job is fine.
+- **Organizational deployment** — installing or managing Orbit across a company's or institution's machines — needs a separate written license, whether or not that organization is for-profit.
+- The source is available for viewing and reference.
+- Copying, modifying, redistributing, sublicensing, selling, rebranding, or distributing a derivative work of the source requires written permission.
+- The Orbit name, logo, and Orbit's own screenshots and artwork are not granted for rebranded or competing distributions.
+
+See the complete terms in [LICENSE](LICENSE). For commercial licensing or
+redistribution requests, contact the copyright holder through the GitHub profile
+associated with this repository.
 
 ## Links
 
 - [Download the latest release](https://github.com/ycl-2004/Orbit/releases/latest)
 - [Issues](https://github.com/ycl-2004/Orbit/issues)
 - [Contributing guide](CONTRIBUTING.md)
+- [Privacy policy](PRIVACY.md)
 - [Decision records](docs/decisions)
 - [Simplified Chinese README](README.zh-CN.md)
