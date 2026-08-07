@@ -21,5 +21,5 @@
 
 ### Validation
 
-- Debug build succeeds.
-- OrbitTests: 27 tests passed.
+- Release build succeeds and the app signature verifies successfully.
+- The test run was attempted but could not complete because CoreSimulatorService became unavailable in the build environment.
