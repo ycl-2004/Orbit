@@ -61,10 +61,10 @@ final class OrbitWindowController: NSObject {
 
         // Capture the real frontmost app before the Orbit panel enters the
         // window list. This prevents Orbit from excluding the wrong app. Whether
-        // it actually gets excluded is decided in AppListService, which already
+        // it actually gets excluded is decided in RunningAppCatalog, which already
         // has the window table in hand.
         let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
-        let apps = AppListService.shared.getRunningApps(frontmostProcessIdentifier: frontmostPID)
+        let apps = RunningAppCatalog.shared.collect(frontmostProcess: frontmostPID)
 
         // 一次唤出只挑一次屏幕，尺寸和摆放共用它。以前尺寸问 `NSScreen.main`、
         // 摆放问光标所在屏，双屏时两者根本不是同一块。
@@ -72,7 +72,7 @@ final class OrbitWindowController: NSObject {
 
         // 开着「唤出即选中最近应用」时，按住再松开就等价于 ⌘Tab。
         let preselecting = OrbitConfig.preselectRecentApp
-            ? AppListService.mostRecent(among: apps, rank: AppActivationHistory.shared.rank(of:))?.id
+            ? RunningAppCatalog.mostRecentlyUsed(in: apps, rank: AppActivationHistory.shared.rank(of:))?.id
             : nil
 
         let ringModel = OrbitRingViewModel(
@@ -124,10 +124,10 @@ final class OrbitWindowController: NSObject {
         model.handle(command, value: value)
     }
 
-    private func activate(_ app: AppInfo, windowTitle: String?) {
+    private func activate(_ app: AppRecord, windowTitle: String?) {
         dismissImmediately()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            _ = app.activate()
+            _ = app.bringToFront()
 
             // Raising has to follow activation, or the app pulls its own
             // frontmost window forward again.

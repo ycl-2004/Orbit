@@ -234,16 +234,16 @@ private struct ShortcutSettingsPane: View {
             Section {
                 // `assignable` rather than `allCases`: picking "Disabled" as the
                 // trigger would leave no way to summon the ring at all.
-                Picker("prefs.trigger.key", selection: $model.triggerModifier) {
-                    ForEach(TriggerModifier.assignable) { modifier in
-                        Text(modifier.localizedName).tag(modifier)
+                Picker("prefs.trigger.key", selection: $model.summonKey) {
+                    ForEach(ShortcutKey.usableForSummon) { key in
+                        Text(key.localizedTitle).tag(key)
                     }
                 }
                 .pickerStyle(.menu)
 
-                Picker("prefs.trigger.clearKey", selection: $model.clearSelectionModifier) {
-                    ForEach(model.clearSelectionChoices) { modifier in
-                        Text(modifier.localizedName).tag(modifier)
+                Picker("prefs.trigger.clearKey", selection: $model.clearSelectionKey) {
+                    ForEach(model.clearSelectionChoices) { key in
+                        Text(key.localizedTitle).tag(key)
                     }
                 }
                 .pickerStyle(.menu)
@@ -280,7 +280,7 @@ private struct ShortcutSettingsPane: View {
 
     private func cheatSheetEntries(model: SettingsModel) -> [CheatSheetEntry] {
         var entries: [CheatSheetEntry] = [
-            CheatSheetEntry(systemImage: "hand.tap", text: hint("prefs.hint.hold", model.triggerModifier.symbol)),
+            CheatSheetEntry(systemImage: "hand.tap", text: hint("prefs.hint.hold", model.summonKey.glyph)),
             CheatSheetEntry(systemImage: "arrow.up.arrow.down", text: hint("prefs.hint.move")),
         ]
         if model.letterShortcutsEnabled {
@@ -289,10 +289,10 @@ private struct ShortcutSettingsPane: View {
         if model.numericShortcutsEnabled {
             entries.append(CheatSheetEntry(systemImage: "number", text: hint("prefs.hint.numbers")))
         }
-        if model.clearSelectionModifier != .disabled {
+        if model.clearSelectionKey != .none {
             entries.append(CheatSheetEntry(
                 systemImage: "shift",
-                text: hint("prefs.hint.clear", model.clearSelectionModifier.symbol)
+                text: hint("prefs.hint.clear", model.clearSelectionKey.glyph)
             ))
         }
         entries.append(CheatSheetEntry(

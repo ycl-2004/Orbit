@@ -98,24 +98,19 @@ enum OrbitConfig {
         }
     }
 
-    /// 唤出 Orbit 的那个键。
-    ///
-    /// `.disabled` is deliberately not a legal answer here. It is a legal value of
-    /// the type — the clear-selection shortcut uses it to mean "off" — but as the
-    /// trigger it would make the ring unsummonable, since `handleFlagsChanged`
-    /// returns immediately on it. Healing the value on read also rescues anyone who
-    /// managed to store it before the settings picker stopped offering it.
-    static var triggerModifier: TriggerModifier {
+    /// The modifier that summons the ring. The stored key name remains stable so
+    /// existing installations keep their preference after the source refactor.
+    static var summonKey: ShortcutKey {
         get {
             guard let rawValue = defaults.string(forKey: "triggerModifier"),
-                  let modifier = TriggerModifier(rawValue: rawValue),
-                  modifier != .disabled else {
-                return .option
+                  let key = ShortcutKey(rawValue: rawValue),
+                  key != .none else {
+                return .alternate
             }
-            return modifier
+            return key
         }
         set {
-            let safeValue = newValue == .disabled ? .option : newValue
+            let safeValue = newValue == .none ? .alternate : newValue
             defaults.set(safeValue.rawValue, forKey: "triggerModifier")
         }
     }
@@ -133,14 +128,12 @@ enum OrbitConfig {
         }
     }
 
-    /// Tapped while the ring is open, this clears the current selection so
-    /// releasing the trigger dismisses without switching apps. Never allowed
-    /// to be the trigger key itself.
-    static var clearSelectionModifier: TriggerModifier {
+    /// Optional key that clears a selection while the ring is open.
+    static var clearSelectionKey: ShortcutKey {
         get {
             let stored = defaults.string(forKey: "clearSelectionModifier")
-                .flatMap(TriggerModifier.init(rawValue:)) ?? .shift
-            return stored == triggerModifier ? .disabled : stored
+                .flatMap(ShortcutKey.init(rawValue:)) ?? .shift
+            return stored == summonKey ? .none : stored
         }
         set {
             defaults.set(newValue.rawValue, forKey: "clearSelectionModifier")
@@ -526,8 +519,8 @@ enum OrbitConfig {
     static let minimumRealWindowSize = CGSize(width: 200, height: 120)
 
     static let maxVisibleApps = 12
-    static let dissolveParticleCount = 72
-    static let dissolveDuration: TimeInterval = 0.55
+    static let dispersionParticleCount = 72
+    static let dispersionDuration: TimeInterval = 0.55
     static let terminateGracePeriod: TimeInterval = 0.45
     static let fileTrashHoldDuration: TimeInterval = 0.9
 

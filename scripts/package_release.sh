@@ -4,6 +4,7 @@
 set -euo pipefail
 
 VERSION="${1:-1.4.0}"
+SIGNING_IDENTITY="${SIGNING_IDENTITY:--}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$PROJECT_DIR/Build"
 BUILT_APP="$BUILD_DIR/Release/Orbit.app"
@@ -22,9 +23,17 @@ echo "==> Building Orbit $VERSION (Release)"
 xcodebuild -quiet -project Orbit.xcodeproj -scheme Orbit \
     -configuration Release -derivedDataPath Build \
     MARKETING_VERSION="$VERSION" \
-    CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
+    ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
+    CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" build
 
 [ -d "$BUILT_APP" ] || { echo "Build produced no app at $BUILT_APP" >&2; exit 1; }
+
+ARCHES="$(lipo -archs "$BUILT_APP/Contents/MacOS/Orbit")"
+[[ " $ARCHES " == *" arm64 "* && " $ARCHES " == *" x86_64 "* ]] || {
+    echo "Release executable is not Universal 2; found architectures: $ARCHES" >&2
+    exit 1
+}
+echo "==> Universal 2 architectures: $ARCHES"
 
 echo "==> Verifying signature"
 codesign --verify --deep --strict "$BUILT_APP"

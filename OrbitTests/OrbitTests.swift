@@ -28,41 +28,41 @@ struct OrbitTests {
         return body()
     }
 
-    @Test func modifierRejectsMixedModifierFlags() {
-        let option = TriggerModifier.option
-        #expect(option.isPressed(in: [.maskAlternate]))
-        #expect(option.otherModifiersPressed(in: [.maskAlternate, .maskShift]))
-        #expect(!option.otherModifiersPressed(in: [.maskAlternate]))
+    @Test func shortcutKeyRejectsMixedModifierFlags() {
+        let alternate = ShortcutKey.alternate
+        #expect(alternate.isDown(in: [.maskAlternate]))
+        #expect(alternate.conflictsWithAnotherModifier(in: [.maskAlternate, .maskShift]))
+        #expect(!alternate.conflictsWithAnotherModifier(in: [.maskAlternate]))
     }
 
     /// `.disabled` 的掩码是空集，而 `OptionSet.contains([])` 恒为 `true`。
     /// 一旦这层保护被拿掉，"关闭取消选择键"会退化成"永远按着"。
-    @Test func disabledModifierNeverCountsAsPressed() {
-        let disabled = TriggerModifier.disabled
-        #expect(!disabled.isPressed(in: []))
-        #expect(!disabled.isPressed(in: [.maskCommand, .maskShift]))
-        #expect(!disabled.otherModifiersPressed(in: [.maskCommand, .maskShift]))
+    @Test func optionalShortcutNeverCountsAsPressed() {
+        let absent = ShortcutKey.none
+        #expect(!absent.isDown(in: []))
+        #expect(!absent.isDown(in: [.maskCommand, .maskShift]))
+        #expect(!absent.conflictsWithAnotherModifier(in: [.maskCommand, .maskShift]))
     }
 
     /// 非修饰键的事件位（例如数字键盘标志）不该让触发手势失效。
     @Test func unrelatedEventFlagsDoNotCountAsCompetingModifiers() {
-        let control = TriggerModifier.control
-        #expect(control.isPressed(in: [.maskControl, .maskNumericPad]))
-        #expect(!control.otherModifiersPressed(in: [.maskControl, .maskNumericPad]))
-        #expect(control.otherModifiersPressed(in: [.maskControl, .maskCommand]))
+        let control = ShortcutKey.control
+        #expect(control.isDown(in: [.maskControl, .maskNumericPad]))
+        #expect(!control.conflictsWithAnotherModifier(in: [.maskControl, .maskNumericPad]))
+        #expect(control.conflictsWithAnotherModifier(in: [.maskControl, .maskCommand]))
     }
 
     @Test func onlyRealModifiersAreAssignable() {
-        #expect(!TriggerModifier.assignable.contains(.disabled))
-        #expect(TriggerModifier.assignable.count == TriggerModifier.allCases.count - 1)
+        #expect(!ShortcutKey.usableForSummon.contains(.none))
+        #expect(ShortcutKey.usableForSummon.count == ShortcutKey.allCases.count - 1)
     }
 
     /// 中心区域只在悬停阶段接收拖放；松手之后不该再响应。
     @Test func onlyHoveringPhasesReceiveTheDrop() {
-        #expect(!FileDropPhase.idle.isReceiving)
-        #expect(FileDropPhase.hovering.isReceiving)
-        #expect(FileDropPhase.trashArmed.isReceiving)
-        #expect(!FileDropPhase.completing.isReceiving)
+        #expect(!DropLifecycle.resting.acceptsHover)
+        #expect(DropLifecycle.sharing.acceptsHover)
+        #expect(DropLifecycle.trashReady.acceptsHover)
+        #expect(!DropLifecycle.processing.acceptsHover)
     }
 
     /// 窗口表里绝大多数条目都不是「用户心里的那种窗口」。
@@ -86,20 +86,20 @@ struct OrbitTests {
             ]
         }
 
-        #expect(WindowVisibilityChecker.isRealWindow(window()))
+        #expect(WindowServerInspector.qualifiesAsWindow(window()))
         // 菜单栏、Dock、悬浮面板都在非 0 层。
-        #expect(!WindowVisibilityChecker.isRealWindow(window(layer: 25)))
+        #expect(!WindowServerInspector.qualifiesAsWindow(window(layer: 25)))
         // 完全透明的窗口在屏幕上等于不存在。
-        #expect(!WindowVisibilityChecker.isRealWindow(window(alpha: 0)))
+        #expect(!WindowServerInspector.qualifiesAsWindow(window(alpha: 0)))
         // 自动填充气泡这类小面板不足以让一个应用值得切过去。
-        #expect(!WindowVisibilityChecker.isRealWindow(window(width: 120, height: 80)))
-        #expect(!WindowVisibilityChecker.isRealWindow([:]))
+        #expect(!WindowServerInspector.qualifiesAsWindow(window(width: 120, height: 80)))
+        #expect(!WindowServerInspector.qualifiesAsWindow([:]))
     }
 
     /// 尺寸门槛必须和预览侧共用一个来源，否则会出现「环上有卡片、预览说没窗口」。
     @Test func windowSizeThresholdIsSharedWithThePreview() {
         let size = OrbitConfig.minimumRealWindowSize
-        #expect(WindowVisibilityChecker.isRealWindow([
+        #expect(WindowServerInspector.qualifiesAsWindow([
             kCGWindowLayer as String: 0,
             kCGWindowBounds as String: [
                 "X": 0, "Y": 0, "Width": size.width, "Height": size.height,
@@ -126,11 +126,11 @@ struct OrbitTests {
         }
 
         // 读不到标题时只能放行，否则每个应用都会被当成没有窗口。
-        #expect(WindowVisibilityChecker.isRealWindow(window()))
+        #expect(WindowServerInspector.qualifiesAsWindow(window()))
 
-        #expect(!WindowVisibilityChecker.isRealWindow(window(), requiringTitle: true))
-        #expect(!WindowVisibilityChecker.isRealWindow(window(title: ""), requiringTitle: true))
-        #expect(WindowVisibilityChecker.isRealWindow(
+        #expect(!WindowServerInspector.qualifiesAsWindow(window(), requiringTitle: true))
+        #expect(!WindowServerInspector.qualifiesAsWindow(window(title: ""), requiringTitle: true))
+        #expect(WindowServerInspector.qualifiesAsWindow(
             window(title: "Orbit — -zsh — 80×24"),
             requiringTitle: true
         ))
@@ -138,13 +138,13 @@ struct OrbitTests {
 
     /// "问不出来"必须和"没有窗口"分开。
     ///
-    /// The fallback in `AppListService` keys off `nil`, and nothing else. Keying
+    /// The fallback in the application catalog keys off `nil`, and nothing else. Keying
     /// it off an empty result is what let the title filter silently disable the
     /// whole setting: the filtered list came back empty and every windowless app
     /// was handed straight back.
     @Test func anUnanswerableWindowListIsNotAnEmptyOne() {
         // 窗口服务在这台机器上一定答得上来，哪怕答案里一个进程都没有。
-        #expect(WindowVisibilityChecker.processesWithWindows() != nil)
+        #expect(WindowServerInspector.windowOwners() != nil)
     }
 
     /// 默认开启：`defaults.bool(forKey:)` 对没写过的键返回 false，正好是反的。
@@ -181,8 +181,8 @@ struct OrbitTests {
     }
 
     /// 排序只看 id 和 name，其余字段给个能过编译的值就行。
-    private func listed(_ id: String, _ name: String) -> AppInfo {
-        AppInfo(
+    private func listed(_ id: String, _ name: String) -> AppRecord {
+        AppRecord(
             id: id,
             name: name,
             icon: NSImage(size: NSSize(width: 1, height: 1)),
@@ -202,7 +202,7 @@ struct OrbitTests {
             listed("com.c", "Charlie")
         ]
 
-        let sorted = AppListService.byRecency(apps) { recent.firstIndex(of: $0) }
+        let sorted = RunningAppCatalog.orderedByUse(apps) { recent.firstIndex(of: $0) }
 
         // 有记录的按记录的先后，没记录的跟在后面按名字。
         #expect(sorted.map(\.id) == ["com.c", "com.a", "com.m", "com.z"])
@@ -217,7 +217,7 @@ struct OrbitTests {
             listed("com.m", "Mid")
         ]
 
-        let sorted = AppListService.byRecency(apps) { _ in nil }
+        let sorted = RunningAppCatalog.orderedByUse(apps) { _ in nil }
 
         #expect(sorted.map(\.name) == ["Alpha", "Mid", "Zed"])
     }
@@ -232,7 +232,7 @@ struct OrbitTests {
             listed("com.m", "Mid")
         ]
 
-        let recentApp = AppListService.mostRecent(among: alphabetical) { recent.firstIndex(of: $0) }
+        let recentApp = RunningAppCatalog.mostRecentlyUsed(in: alphabetical) { recent.firstIndex(of: $0) }
 
         #expect(recentApp?.id == "com.c")
     }
@@ -240,9 +240,9 @@ struct OrbitTests {
     /// Orbit 自己的卡片是清理目标，不是一个可以切过去的应用；即使它排在最前面，
     /// 预选也绝不能落在它身上。
     @Test func orbitsOwnCardIsNeverThePreselection() {
-        let apps = [AppInfo.orbit, listed("com.a", "Alpha")]
+        let apps = [AppRecord.orbitCard, listed("com.a", "Alpha")]
 
-        let recentApp = AppListService.mostRecent(among: apps) { _ in 0 }
+        let recentApp = RunningAppCatalog.mostRecentlyUsed(in: apps) { _ in 0 }
 
         #expect(recentApp?.isOrbit == false)
         #expect(recentApp?.id == "com.a")
@@ -271,22 +271,22 @@ struct OrbitTests {
         }
 
         OrbitConfig.showOrbitCard = true
-        let shown = OrbitRingViewModel(apps: [.orbit], showsPreview: false)
+        let shown = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
         #expect(shown.apps.contains(where: { $0.isOrbit }))
 
         OrbitConfig.showOrbitCard = false
-        let hidden = OrbitRingViewModel(apps: [.orbit], showsPreview: false)
+        let hidden = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
         #expect(!hidden.apps.contains(where: { $0.isOrbit }))
     }
 
     @Test @MainActor func orbitCleanupKeepsRingOpenUntilTriggerRelease() {
-        let model = OrbitRingViewModel(apps: [.orbit], showsPreview: false)
+        let model = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
         var didCancel = false
         model.onCancel = { didCancel = true }
 
-        model.beginAppDrag(.orbit)
-        model.updateAppDrag(.orbit, offset: .zero, overCenter: true)
-        model.finishAppDrag(.orbit)
+        model.beginAppDrag(.orbitCard)
+        model.updateAppDrag(.orbitCard, offset: .zero, overCenter: true)
+        model.finishAppDrag(.orbitCard)
 
         #expect(!didCancel)
 
@@ -295,8 +295,8 @@ struct OrbitTests {
     }
 
     @Test func firstLetterFoldsAccentsAndNonLatinNames() {
-        func app(named name: String) -> AppInfo {
-            AppInfo(
+        func app(named name: String) -> AppRecord {
+            AppRecord(
                 id: name,
                 name: name,
                 icon: NSImage(size: NSSize(width: 1, height: 1)),
@@ -305,11 +305,11 @@ struct OrbitTests {
             )
         }
 
-        #expect(app(named: "Safari").firstLetter == "S")
-        #expect(app(named: "  Éditeur").firstLetter == "E")
-        #expect(app(named: "微信").firstLetter == "W")
-        #expect(app(named: "123").firstLetter == nil)
-        #expect(app(named: "   ").firstLetter == nil)
+        #expect(app(named: "Safari").letterShortcut == "S")
+        #expect(app(named: "  Éditeur").letterShortcut == "E")
+        #expect(app(named: "微信").letterShortcut == "W")
+        #expect(app(named: "123").letterShortcut == nil)
+        #expect(app(named: "   ").letterShortcut == nil)
     }
 
     @Test @MainActor func releasingWithoutSelectionCancels() {
@@ -354,8 +354,8 @@ struct OrbitTests {
     /// 悬停到黑洞出现、再把文件拖走而不放手，环必须还能关掉。
     ///
     /// The exit path used to bail out whenever the trash was armed, so
-    /// `fileDropPhase` stayed on `.trashArmed` forever. Both `cancel()` and
-    /// `triggerReleased()` require `.idle`, which left the ring floating over
+    /// `fileDropPhase` stayed on `.trashReady` forever. Both `cancel()` and
+    /// `triggerReleased()` require `.resting`, which left the ring floating over
     /// everything with Escape, the trigger key and the hub all inert.
     @Test @MainActor func draggingFilesAwayAfterTheTrashArmsStillLetsTheRingClose() async throws {
         let model = OrbitRingViewModel(apps: [])
@@ -369,7 +369,7 @@ struct OrbitTests {
         // 文件离开了窗口，但用户并没有放手 —— 不会有 drop 回调来收拾状态。
         model.setFileDragTargeted(false)
         try await Task.sleep(for: .seconds(OrbitConfig.fileDragExitGrace + 0.2))
-        #expect(model.fileDropPhase == .idle)
+        #expect(model.fileDropPhase == .resting)
         #expect(model.centerMode == .cancel)
 
         model.triggerReleased()
@@ -388,20 +388,20 @@ struct OrbitTests {
         model.onCancel = { didCancel = true }
 
         _ = model.handleFileDrop([])
-        #expect(model.fileDropPhase == .completing)
+        #expect(model.fileDropPhase == .processing)
 
         model.cancel()
         #expect(!didCancel)
 
         try await Task.sleep(for: .milliseconds(200))
-        #expect(model.fileDropPhase == .idle)
+        #expect(model.fileDropPhase == .resting)
         #expect(didCancel)
     }
 
     /// 同一个窗口里点中心也不能切走 —— 切换会关闭环，代价和取消一样。
     @Test @MainActor func theHubDoesNotSwitchAppsWhileADropIsCompleting() async throws {
         let model = OrbitRingViewModel(apps: [listed("com.a", "Alpha")])
-        var activated: AppInfo?
+        var activated: AppRecord?
         model.onActivate = { app, _ in activated = app }
         model.select(model.apps[0])
 
@@ -440,19 +440,19 @@ struct OrbitTests {
         #expect(!didCancel)
     }
 
-    /// 触发键设成 `.disabled` 会让环再也唤不出来，所以它连存都不该存得住。
-    @Test func triggerModifierNeverResolvesToDisabled() {
+    /// 触发键设成 `.none` 会让环再也唤不出来，所以它连存都不该存得住。
+    @Test @MainActor func summonKeyAlwaysHasAValue() {
         let previous = UserDefaults.standard.object(forKey: "triggerModifier")
         defer { UserDefaults.standard.set(previous, forKey: "triggerModifier") }
 
-        UserDefaults.standard.set(TriggerModifier.disabled.rawValue, forKey: "triggerModifier")
+        UserDefaults.standard.set(ShortcutKey.none.rawValue, forKey: "triggerModifier")
 
-        #expect(OrbitConfig.triggerModifier != .disabled)
-        #expect(!TriggerModifier.assignable.contains(.disabled))
+        #expect(OrbitConfig.summonKey != .none)
+        #expect(!ShortcutKey.usableForSummon.contains(.none))
 
-        OrbitConfig.triggerModifier = .disabled
+        OrbitConfig.summonKey = .none
         #expect(
-            UserDefaults.standard.string(forKey: "triggerModifier") == TriggerModifier.option.rawValue
+            UserDefaults.standard.string(forKey: "triggerModifier") == ShortcutKey.alternate.rawValue
         )
     }
 
@@ -474,7 +474,7 @@ struct OrbitTests {
     }
 
     @Test @MainActor func selectionDoesNotActivateUntilConfirmed() {
-        let app = AppInfo(
+        let app = AppRecord(
             id: "test.orbit.app",
             name: "Test App",
             icon: NSImage(size: NSSize(width: 32, height: 32)),
@@ -493,14 +493,14 @@ struct OrbitTests {
     }
 
     @Test @MainActor func keyboardNavigationSelectsWithoutActivating() {
-        let first = AppInfo(
+        let first = AppRecord(
             id: "test.orbit.first",
             name: "First App",
             icon: NSImage(size: NSSize(width: 32, height: 32)),
             bundleURL: nil,
             processIdentifier: getpid()
         )
-        let second = AppInfo(
+        let second = AppRecord(
             id: "test.orbit.second",
             name: "Second App",
             icon: NSImage(size: NSSize(width: 32, height: 32)),
@@ -524,7 +524,7 @@ struct OrbitTests {
     }
 
     @Test @MainActor func deselectingLetsTheTriggerDismissWithoutActivating() {
-        let app = AppInfo(
+        let app = AppRecord(
             id: "test.orbit.app",
             name: "Test App",
             icon: NSImage(size: NSSize(width: 32, height: 32)),
@@ -551,7 +551,7 @@ struct OrbitTests {
     @Test @MainActor func arrowingAfterDeselectResumesWhereItLeftOff() {
         withShortcutSettings(numbers: true) {
             let apps = ["Safari", "Xcode", "Terminal", "Notes"].enumerated().map { index, name in
-                AppInfo(
+                AppRecord(
                     id: "test.orbit.\(index)",
                     name: name,
                     icon: NSImage(size: NSSize(width: 32, height: 32)),
@@ -580,7 +580,7 @@ struct OrbitTests {
     @Test @MainActor func deselectTwiceStillResumesFromTheLatestPosition() {
         withShortcutSettings(numbers: true) {
             let apps = ["Safari", "Xcode", "Terminal"].enumerated().map { index, name in
-                AppInfo(
+                AppRecord(
                     id: "test.orbit.\(index)",
                     name: name,
                     icon: NSImage(size: NSSize(width: 32, height: 32)),
@@ -605,7 +605,7 @@ struct OrbitTests {
     @Test @MainActor func numberAndLetterCommandsSelectExpectedCards() {
         withShortcutSettings(letters: true, numbers: true) {
             let apps = ["Safari", "Xcode", "Terminal"].enumerated().map { index, name in
-                AppInfo(
+                AppRecord(
                     id: "test.orbit.\(index)",
                     name: name,
                     icon: NSImage(size: NSSize(width: 32, height: 32)),
@@ -626,7 +626,7 @@ struct OrbitTests {
     @Test @MainActor func optionalShortcutsStayDisabledByDefault() {
         withShortcutSettings {
             let apps = ["Safari", "Xcode"].enumerated().map { index, name in
-                AppInfo(
+                AppRecord(
                     id: "test.orbit.\(index)",
                     name: name,
                     icon: NSImage(size: NSSize(width: 32, height: 32)),

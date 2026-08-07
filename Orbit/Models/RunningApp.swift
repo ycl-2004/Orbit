@@ -1,13 +1,13 @@
 //
-//  AppInfo.swift
+//  RunningApp.swift
 //  Orbit
 //
 
 import AppKit
 import Foundation
 
-/// 环形界面上的一张卡片所代表的、正在运行的应用。
-struct AppInfo: Identifiable, Equatable {
+/// A running application as represented by one card in Orbit.
+struct AppRecord: Identifiable, Equatable {
     let id: String
     let name: String
     let icon: NSImage
@@ -32,7 +32,7 @@ struct AppInfo: Identifiable, Equatable {
     }
 
     /// 两条记录指向同一个应用即视为相等；图标对象换了新实例不算变化。
-    static func == (lhs: AppInfo, rhs: AppInfo) -> Bool {
+    static func == (lhs: AppRecord, rhs: AppRecord) -> Bool {
         lhs.id == rhs.id
     }
 
@@ -41,12 +41,12 @@ struct AppInfo: Identifiable, Equatable {
     }
 }
 
-extension AppInfo {
+extension AppRecord {
     /// Orbit is a menu-bar app, so it has no regular document window to discover
     /// through `NSWorkspace`. It is still a real card in the ring, built from
     /// the app's own icon and process identity.
-    static var orbit: AppInfo {
-        AppInfo(
+    static var orbitCard: AppRecord {
+        AppRecord(
             id: Bundle.main.bundleIdentifier ?? "app.orbit",
             name: NSLocalizedString("app.orbit", comment: "Orbit app name"),
             icon: NSApp.applicationIconImage,
@@ -59,14 +59,14 @@ extension AppInfo {
 
 // MARK: - 键盘快捷键
 
-extension AppInfo {
-    /// 用于字母快捷键的首字母。
+extension AppRecord {
+    /// The first Latin letter used by the optional name shortcut.
     ///
     /// The name is folded to Latin first, so 「微信」 answers to W (via *Wēixìn*)
     /// and *Éditeur* answers to E. Anything that still has no letter after
     /// folding — an app named only with digits or symbols — simply has no letter
     /// shortcut rather than claiming a wrong one.
-    var firstLetter: Character? {
+    var letterShortcut: Character? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
@@ -82,15 +82,15 @@ extension AppInfo {
 
 // MARK: - 激活
 
-extension AppInfo {
-    /// 把这个应用切到前台。
+extension AppRecord {
+    /// Bring the application to the foreground, reopening its bundle if needed.
     ///
     /// 分两级降级：先用 `NSRunningApplication` 直接激活；如果它成功了但应用一个
     /// 可见窗口都没有（Dock 里点一下才会重新开窗的那类应用），再用 `NSWorkspace`
     /// 重新 open 一次 bundle，等价于用户点 Dock 图标。
     /// - Returns: 是否已经发出了有效的激活请求。
     @discardableResult
-    func activate() -> Bool {
+    func bringToFront() -> Bool {
         if let running = NSRunningApplication(processIdentifier: processIdentifier) {
             if running.isHidden {
                 running.unhide()
@@ -98,7 +98,7 @@ extension AppInfo {
 
             if running.activate(options: [.activateAllWindows]) {
                 // 激活成功但没有窗口：让 bundle 自己重开一个。
-                if !WindowVisibilityChecker.hasVisibleWindow(processIdentifier: processIdentifier) {
+                if !WindowServerInspector.hasOnscreenWindow(processIdentifier: processIdentifier) {
                     reopenBundle()
                 }
                 return true
@@ -128,8 +128,8 @@ extension AppInfo {
 
 // MARK: - 退出
 
-extension AppInfo {
-    /// 请求这个应用退出。
+extension AppRecord {
+    /// Ask the application to quit and report whether it exited during the grace period.
     ///
     /// 只做礼貌退出，绝不 force kill。一个不肯退出的应用通常正卡在"有未保存的更改"
     /// 对话框上，强杀会直接丢掉用户的工作 —— 比留一张卡片在环上糟糕得多。这种情况
@@ -137,7 +137,7 @@ extension AppInfo {
     /// - Parameters:
     ///   - gracePeriod: 等待应用自行退出的秒数。
     ///   - completion: 回调参数为宽限期结束时该应用是否真的已经退出。
-    func terminate(
+    func requestQuit(
         gracePeriod: TimeInterval = OrbitConfig.terminateGracePeriod,
         completion: @escaping (Bool) -> Void
     ) {

@@ -99,7 +99,7 @@ final class AppActivationHistory {
         }
 
         var seen: Set<pid_t> = []
-        for window in windows where WindowVisibilityChecker.isRealWindow(window) {
+        for window in windows where WindowServerInspector.qualifiesAsWindow(window) {
             guard let raw = window[kCGWindowOwnerPID as String] as? Int else { continue }
             let pid = pid_t(raw)
             guard seen.insert(pid).inserted else { continue }

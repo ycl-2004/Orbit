@@ -25,19 +25,19 @@ final class SettingsModel: ObservableObject {
         didSet { writeThrough { OrbitConfig.longPressThreshold = longPressThreshold } }
     }
 
-    @Published var triggerModifier: TriggerModifier = OrbitConfig.triggerModifier {
+    @Published var summonKey: ShortcutKey = OrbitConfig.summonKey {
         didSet {
             writeThrough {
-                OrbitConfig.triggerModifier = triggerModifier
+                OrbitConfig.summonKey = summonKey
                 // 把触发键设成原本的"取消选择键"会让后者自动失效，
                 // 所以要把 OrbitConfig 消解后的结果读回来。
-                syncing { clearSelectionModifier = OrbitConfig.clearSelectionModifier }
+                syncing { clearSelectionKey = OrbitConfig.clearSelectionKey }
             }
         }
     }
 
-    @Published var clearSelectionModifier: TriggerModifier = OrbitConfig.clearSelectionModifier {
-        didSet { writeThrough { OrbitConfig.clearSelectionModifier = clearSelectionModifier } }
+    @Published var clearSelectionKey: ShortcutKey = OrbitConfig.clearSelectionKey {
+        didSet { writeThrough { OrbitConfig.clearSelectionKey = clearSelectionKey } }
     }
 
     @Published var letterShortcutsEnabled: Bool = OrbitConfig.letterShortcutsEnabled {
@@ -191,8 +191,8 @@ final class SettingsModel: ObservableObject {
     func reload() {
         syncing {
             longPressThreshold = OrbitConfig.longPressThreshold
-            triggerModifier = OrbitConfig.triggerModifier
-            clearSelectionModifier = OrbitConfig.clearSelectionModifier
+            summonKey = OrbitConfig.summonKey
+            clearSelectionKey = OrbitConfig.clearSelectionKey
             letterShortcutsEnabled = OrbitConfig.letterShortcutsEnabled
             numericShortcutsEnabled = OrbitConfig.numericShortcutsEnabled
             ringPlacement = OrbitConfig.ringPlacement
@@ -214,8 +214,8 @@ final class SettingsModel: ObservableObject {
     }
 
     /// 可以作为"取消选择键"的候选：不能跟触发键是同一个。
-    var clearSelectionChoices: [TriggerModifier] {
-        TriggerModifier.allCases.filter { $0 != triggerModifier }
+    var clearSelectionChoices: [ShortcutKey] {
+        ShortcutKey.allCases.filter { $0 != summonKey }
     }
 
     private func writeThrough(_ persist: () -> Void) {

@@ -69,9 +69,9 @@ final class HotKeyService {
     fileprivate var orbitIsOpen: Bool {
         guard orbitHasOpened else { return false }
 
-        let modifier = OrbitConfig.triggerModifier
-        guard modifier != .disabled else { return false }
-        return modifier.isPressed(in: CGEventSource.flagsState(.combinedSessionState))
+        let key = OrbitConfig.summonKey
+        guard key != .none else { return false }
+        return key.isDown(in: CGEventSource.flagsState(.combinedSessionState))
     }
 
     /// The ring can close without the trigger being released — Escape, a
@@ -85,9 +85,9 @@ final class HotKeyService {
     /// Tapped while the ring is open, this clears the current selection.
     /// `nil` when the user has turned the shortcut off.
     private var clearSelectionFlag: CGEventFlags? {
-        let modifier = OrbitConfig.clearSelectionModifier
-        guard modifier != .disabled else { return nil }
-        return modifier.cgFlag
+        let key = OrbitConfig.clearSelectionKey
+        guard key != .none else { return nil }
+        return key.eventFlags
     }
 
     private init() {}
@@ -156,8 +156,8 @@ final class HotKeyService {
     }
 
     fileprivate func handleFlagsChanged(_ flags: CGEventFlags) {
-        let modifier = OrbitConfig.triggerModifier
-        guard modifier != .disabled else { return }
+        let key = OrbitConfig.summonKey
+        guard key != .none else { return }
 
         // Track the clear key on its own edge, so holding it down does not
         // fire repeatedly and releasing it does nothing.
@@ -167,8 +167,8 @@ final class HotKeyService {
         }
         clearKeyPressed = clearDown
 
-        let pressed = modifier.isPressed(in: flags)
-        if pressed && modifier.otherModifiersPressed(in: flags) {
+        let pressed = key.isDown(in: flags)
+        if pressed && key.conflictsWithAnotherModifier(in: flags) {
             // Once the ring is up a second modifier is a command, not a
             // reason to abandon the trigger — abandoning it here used to
             // leave the ring stranded on screen after the trigger released.

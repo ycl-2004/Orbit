@@ -28,7 +28,8 @@
 
 ### Validation
 
-- The full clean test suite passed: 37 `OrbitTests` tests and 2 `OrbitUITests` tests, with 0 failures.
+- The full clean test suite contains 36 `OrbitTests` tests and 2 `OrbitUITests` tests; the 36 unit tests passed with 0 failures.
+- Release artifacts are Universal 2 (`arm64` + `x86_64`) and are checked before publishing.
 - The release build is marketing version `1.4.0`, build `3`.
 
 ## 1.3.0 — 2026-08-06

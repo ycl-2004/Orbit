@@ -11,6 +11,7 @@
 <p align="center">
   <a href="https://github.com/ycl-2004/Orbit/releases/latest"><img src="https://img.shields.io/github/v/release/ycl-2004/Orbit?label=release&color=111111" alt="Latest release"></a>
   <a href="https://github.com/ycl-2004/Orbit/releases"><img src="https://img.shields.io/github/downloads/ycl-2004/Orbit/total?label=downloads&color=111111" alt="Total downloads"></a>
+  <a href="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml"><img src="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/macOS-14.0%2B-111111?logo=apple&logoColor=white" alt="macOS 14.0 or later">
   <img src="https://img.shields.io/badge/Swift-SwiftUI%20%C2%B7%20AppKit-F05138?logo=swift&logoColor=white" alt="Built with SwiftUI and AppKit">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-free%20for%20personal%20use-111111" alt="Free for personal use"></a>
@@ -46,7 +47,7 @@ on-device.
 
 ## Quick start
 
-1. **[Download `Orbit-macOS.zip`](https://github.com/ycl-2004/Orbit/releases/latest/download/Orbit-macOS.zip)** and unzip it. Requires macOS 14.0 or later.
+1. **[Download `Orbit-macOS.zip`](https://github.com/ycl-2004/Orbit/releases/latest/download/Orbit-macOS.zip)** and unzip it. Requires macOS 14.0 or later; the release is a Universal 2 build for Apple Silicon and Intel Macs.
 2. Move `Orbit.app` to `/Applications`. On first launch, Control-click it and choose **Open** — the build is ad-hoc signed, not Apple-notarized, so a regular double-click is blocked.
 3. Grant **Accessibility** permission when asked, then hold **Option (⌥)** anywhere to summon the ring.
 
@@ -213,6 +214,7 @@ transfers are handed to macOS and never touch an Orbit-controlled server.
 Requirements:
 
 - macOS 14.0 or later for the current reconstructed Xcode project.
+- Universal 2 release artifacts contain both `arm64` and `x86_64`; the downloadable release supports Apple Silicon and Intel Macs.
 - Xcode 26 or later.
 - Accessibility permission for the global modifier-key trigger.
 - Screen Recording permission if live window previews are enabled.
@@ -256,6 +258,11 @@ The repository intentionally excludes generated build products, DerivedData,
 Xcode user state, local environment files, secrets, logs, and local workflow
 state. The source files, assets, tests, project file, workspace data, and
 public documentation remain tracked.
+
+Release verification, including Universal 2 checks and the clean-machine
+installation/permission regression checklist, is documented in
+[docs/release-checklist.md](docs/release-checklist.md). GitHub Actions runs the
+metadata check, Debug build, and 36 `OrbitTests` tests on every push and pull request.
 
 </details>
 

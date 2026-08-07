@@ -1,5 +1,5 @@
 //
-//  OrbitApp.swift
+//  ApplicationShell.swift
 //  Orbit
 //
 
@@ -7,8 +7,8 @@ import AppKit
 import SwiftUI
 
 @main
-struct OrbitApp: App {
-    @NSApplicationDelegateAdaptor(OrbitAppDelegate.self) private var delegate
+struct OrbitApplication: App {
+    @NSApplicationDelegateAdaptor(ApplicationDelegate.self) private var delegate
 
     var body: some Scene {
         // Orbit 的实际界面全部由 AppDelegate 用 AppKit 窗口驱动。这里保留一个
@@ -21,7 +21,7 @@ struct OrbitApp: App {
 }
 
 /// 菜单栏常驻应用的生命周期。
-final class OrbitAppDelegate: NSObject, NSApplicationDelegate {
+final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var summonObserver: NSObjectProtocol?
 
@@ -133,7 +133,7 @@ final class OrbitAppDelegate: NSObject, NSApplicationDelegate {
         ))
         menu.addItem(infoItem(String(
             format: NSLocalizedString("statusMenu.hint.hold", comment: "How to summon Orbit"),
-            OrbitConfig.triggerModifier.symbol
+            OrbitConfig.summonKey.glyph
         )))
         menu.addItem(.separator())
 

@@ -1,18 +1,16 @@
 //
-//  WindowVisibilityChecker.swift
+//  WindowServerInspector.swift
 //  Orbit
 //
 
 import CoreGraphics
 
-/// 判断某个进程当前是否真的有窗口摆在屏幕上。
+/// Queries the macOS window server for the surfaces that are useful to Orbit.
 ///
-/// `NSRunningApplication` alone cannot answer this: a menu-bar helper, an app
-/// that has closed its last window, and an app sitting on another Space all look
-/// identical from there. The window server, on the other hand, knows — so this
-/// asks it directly and applies the three filters that separate a real document
-/// window from the invisible bookkeeping windows every app keeps around.
-enum WindowVisibilityChecker {
+/// The running-application API cannot distinguish a menu-bar helper from an app
+/// with a document window. This type keeps that policy in one place and exposes
+/// both the per-process and whole-system queries needed by the ring.
+enum WindowServerInspector {
     /// 一个窗口要算作"用户看得见"必须同时满足的条件。
     private enum Threshold {
         /// 只认普通窗口层；菜单栏、Dock、悬浮面板都在非 0 层。
@@ -23,21 +21,21 @@ enum WindowVisibilityChecker {
         static let minimumEdge: CGFloat = 1
     }
 
-    static func hasVisibleWindow(processIdentifier: pid_t) -> Bool {
+    static func hasOnscreenWindow(processIdentifier: pid_t) -> Bool {
         let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
         guard let windows = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
             return false
         }
 
         return windows.contains { window in
-            isVisibleWindow(window, ownedBy: processIdentifier)
+            isOnscreenEntry(window, owner: processIdentifier)
         }
     }
 
     /// 当前拥有窗口的所有进程。
     ///
     /// Deliberately drops `.optionOnScreenOnly`, which is the one thing that
-    /// separates this from `hasVisibleWindow`: a minimized window, a window on
+    /// separates this from `hasOnscreenWindow`: a minimized window, a window on
     /// another Space and a fullscreen app are all off-screen, and all three are
     /// things a person still wants to switch back to. What this answers is the
     /// narrower question "does anything at all belong to this app", so that an
@@ -49,7 +47,7 @@ enum WindowVisibilityChecker {
     ///
     /// - Returns: 有窗口的那些进程；`nil` 表示窗口服务没有作答 —— 调用方必须把它
     ///   和"谁都没有窗口"分开处理，否则一次查询失败会清空整个环。
-    static func processesWithWindows() -> Set<pid_t>? {
+    static func windowOwners() -> Set<pid_t>? {
         let options: CGWindowListOption = [.excludeDesktopElements]
         guard let windows = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
             return nil
@@ -61,7 +59,7 @@ enum WindowVisibilityChecker {
         let titlesReadable = CGPreflightScreenCaptureAccess()
 
         var pids: Set<pid_t> = []
-        for window in windows where isRealWindow(window, requiringTitle: titlesReadable) {
+        for window in windows where qualifiesAsWindow(window, requiringTitle: titlesReadable) {
             guard let pid = window[kCGWindowOwnerPID as String] as? Int else { continue }
             pids.insert(pid_t(pid))
         }
@@ -84,7 +82,7 @@ enum WindowVisibilityChecker {
     /// `requiringTitle` applies that same test. Callers pass true only when
     /// `CGPreflightScreenCaptureAccess()` says titles are readable — without that
     /// permission every title reads as nil, and requiring one would empty the ring.
-    static func isRealWindow(_ window: [String: Any], requiringTitle: Bool = false) -> Bool {
+    static func qualifiesAsWindow(_ window: [String: Any], requiringTitle: Bool = false) -> Bool {
         guard window[kCGWindowLayer as String] as? Int ?? 0 == Threshold.normalLayer else {
             return false
         }
@@ -102,7 +100,7 @@ enum WindowVisibilityChecker {
             && bounds.height >= OrbitConfig.minimumRealWindowSize.height
     }
 
-    private static func isVisibleWindow(_ window: [String: Any], ownedBy pid: pid_t) -> Bool {
+    private static func isOnscreenEntry(_ window: [String: Any], owner pid: pid_t) -> Bool {
         guard window[kCGWindowOwnerPID as String] as? Int == Int(pid) else {
             return false
         }

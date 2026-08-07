@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Inspect Xcode
+        run: xcodebuild -version
+
+      - name: Validate version, tag, architecture, and test counts
+        run: bash scripts/ci_validate.sh
+
+      - name: Require signing and notarization credentials
+        env:
+          CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          for value in CERTIFICATE CERTIFICATE_PASSWORD SIGNING_IDENTITY APPLE_ID APPLE_TEAM_ID APPLE_APP_PASSWORD; do
+            if [[ -z "${!value}" ]]; then
+              echo "Missing required release secret: $value" >&2
+              exit 1
+            fi
+          done
+
+      - name: Import Developer ID certificate
+        env:
+          CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/orbit-release.keychain-db"
+          CERTIFICATE_PATH="$RUNNER_TEMP/developer-id.p12"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          echo "$CERTIFICATE" | base64 -D > "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security default-keychain -s "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+
+      - name: Build signed Universal 2 release
+        env:
+          SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+        run: bash scripts/package_release.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Notarize release archive
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          xcrun notarytool submit dist/Orbit-macOS.zip \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --wait
+
+      - name: Staple and repackage notarized app
+        run: |
+          STAPLE_DIR="$RUNNER_TEMP/orbit-stapled"
+          ditto -x -k dist/Orbit-macOS.zip "$STAPLE_DIR"
+          xcrun stapler staple "$STAPLE_DIR/Orbit.app"
+          xcrun stapler validate "$STAPLE_DIR/Orbit.app"
+          rm -f dist/Orbit-macOS.zip "Orbit-macOS-v${GITHUB_REF_NAME#v}.zip" dist/SHA256SUMS.txt
+          ditto -c -k --sequesterRsrc --keepParent "$STAPLE_DIR/Orbit.app" dist/Orbit-macOS.zip
+          cp dist/Orbit-macOS.zip "Orbit-macOS-v${GITHUB_REF_NAME#v}.zip"
+          (cd dist && shasum -a 256 Orbit-macOS.zip > SHA256SUMS.txt)
+
+      - name: Verify final release artifact
+        run: bash scripts/verify_release.sh dist/Orbit-macOS.zip
+
+      - name: Upload GitHub Release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/Orbit-macOS.zip
+            dist/SHA256SUMS.txt
+            Orbit-macOS-${{ github.ref_name }}.zip

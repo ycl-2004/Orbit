@@ -11,6 +11,7 @@
 <p align="center">
   <a href="https://github.com/ycl-2004/Orbit/releases/latest"><img src="https://img.shields.io/github/v/release/ycl-2004/Orbit?label=release&color=111111" alt="最新版本"></a>
   <a href="https://github.com/ycl-2004/Orbit/releases"><img src="https://img.shields.io/github/downloads/ycl-2004/Orbit/total?label=downloads&color=111111" alt="累计下载"></a>
+  <a href="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml"><img src="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/macOS-14.0%2B-111111?logo=apple&logoColor=white" alt="需要 macOS 14.0 或更高版本">
   <img src="https://img.shields.io/badge/Swift-SwiftUI%20%C2%B7%20AppKit-F05138?logo=swift&logoColor=white" alt="使用 SwiftUI 与 AppKit 构建">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-free%20for%20personal%20use-111111" alt="个人免费使用"></a>
@@ -44,7 +45,7 @@ AppKit 写的菜单栏应用，没有任何第三方依赖，也不联网——�
 
 ## 快速开始
 
-1. **[下载 `Orbit-macOS.zip`](https://github.com/ycl-2004/Orbit/releases/latest/download/Orbit-macOS.zip)** 并解压。需要 macOS 14.0 或更高版本。
+1. **[下载 `Orbit-macOS.zip`](https://github.com/ycl-2004/Orbit/releases/latest/download/Orbit-macOS.zip)** 并解压。需要 macOS 14.0 或更高版本；正式包是同时支持 Apple Silicon 与 Intel Mac 的 Universal 2 构建。
 2. 把 `Orbit.app` 移到 `/Applications`。首次启动请按住 Control 点按它并选择**打开**——这个构建是 ad-hoc 签名、未经 Apple 公证的，直接双击会被拦截。
 3. 按提示授予**辅助功能（Accessibility）**权限，然后在任意界面长按 **Option（⌥）** 呼出环。
 
@@ -205,6 +206,7 @@ defaults delete app.orbit.local
 环境要求：
 
 - macOS 14.0 或更高版本（当前重建 Xcode 工程的部署目标）。
+- 正式发布包包含 `arm64` 与 `x86_64` 两种架构，支持 Apple Silicon 和 Intel Mac。
 - Xcode 26 或更高版本。
 - Accessibility 权限，用于全局修饰键触发。
 - 如果启用实时窗口预览，还需要 Screen Recording 权限。
@@ -244,6 +246,10 @@ xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
 
 仓库会排除构建产物、DerivedData、Xcode 用户状态、本地环境文件、密钥、日志和本地工作流状态。
 源码、资源、测试、工程文件、workspace 数据和公开文档都会保留在 Git 中。
+
+Universal 2 检查、干净机器安装和权限回归清单见
+[docs/release-checklist.md](docs/release-checklist.md)。GitHub Actions 会在每次 push
+和 pull request 上执行元数据检查、Debug 构建以及 36 个 `OrbitTests` 测试。
 
 </details>
 

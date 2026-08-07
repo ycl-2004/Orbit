@@ -27,14 +27,14 @@ enum OrbitPreviewState: Equatable {
 
 @MainActor
 final class OrbitRingViewModel: ObservableObject {
-    @Published private(set) var apps: [AppInfo]
+    @Published private(set) var apps: [AppRecord]
     @Published var selectedID: String?
     @Published var draggedAppID: String?
     @Published var dragOffset: CGSize = .zero
     @Published var dragOverCenter = false
-    @Published var dissolvingAppID: String?
-    @Published private(set) var bulkDissolvingAppIDs: Set<String> = []
-    @Published var fileDropPhase: FileDropPhase = .idle
+    @Published var vanishingAppID: String?
+    @Published private(set) var bulkVanishingAppIDs: Set<String> = []
+    @Published var fileDropPhase: DropLifecycle = .resting
     @Published var fileTrashReady = false
     /// 上一次拖放没做成，中心正在把这件事说出来。
     @Published private(set) var fileDropFailed = false
@@ -46,7 +46,7 @@ final class OrbitRingViewModel: ObservableObject {
 
     var onCancel: (() -> Void)?
     /// Second argument is the window title to raise, when one was picked.
-    var onActivate: ((AppInfo, String?) -> Void)?
+    var onActivate: ((AppRecord, String?) -> Void)?
 
     private var fileTrashTask: DispatchWorkItem?
     private var dragExitTask: DispatchWorkItem?
@@ -82,7 +82,7 @@ final class OrbitRingViewModel: ObservableObject {
     /// - Parameter preselecting: 唤出时就选中的应用，`nil` 表示以取消态开场。
     ///   由调用方决定，因为"最近用过的是谁"是应用列表那边的知识，而不是环的。
     init(
-        apps: [AppInfo],
+        apps: [AppRecord],
         showsPreview: Bool? = nil,
         screen: NSScreen? = nil,
         preselecting: String? = nil
@@ -114,7 +114,7 @@ final class OrbitRingViewModel: ObservableObject {
         }
     }
 
-    var selectedApp: AppInfo? {
+    var selectedApp: AppRecord? {
         guard let selectedID else { return nil }
         return apps.first(where: { $0.id == selectedID })
     }
@@ -129,7 +129,7 @@ final class OrbitRingViewModel: ObservableObject {
         if fileTrashReady {
             return .trash
         }
-        if fileDropPhase.isReceiving {
+        if fileDropPhase.acceptsHover {
             return .share
         }
         if selectedID != nil {
@@ -292,7 +292,7 @@ final class OrbitRingViewModel: ObservableObject {
         )
     }
 
-    func select(_ app: AppInfo) {
+    func select(_ app: AppRecord) {
         guard draggedAppID == nil else { return }
         hoverAnchor = nil
         resumeIndex = nil
@@ -302,7 +302,7 @@ final class OrbitRingViewModel: ObservableObject {
     /// Hovering re-selects a card, which would undo an explicit deselect or
     /// select a card as soon as the ring opens under a stationary cursor.
     /// Ignore hover until the pointer actually moves away from the anchor.
-    func selectFromHover(_ app: AppInfo) {
+    func selectFromHover(_ app: AppRecord) {
         if let anchor = hoverAnchor {
             let now = NSEvent.mouseLocation
             guard hypot(now.x - anchor.x, now.y - anchor.y) > 4 else { return }
@@ -344,8 +344,8 @@ final class OrbitRingViewModel: ObservableObject {
         previews = Array(captured.prefix(OrbitConfig.maxVisiblePreviews))
         isLoadingPreviews = false
         if previews.isEmpty {
-            if let processesWithWindows = WindowVisibilityChecker.processesWithWindows() {
-                previewState = processesWithWindows.contains(app.processIdentifier)
+            if let owners = WindowServerInspector.windowOwners() {
+                previewState = owners.contains(app.processIdentifier)
                     ? .unavailable
                     : .noOpenWindows
             } else {
@@ -394,7 +394,7 @@ final class OrbitRingViewModel: ObservableObject {
         guard !apps.isEmpty, let first = letter.first else { return }
         let startIndex = selectedID.flatMap { id in apps.firstIndex(where: { $0.id == id }) } ?? -1
         let orderedIndices = Array(0 ..< apps.count).map { (startIndex + 1 + $0) % apps.count }
-        guard let match = orderedIndices.first(where: { apps[$0].firstLetter == Character(String(first).uppercased()) }) else {
+        guard let match = orderedIndices.first(where: { apps[$0].letterShortcut == Character(String(first).uppercased()) }) else {
             return
         }
         selectedID = apps[match].id
@@ -437,7 +437,7 @@ final class OrbitRingViewModel: ObservableObject {
     /// the ring once the file work has reached a stable state.
     func cancel() {
         guard draggedAppID == nil else { return }
-        guard fileDropPhase == .idle else {
+        guard fileDropPhase == .resting else {
             dismissAfterFileDrop = true
             return
         }
@@ -449,15 +449,15 @@ final class OrbitRingViewModel: ObservableObject {
     /// Guarded like `cancel()`: a card in flight or a file drop in progress owns
     /// the hub, and a stray tap must not switch apps out from under either of
     /// them. Unlike a cancel this is not deferred — switching apps is not what
-    /// the user was in the middle of, and `.completing` lasts a few frames.
+    /// the user was in the middle of, and `.processing` lasts a few frames.
     func confirmFromHub() {
-        guard draggedAppID == nil, fileDropPhase == .idle else { return }
+        guard draggedAppID == nil, fileDropPhase == .resting else { return }
         confirmSelection()
     }
 
     func triggerReleased() {
         guard draggedAppID == nil else { return }
-        guard fileDropPhase == .idle else {
+        guard fileDropPhase == .resting else {
             dismissAfterFileDrop = true
             return
         }
@@ -468,20 +468,20 @@ final class OrbitRingViewModel: ObservableObject {
         }
     }
 
-    func beginAppDrag(_ app: AppInfo) {
+    func beginAppDrag(_ app: AppRecord) {
         selectedID = app.id
         draggedAppID = app.id
         dragOffset = .zero
         dragOverCenter = false
     }
 
-    func updateAppDrag(_ app: AppInfo, offset: CGSize, overCenter: Bool) {
+    func updateAppDrag(_ app: AppRecord, offset: CGSize, overCenter: Bool) {
         guard draggedAppID == app.id else { return }
         dragOffset = offset
         dragOverCenter = overCenter
     }
 
-    func finishAppDrag(_ app: AppInfo) {
+    func finishAppDrag(_ app: AppRecord) {
         guard draggedAppID == app.id else { return }
         let shouldQuit = dragOverCenter
         draggedAppID = nil
@@ -497,21 +497,21 @@ final class OrbitRingViewModel: ObservableObject {
             return
         }
 
-        dissolvingAppID = app.id
-        app.terminate { [weak self] success in
+        vanishingAppID = app.id
+        app.requestQuit { [weak self] success in
             DispatchQueue.main.async {
                 guard let self else { return }
                 guard success else {
-                    self.dissolvingAppID = nil
+                    self.vanishingAppID = nil
                     return
                 }
 
                 // 宽限期比消散动画短，所以退出成功之后还要把动画剩下的那一截等完
                 // 再抽走卡片 —— 否则碎片飞到一半，卡片就凭空不见了。
-                let remaining = max(0, OrbitConfig.dissolveDuration - OrbitConfig.terminateGracePeriod)
+                let remaining = max(0, OrbitConfig.dispersionDuration - OrbitConfig.terminateGracePeriod)
                 DispatchQueue.main.asyncAfter(deadline: .now() + remaining) {
                     self.apps.removeAll { $0.id == app.id }
-                    self.dissolvingAppID = nil
+                    self.vanishingAppID = nil
                     if self.apps.isEmpty {
                         self.onCancel?()
                     }
@@ -524,7 +524,7 @@ final class OrbitRingViewModel: ObservableObject {
     /// preview is deliberately not enough: capture can fail while a real app
     /// window still exists. Finder and Orbit are never candidates.
     private func cleanupWindowlessApps() {
-        guard let windowedPIDs = WindowVisibilityChecker.processesWithWindows() else {
+        guard let windowedPIDs = WindowServerInspector.windowOwners() else {
             // Keep the ring alive while the trigger is held. An unavailable
             // window list means "nothing can be safely cleaned", not "the
             // user asked to dismiss Orbit".
@@ -544,10 +544,10 @@ final class OrbitRingViewModel: ObservableObject {
         selectedID = nil
         bulkCleanupPendingIDs = Set(candidates.map(\.id))
         bulkCleanupSucceededIDs = []
-        bulkDissolvingAppIDs = bulkCleanupPendingIDs
+        bulkVanishingAppIDs = bulkCleanupPendingIDs
 
         for app in candidates {
-            app.terminate { [weak self] success in
+            app.requestQuit { [weak self] success in
                 DispatchQueue.main.async {
                     self?.finishBulkCleanup(for: app.id, succeeded: success)
                 }
@@ -563,11 +563,11 @@ final class OrbitRingViewModel: ObservableObject {
         guard bulkCleanupPendingIDs.isEmpty else { return }
 
         let succeededIDs = bulkCleanupSucceededIDs
-        let remaining = max(0, OrbitConfig.dissolveDuration - OrbitConfig.terminateGracePeriod)
+        let remaining = max(0, OrbitConfig.dispersionDuration - OrbitConfig.terminateGracePeriod)
         DispatchQueue.main.asyncAfter(deadline: .now() + remaining) { [weak self] in
             guard let self else { return }
             self.apps.removeAll { succeededIDs.contains($0.id) }
-            self.bulkDissolvingAppIDs = []
+            self.bulkVanishingAppIDs = []
             self.bulkCleanupSucceededIDs = []
             // Do not dismiss after the Orbit cleanup gesture. The trigger key
             // is still held at this point; `triggerReleased()` will close the
@@ -586,12 +586,12 @@ final class OrbitRingViewModel: ObservableObject {
             fileFailureTask = nil
             fileDropFailed = false
             fileTrashReady = false
-            fileDropPhase = .hovering
+            fileDropPhase = .sharing
 
             let task = DispatchWorkItem { [weak self] in
-                guard let self, self.fileDropPhase.isReceiving else { return }
+                guard let self, self.fileDropPhase.acceptsHover else { return }
                 self.fileTrashReady = true
-                self.fileDropPhase = .trashArmed
+                self.fileDropPhase = .trashReady
             }
             fileTrashTask = task
             DispatchQueue.main.asyncAfter(deadline: .now() + OrbitConfig.fileTrashHoldDuration, execute: task)
@@ -611,17 +611,17 @@ final class OrbitRingViewModel: ObservableObject {
     /// the spot.
     ///
     /// Resetting must happen *somehow*, though: this used to bail out whenever the
-    /// trash was armed, which left `fileDropPhase` stuck on `.trashArmed` after a
+    /// the trash was ready, which left `fileDropPhase` stuck on `.trashReady` after a
     /// drag that hovered long enough and then left without dropping. Both `cancel()`
-    /// and `triggerReleased()` require `.idle`, so the ring became impossible to
+    /// and `triggerReleased()` require `.resting`, so the ring became impossible to
     /// dismiss.
     private func scheduleDragExitReset() {
         dragExitTask?.cancel()
 
         let task = DispatchWorkItem { [weak self] in
-            guard let self, self.fileDropPhase != .completing else { return }
+            guard let self, self.fileDropPhase != .processing else { return }
             self.fileTrashReady = false
-            self.fileDropPhase = .idle
+            self.fileDropPhase = .resting
             if self.dismissAfterFileDrop {
                 self.dismissAfterFileDrop = false
                 self.onCancel?()
@@ -661,7 +661,7 @@ final class OrbitRingViewModel: ObservableObject {
         dragExitTask = nil
         fileTrashTask?.cancel()
         fileTrashTask = nil
-        fileDropPhase = .completing
+        fileDropPhase = .processing
 
         // 每个 provider 写自己那一格，而不是一起往同一个数组尾部挤。
         //
@@ -692,7 +692,7 @@ final class OrbitRingViewModel: ObservableObject {
 
             guard let self else { return }
             self.fileTrashReady = false
-            self.fileDropPhase = .idle
+            self.fileDropPhase = .resting
             let shouldDismiss = self.dismissAfterFileDrop
             self.dismissAfterFileDrop = false
             guard !urls.isEmpty else {
@@ -885,7 +885,7 @@ struct OrbitRingView: View {
                     angle: model.angle(for: index),
                     isSelected: model.selectedID == app.id,
                     isDragging: model.draggedAppID == app.id,
-                    isDissolving: model.dissolvingAppID == app.id || model.bulkDissolvingAppIDs.contains(app.id),
+                    isVanishing: model.vanishingAppID == app.id || model.bulkVanishingAppIDs.contains(app.id),
                     dragOffset: model.draggedAppID == app.id ? model.dragOffset : .zero,
                     onSelect: { model.select(app) },
                     onHoverSelect: { model.selectFromHover(app) },
@@ -918,7 +918,7 @@ struct OrbitRingView: View {
             OrbitCenterControl(
                 mode: model.centerMode,
                 isFileTargeted: Binding(
-                    get: { model.fileDropPhase.isReceiving },
+                    get: { model.fileDropPhase.acceptsHover },
                     set: { model.setFileDragTargeted($0) }
                 ),
                 onCancel: { model.cancel() },
@@ -1103,7 +1103,7 @@ private struct OrbitPreviewPanel: View {
 
     private func statusCard(
         systemName: String? = nil,
-        app: AppInfo? = nil,
+        app: AppRecord? = nil,
         titleKey: String,
         messageKey: String,
         hintKey: String? = nil,
@@ -1244,20 +1244,20 @@ private struct OrbitPreviewWindowCard: View {
 }
 
 private struct OrbitAppCard: View {
-    let app: AppInfo
+    let app: AppRecord
     let cardNumber: Int
     /// Where the card sits on the ring, in radians (0 = 3 o'clock).
     let angle: Double
     let isSelected: Bool
     let isDragging: Bool
-    let isDissolving: Bool
+    let isVanishing: Bool
     let dragOffset: CGSize
     let onSelect: () -> Void
     let onHoverSelect: () -> Void
     let onDragChanged: (CGSize) -> Void
     let onDragEnded: () -> Void
 
-    @State private var dissolveProgress = 0.0
+    @State private var scatterProgress = 0.0
 
     /// Rotating by the ring angle plus a quarter turn points the card's
     /// bottom edge — the shortcut hint — at the center, so the icon always
@@ -1271,8 +1271,8 @@ private struct OrbitAppCard: View {
         if OrbitConfig.numericShortcutsEnabled, cardNumber <= 9 {
             hints.append(String(cardNumber))
         }
-        if OrbitConfig.letterShortcutsEnabled, let firstLetter = app.firstLetter {
-            hints.append(String(firstLetter).lowercased())
+        if OrbitConfig.letterShortcutsEnabled, let letter = app.letterShortcut {
+            hints.append(String(letter).lowercased())
         }
         return hints.joined(separator: " · ")
     }
@@ -1317,10 +1317,10 @@ private struct OrbitAppCard: View {
         .scaleEffect(isSelected ? 1.1 : 1)
         .rotationEffect(cardRotation)
         .offset(dragOffset)
-        .opacity(isDissolving ? 0.35 : 1)
+        .opacity(isVanishing ? 0.35 : 1)
         // Particles are drawn in unrotated screen space, so aim them straight
         // at the ring center rather than at the card's own bottom edge.
-        .pixelDissolve(progress: dissolveProgress, blackHoleDirection: angle + .pi)
+        .cardScatter(progress: scatterProgress, towards: angle + .pi)
         .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .onTapGesture(perform: onSelect)
         .gesture(
@@ -1333,13 +1333,13 @@ private struct OrbitAppCard: View {
                 onHoverSelect()
             }
         }
-        .onChange(of: isDissolving) { _, newValue in
+        .onChange(of: isVanishing) { _, newValue in
             if newValue {
-                withAnimation(.easeIn(duration: OrbitConfig.dissolveDuration)) {
-                    dissolveProgress = 1
+                withAnimation(.easeIn(duration: OrbitConfig.dispersionDuration)) {
+                    scatterProgress = 1
                 }
             } else {
-                dissolveProgress = 0
+                scatterProgress = 0
             }
         }
         .accessibilityElement(children: .combine)
