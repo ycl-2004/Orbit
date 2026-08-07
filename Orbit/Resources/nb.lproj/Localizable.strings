@@ -1,15 +1,18 @@
 /* Orbit — nb */
 
 /* Menu bar */
-"statusMenu.permission.granted" = "Snarvei aktiv";
-"statusMenu.permission.missing" = "Snarveien mangler tilgang";
-"statusMenu.hint.hold" = "Hold %@ for å åpne ringen";
+"statusMenu.permission.granted" = "Snarvei klar";
+"statusMenu.permission.missing" = "Snarveien krever tilgang";
+"statusMenu.hint.hold" = "Hold %@ for å vise Orbit";
 "statusMenu.grantAccess" = "Åpne Tilgjengelighet …";
-"statusMenu.preferences" = "Innstillinger...";
+"statusMenu.preferences" = "Innstillinger…";
 "statusMenu.quit" = "Avslutt Orbit";
 
 /* Settings — window and permissions */
 "prefs.windowTitle" = "Innstillinger";
+"prefs.tab.general" = "Generelt";
+"prefs.tab.shortcuts" = "Snarveier";
+"prefs.tab.appearance" = "Utseende";
 "prefs.access.granted" = "Orbit har tilgang til Tilgjengelighet";
 "prefs.access.missing" = "Orbit trenger tilgang til Tilgjengelighet";
 "prefs.access.grant" = "Tillat …";
@@ -29,6 +32,8 @@
 "prefs.appearance.placement" = "Plassering";
 "prefs.appearance.cardSize" = "Kortstørrelse";
 "prefs.appearance.cardFinish" = "Kortmateriale";
+"prefs.appearance.preview" = "Kortforhåndsvisning";
+"prefs.appearance.accentColor" = "Aksentfarge";
 "prefs.appearance.hideWindowless" = "Skjul apper uten vinduer";
 "prefs.appearance.hideWindowless.note" = "Apper som kjører uten et åpent vindu, vises ikke i ringen. Minimerte vinduer og fullskjermvinduer teller fortsatt med.";
 

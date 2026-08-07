@@ -7,6 +7,7 @@
 
 import AppKit
 import Foundation
+import SwiftUI
 
 enum CardSize: String, CaseIterable, Identifiable {
     case small
@@ -184,6 +185,32 @@ enum OrbitConfig {
         }
         set {
             defaults.set(newValue.rawValue, forKey: "cardMaterial")
+        }
+    }
+
+    /// The user-selectable Orbit accent. Stored as a secure, sRGB NSColor
+    /// archive because SwiftUI Color itself is environment-resolved rather
+    /// than a stable UserDefaults value.
+    static var accentColor: Color {
+        get {
+            guard let data = defaults.data(forKey: "accentColor"),
+                  let color = try? NSKeyedUnarchiver.unarchivedObject(
+                    ofClass: NSColor.self,
+                    from: data
+                  ) else {
+                return OrbitPalette.defaultBurgundy
+            }
+            return Color(nsColor: color)
+        }
+        set {
+            let color = NSColor(newValue).usingColorSpace(.sRGB) ?? NSColor(newValue)
+            guard let data = try? NSKeyedArchiver.archivedData(
+                withRootObject: color,
+                requiringSecureCoding: true
+            ) else {
+                return
+            }
+            defaults.set(data, forKey: "accentColor")
         }
     }
 

@@ -1,15 +1,18 @@
 /* Orbit — zh-Hant */
 
 /* Menu bar */
-"statusMenu.permission.granted" = "快捷鍵已啟用";
-"statusMenu.permission.missing" = "快捷鍵需要授權";
-"statusMenu.hint.hold" = "按住 %@ 喚出環形介面";
+"statusMenu.permission.granted" = "快捷鍵已就緒";
+"statusMenu.permission.missing" = "需要輔助使用權限";
+"statusMenu.hint.hold" = "按住 %@ 顯示 Orbit";
 "statusMenu.grantAccess" = "打開輔助使用設定…";
-"statusMenu.preferences" = "設定...";
+"statusMenu.preferences" = "設定…";
 "statusMenu.quit" = "退出 Orbit";
 
 /* Settings — window and permissions */
 "prefs.windowTitle" = "設定";
+"prefs.tab.general" = "一般";
+"prefs.tab.shortcuts" = "快捷鍵";
+"prefs.tab.appearance" = "外觀";
 "prefs.access.granted" = "Orbit 已取得輔助使用權限";
 "prefs.access.missing" = "Orbit 需要輔助使用權限";
 "prefs.access.grant" = "去授權…";
@@ -29,6 +32,8 @@
 "prefs.appearance.placement" = "喚出位置";
 "prefs.appearance.cardSize" = "卡片大小";
 "prefs.appearance.cardFinish" = "卡片材質";
+"prefs.appearance.preview" = "卡片預覽";
+"prefs.appearance.accentColor" = "強調顏色";
 "prefs.appearance.hideWindowless" = "隱藏沒有視窗的應用程式";
 "prefs.appearance.hideWindowless.note" = "正在執行但沒有開啟任何視窗的應用程式不會出現在環上。最小化和全螢幕的視窗仍然算數。";
 

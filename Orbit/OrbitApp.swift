@@ -16,6 +16,7 @@ struct OrbitApp: App {
         Settings {
             SettingsView()
         }
+        .defaultSize(width: SettingsView.preferredSize.width, height: SettingsView.preferredSize.height)
     }
 }
 
@@ -128,8 +129,6 @@ final class OrbitAppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(infoItem(
             isAuthorized ? "statusMenu.permission.granted" : "statusMenu.permission.missing"
         ))
-        menu.addItem(.separator())
-
         menu.addItem(infoItem(String(
             format: NSLocalizedString("statusMenu.hint.hold", comment: "How to summon Orbit"),
             OrbitConfig.triggerModifier.symbol

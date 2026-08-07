@@ -40,168 +40,172 @@ final class SettingsWindowController: NSWindowController {
 }
 
 struct SettingsView: View {
-    static let preferredSize = CGSize(width: 360, height: 620)
+    static let preferredSize = CGSize(width: 600, height: 500)
 
     @StateObject private var model = SettingsModel()
-    @State private var showsCheatSheet = false
+    @State private var selectedTab = SettingsTab.general
+
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            GeneralSettingsPane(model: model)
+                .tabItem {
+                    Label("prefs.tab.general", systemImage: "gearshape")
+                }
+                .tag(SettingsTab.general)
+
+            ShortcutSettingsPane(model: model)
+                .tabItem {
+                    Label("prefs.tab.shortcuts", systemImage: "command")
+                }
+                .tag(SettingsTab.shortcuts)
+
+            AppearanceSettingsPane(model: model)
+                .tabItem {
+                    Label("prefs.tab.appearance", systemImage: "paintbrush")
+                }
+                .tag(SettingsTab.appearance)
+        }
+        .tint(OrbitPalette.burgundy)
+        .frame(width: Self.preferredSize.width, height: Self.preferredSize.height)
+        .onAppear { model.reload() }
+    }
+}
+
+private enum SettingsTab: Hashable {
+    case general
+    case shortcuts
+    case appearance
+}
+
+// MARK: - General
+
+private struct GeneralSettingsPane: View {
+    @ObservedObject var model: SettingsModel
 
     var body: some View {
         Form {
-            accessibilitySection
-            triggerSection
-            appearanceSection
-            previewSection
-            startupSection
-            cheatSheetSection
-        }
-        .formStyle(.grouped)
-        .tint(OrbitPalette.burgundy)
-        .frame(width: 350, height: 610)
-        .onAppear { model.reload() }
-    }
-
-    // MARK: - 辅助功能权限
-
-    private var accessibilitySection: some View {
-        Section {
-            HStack {
-                Image(systemName: model.hasAccessibility ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                    .foregroundStyle(model.hasAccessibility ? Color.green : Color.orange)
-
-                Text(model.hasAccessibility ? "prefs.access.granted" : "prefs.access.missing")
-
-                Spacer()
-
-                if !model.hasAccessibility {
-                    Button("prefs.access.grant") { SystemSettingsLink.accessibility.open() }
-                }
-            }
-        }
-    }
-
-    // MARK: - 触发
-
-    private var triggerSection: some View {
-        Section("prefs.group.trigger") {
-            // `assignable` rather than `allCases`: picking "Disabled" as the
-            // trigger would leave no way to summon the ring at all. The
-            // clear-selection picker below does offer it, where it means
-            // "no shortcut" rather than "no app".
-            Picker("prefs.trigger.key", selection: $model.triggerModifier) {
-                ForEach(TriggerModifier.assignable) { modifier in
-                    Text(modifier.localizedName).tag(modifier)
-                }
+            Section {
+                AccessibilityStatusRow(model: model)
             }
 
-            Picker("prefs.trigger.clearKey", selection: $model.clearSelectionModifier) {
-                ForEach(model.clearSelectionChoices) { modifier in
-                    Text(modifier.localizedName).tag(modifier)
-                }
-            }
+            Section {
+                Toggle("prefs.preview.enabled", isOn: $model.windowPreviewEnabled)
 
-            HStack {
-                Text("prefs.trigger.holdTime")
-                Slider(value: $model.longPressThreshold, in: 100 ... 300, step: 10)
-                Text(String(
-                    format: NSLocalizedString("prefs.trigger.holdTimeValue", comment: "Milliseconds"),
-                    Int(model.longPressThreshold)
-                ))
-                .frame(width: 55)
-                .monospacedDigit()
-            }
+                if model.windowPreviewEnabled && !model.hasScreenRecording {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
 
-            Toggle("prefs.trigger.letterKeys", isOn: $model.letterShortcutsEnabled)
-            Toggle("prefs.trigger.numberKeys", isOn: $model.numericShortcutsEnabled)
-
-            Text("prefs.trigger.keysNote")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    // MARK: - 外观
-
-    private var appearanceSection: some View {
-        Section("prefs.group.appearance") {
-            Picker("prefs.appearance.placement", selection: $model.ringPlacement) {
-                ForEach(RingPlacement.allCases) { placement in
-                    Text(placement.localizedName).tag(placement)
-                }
-            }
-
-            Picker("prefs.appearance.cardSize", selection: $model.cardSize) {
-                ForEach(CardSize.allCases, id: \.self) { size in
-                    Text(size.localizedName).tag(size)
-                }
-            }
-
-            Picker("prefs.appearance.cardFinish", selection: $model.cardMaterial) {
-                ForEach(OrbitConfig.CardMaterial.allCases) { material in
-                    Text(material.localizedName).tag(material)
-                }
-            }
-
-            Toggle("prefs.appearance.hideWindowless", isOn: $model.hideWindowlessApps)
-
-            Text("prefs.appearance.hideWindowless.note")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    // MARK: - 窗口预览
-
-    private var previewSection: some View {
-        Section("prefs.group.preview") {
-            Toggle("prefs.preview.enabled", isOn: $model.windowPreviewEnabled)
-
-            if model.windowPreviewEnabled && !model.hasScreenRecording {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("prefs.preview.needsRecording")
-                        Button("prefs.preview.openSystemSettings") {
-                            SystemSettingsLink.screenRecording.open()
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("prefs.preview.needsRecording")
+                            Button("prefs.preview.openSystemSettings") {
+                                SystemSettingsLink.screenRecording.open()
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
                         }
                     }
+                    .font(.callout)
                 }
-                .font(.callout)
+            } header: {
+                Text("prefs.group.preview")
+            } footer: {
+                Text("prefs.preview.note")
             }
 
-            Text("prefs.preview.note")
-                .font(.callout)
+            Section {
+                Toggle("prefs.appearance.hideWindowless", isOn: $model.hideWindowlessApps)
+                Toggle("prefs.startup.launchAtLogin", isOn: $model.launchAtLogin)
+            } footer: {
+                Text("prefs.appearance.hideWindowless.note")
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+private struct AccessibilityStatusRow: View {
+    @ObservedObject var model: SettingsModel
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: model.hasAccessibility
+                ? "checkmark.circle.fill"
+                : "exclamationmark.triangle.fill")
+            .foregroundStyle(model.hasAccessibility ? .green : .orange)
+
+            Text(model.hasAccessibility ? "prefs.access.granted" : "prefs.access.missing")
                 .foregroundStyle(.secondary)
+
+            Spacer()
+
+            if !model.hasAccessibility {
+                Button("prefs.access.grant") {
+                    SystemSettingsLink.accessibility.open()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
         }
+        .font(.callout)
     }
+}
 
-    // MARK: - 开机自启
+// MARK: - Shortcuts
 
-    private var startupSection: some View {
-        Section("prefs.group.startup") {
-            Toggle("prefs.startup.launchAtLogin", isOn: $model.launchAtLogin)
-        }
-    }
+private struct ShortcutSettingsPane: View {
+    @ObservedObject var model: SettingsModel
 
-    // MARK: - 操作速查
-
-    /// 折叠起来的速查表，内容随开关变化 —— 关掉的快捷键就不该继续出现在说明里。
-    private var cheatSheetSection: some View {
-        Section {
-            DisclosureGroup(isExpanded: $showsCheatSheet) {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(cheatSheetEntries) { entry in
-                        SettingsHintRow(systemImage: entry.systemImage, text: entry.text)
+    var body: some View {
+        Form {
+            Section {
+                // `assignable` rather than `allCases`: picking "Disabled" as the
+                // trigger would leave no way to summon the ring at all.
+                Picker("prefs.trigger.key", selection: $model.triggerModifier) {
+                    ForEach(TriggerModifier.assignable) { modifier in
+                        Text(modifier.localizedName).tag(modifier)
                     }
                 }
-                .padding(.top, 4)
-            } label: {
-                Label("prefs.group.cheatSheet", systemImage: "keyboard")
+                .pickerStyle(.menu)
+
+                Picker("prefs.trigger.clearKey", selection: $model.clearSelectionModifier) {
+                    ForEach(model.clearSelectionChoices) { modifier in
+                        Text(modifier.localizedName).tag(modifier)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                HStack(spacing: 12) {
+                    Text("prefs.trigger.holdTime")
+                    Slider(value: $model.longPressThreshold, in: 100 ... 300, step: 10)
+                    Text(String(
+                        format: NSLocalizedString("prefs.trigger.holdTimeValue", comment: "Milliseconds"),
+                        Int(model.longPressThreshold)
+                    ))
+                    .frame(width: 58, alignment: .trailing)
+                    .monospacedDigit()
+                }
+
+                Toggle("prefs.trigger.letterKeys", isOn: $model.letterShortcutsEnabled)
+                Toggle("prefs.trigger.numberKeys", isOn: $model.numericShortcutsEnabled)
+            } header: {
+                Text("prefs.group.trigger")
+            } footer: {
+                Text("prefs.trigger.keysNote")
+            }
+
+            Section {
+                ForEach(cheatSheetEntries(model: model)) { entry in
+                    SettingsHintRow(systemImage: entry.systemImage, text: entry.text)
+                }
+            } header: {
+                Text("prefs.group.cheatSheet")
             }
         }
+        .formStyle(.grouped)
     }
 
-    private var cheatSheetEntries: [CheatSheetEntry] {
+    private func cheatSheetEntries(model: SettingsModel) -> [CheatSheetEntry] {
         var entries: [CheatSheetEntry] = [
             CheatSheetEntry(systemImage: "hand.tap", text: hint("prefs.hint.hold", model.triggerModifier.symbol)),
             CheatSheetEntry(systemImage: "arrow.up.arrow.down", text: hint("prefs.hint.move")),
@@ -225,10 +229,147 @@ struct SettingsView: View {
         return entries
     }
 
-    /// 取本地化文案。带 `arguments` 时按格式串填充。
     private func hint(_ key: String, _ arguments: CVarArg...) -> String {
-        let template = NSLocalizedString(key, comment: "Settings cheat sheet line")
+        let template = NSLocalizedString(key, comment: "Settings shortcut reference line")
         return arguments.isEmpty ? template : String(format: template, arguments: arguments)
+    }
+}
+
+// MARK: - Appearance
+
+private struct AppearanceSettingsPane: View {
+    @ObservedObject var model: SettingsModel
+
+    var body: some View {
+        Form {
+            Section {
+                Picker("prefs.appearance.placement", selection: $model.ringPlacement) {
+                    ForEach(RingPlacement.allCases) { placement in
+                        Text(placement.localizedName).tag(placement)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Picker("prefs.appearance.cardSize", selection: $model.cardSize) {
+                    ForEach(CardSize.allCases) { size in
+                        Text(size.localizedName).tag(size)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Picker("prefs.appearance.cardFinish", selection: $model.cardMaterial) {
+                    ForEach(OrbitConfig.CardMaterial.allCases) { material in
+                        Text(material.localizedName).tag(material)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                ColorPicker(
+                    "prefs.appearance.accentColor",
+                    selection: $model.accentColor,
+                    supportsOpacity: false
+                )
+            } header: {
+                Text("prefs.group.appearance")
+            }
+
+            Section {
+                AppearancePreview(
+                    cardSize: model.cardSize,
+                    cardMaterial: model.cardMaterial,
+                    accentColor: model.accentColor
+                )
+            } header: {
+                Text("prefs.appearance.preview")
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+private struct AppearancePreview: View {
+    let cardSize: CardSize
+    let cardMaterial: OrbitConfig.CardMaterial
+    let accentColor: Color
+
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
+                    .fill(cardFill)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
+                            .strokeBorder(cardBorder, lineWidth: 1)
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
+                            .strokeBorder(accentColor.opacity(0.9), lineWidth: 1.5)
+                    }
+
+                VStack(spacing: 6) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: previewDimension * 0.47, height: previewDimension * 0.47)
+                    Text("Orbit")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                }
+                .foregroundStyle(cardForeground)
+            }
+            .frame(width: previewDimension, height: previewDimension * 1.2)
+            .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Orbit")
+                    .font(.headline)
+                Text("\(cardSize.localizedName) · \(cardMaterial.localizedName)")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 6)
+    }
+
+    /// Keep the preview proportional to a real ring card while making the
+    /// four size choices visibly different in a compact settings row.
+    private var previewDimension: CGFloat {
+        cardSize.dimension * 0.55
+    }
+
+    private var cardFill: AnyShapeStyle {
+        switch cardMaterial {
+        case .white:
+            AnyShapeStyle(Color.white)
+        case .black:
+            AnyShapeStyle(Color.black.opacity(0.86))
+        case .system:
+            AnyShapeStyle(.regularMaterial)
+        }
+    }
+
+    private var cardBorder: Color {
+        switch cardMaterial {
+        case .white:
+            .black.opacity(0.06)
+        case .black:
+            .white.opacity(0.12)
+        case .system:
+            .white.opacity(0.2)
+        }
+    }
+
+    private var cardForeground: Color {
+        switch cardMaterial {
+        case .black:
+            .white
+        case .white:
+            .black.opacity(0.82)
+        case .system:
+            .primary
+        }
     }
 }
 
@@ -254,6 +395,5 @@ private struct SettingsHintRow: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .font(.callout)
-        .foregroundStyle(.secondary)
     }
 }

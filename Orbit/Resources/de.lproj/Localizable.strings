@@ -1,15 +1,18 @@
 /* Orbit — de */
 
 /* Menu bar */
-"statusMenu.permission.granted" = "Kurzbefehl aktiv";
-"statusMenu.permission.missing" = "Kurzbefehl braucht Zugriff";
-"statusMenu.hint.hold" = "%@ gedrückt halten, um den Ring zu öffnen";
+"statusMenu.permission.granted" = "Kurzbefehl bereit";
+"statusMenu.permission.missing" = "Kurzbefehl benötigt Zugriff";
+"statusMenu.hint.hold" = "%@ gedrückt halten, um Orbit einzublenden";
 "statusMenu.grantAccess" = "Bedienungshilfen öffnen …";
-"statusMenu.preferences" = "Einstellungen...";
+"statusMenu.preferences" = "Einstellungen…";
 "statusMenu.quit" = "Orbit beenden";
 
 /* Settings — window and permissions */
 "prefs.windowTitle" = "Einstellungen";
+"prefs.tab.general" = "Allgemein";
+"prefs.tab.shortcuts" = "Kurzbefehle";
+"prefs.tab.appearance" = "Erscheinungsbild";
 "prefs.access.granted" = "Orbit hat Zugriff auf die Bedienungshilfen";
 "prefs.access.missing" = "Orbit benötigt Zugriff auf die Bedienungshilfen";
 "prefs.access.grant" = "Erlauben …";
@@ -29,6 +32,8 @@
 "prefs.appearance.placement" = "Anzeigeposition";
 "prefs.appearance.cardSize" = "Kartengröße";
 "prefs.appearance.cardFinish" = "Kartenmaterial";
+"prefs.appearance.preview" = "Kartenvorschau";
+"prefs.appearance.accentColor" = "Akzentfarbe";
 "prefs.appearance.hideWindowless" = "Apps ohne Fenster ausblenden";
 "prefs.appearance.hideWindowless.note" = "Apps, die laufen, aber kein Fenster geöffnet haben, erscheinen nicht im Ring. Minimierte Fenster und Vollbildfenster zählen weiterhin.";
 

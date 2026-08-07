@@ -1,15 +1,18 @@
 /* Orbit — ja */
 
 /* Menu bar */
-"statusMenu.permission.granted" = "ショートカット有効";
-"statusMenu.permission.missing" = "ショートカットに許可が必要";
-"statusMenu.hint.hold" = "%@ を長押しでリングを表示";
+"statusMenu.permission.granted" = "ショートカット準備完了";
+"statusMenu.permission.missing" = "ショートカットにアクセス許可が必要";
+"statusMenu.hint.hold" = "%@ を長押しして Orbit を表示";
 "statusMenu.grantAccess" = "アクセシビリティ設定を開く…";
-"statusMenu.preferences" = "設定...";
+"statusMenu.preferences" = "設定…";
 "statusMenu.quit" = "Orbit を終了";
 
 /* Settings — window and permissions */
 "prefs.windowTitle" = "設定";
+"prefs.tab.general" = "一般";
+"prefs.tab.shortcuts" = "ショートカット";
+"prefs.tab.appearance" = "外観";
 "prefs.access.granted" = "Orbit にアクセシビリティ権限があります";
 "prefs.access.missing" = "Orbit にはアクセシビリティ権限が必要です";
 "prefs.access.grant" = "許可する…";
@@ -29,6 +32,8 @@
 "prefs.appearance.placement" = "表示位置";
 "prefs.appearance.cardSize" = "カードのサイズ";
 "prefs.appearance.cardFinish" = "カードの材質";
+"prefs.appearance.preview" = "カードプレビュー";
+"prefs.appearance.accentColor" = "アクセントカラー";
 "prefs.appearance.hideWindowless" = "ウインドウのないアプリを隠す";
 "prefs.appearance.hideWindowless.note" = "起動中でもウインドウを開いていないアプリはリングに表示しません。最小化されたウインドウやフルスクリーンのウインドウは対象に含まれます。";
 

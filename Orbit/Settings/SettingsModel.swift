@@ -5,6 +5,7 @@
 
 import AppKit
 import Combine
+import SwiftUI
 
 /// 设置窗口的可观察状态。
 ///
@@ -61,6 +62,10 @@ final class SettingsModel: ObservableObject {
         didSet { writeThrough { OrbitConfig.cardMaterial = cardMaterial } }
     }
 
+    @Published var accentColor: Color = OrbitConfig.accentColor {
+        didSet { writeThrough { OrbitConfig.accentColor = accentColor } }
+    }
+
     @Published var hideWindowlessApps: Bool = OrbitConfig.hideWindowlessApps {
         didSet { writeThrough { OrbitConfig.hideWindowlessApps = hideWindowlessApps } }
     }
@@ -112,6 +117,7 @@ final class SettingsModel: ObservableObject {
             ringPlacement = OrbitConfig.ringPlacement
             cardSize = OrbitConfig.cardSize
             cardMaterial = OrbitConfig.cardMaterial
+            accentColor = OrbitConfig.accentColor
             hideWindowlessApps = OrbitConfig.hideWindowlessApps
             windowPreviewEnabled = OrbitConfig.windowPreviewEnabled
             launchAtLogin = LoginItemService.reload()

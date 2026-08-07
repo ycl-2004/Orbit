@@ -1,15 +1,18 @@
 /* Orbit — en */
 
 /* Menu bar */
-"statusMenu.permission.granted" = "Shortcut active";
-"statusMenu.permission.missing" = "Shortcut needs access";
-"statusMenu.hint.hold" = "Hold %@ to bring up the ring";
+"statusMenu.permission.granted" = "Shortcut ready";
+"statusMenu.permission.missing" = "Accessibility access required";
+"statusMenu.hint.hold" = "Hold %@ to show Orbit";
 "statusMenu.grantAccess" = "Open Accessibility Settings…";
-"statusMenu.preferences" = "Settings...";
+"statusMenu.preferences" = "Settings…";
 "statusMenu.quit" = "Quit Orbit";
 
 /* Settings — window and permissions */
 "prefs.windowTitle" = "Settings";
+"prefs.tab.general" = "General";
+"prefs.tab.shortcuts" = "Shortcuts";
+"prefs.tab.appearance" = "Appearance";
 "prefs.access.granted" = "Orbit has Accessibility access";
 "prefs.access.missing" = "Orbit needs Accessibility access";
 "prefs.access.grant" = "Grant…";
@@ -29,6 +32,8 @@
 "prefs.appearance.placement" = "Appears at";
 "prefs.appearance.cardSize" = "Card size";
 "prefs.appearance.cardFinish" = "Card material";
+"prefs.appearance.preview" = "Card preview";
+"prefs.appearance.accentColor" = "Accent color";
 "prefs.appearance.hideWindowless" = "Hide apps with no windows";
 "prefs.appearance.hideWindowless.note" = "Apps that are running without any open window are left off the ring. Minimized and full-screen windows still count.";
 
