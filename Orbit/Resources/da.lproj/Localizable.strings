@@ -17,6 +17,11 @@
 "prefs.access.missing" = "Orbit mangler adgang til Tilgængelighed";
 "prefs.access.grant" = "Tillad …";
 
+/* Settings — ring */
+"prefs.group.ring" = "Ring";
+"prefs.ring.showOrbitCard" = "Vis Orbit i ringen";
+"prefs.ring.showOrbitCard.note" = "Vis Orbit som et ryddekort til apps uden åbne vinduer.";
+
 /* Settings — summoning */
 "prefs.group.trigger" = "Fremkaldelse";
 "prefs.trigger.key" = "Fremkald med";
@@ -81,10 +86,25 @@
 "center.cancel" = "Annullér";
 "center.confirm" = "Slip for at skifte";
 "center.quit" = "Slip for at afslutte";
+"center.cleanup" = "Slip for at lukke apps uden vinduer";
 "center.share" = "Slip for at dele";
 "center.trash" = "Slip for at flytte til papirkurv";
 
 /* Ring — window preview panel */
+"preview.empty.title" = "Vælg en app";
+"preview.empty.message" = "Vælg et kort for at se vinduets forhåndsvisning.";
+"preview.loading.title" = "Indlæser forhåndsvisning";
+"preview.loading.message" = "Henter det nyeste vinduesbillede.";
+"preview.orbit.title" = "Orbit kører";
+"preview.orbit.message" = "Orbit ligger i menulinjen og har ingen vinduesforhåndsvisning.";
+"preview.orbit.hint" = "Træk Orbit-kortet til midten for at lukke apps uden åbne vinduer.";
+"preview.permission.title" = "Adgang til skærmoptagelse kræves";
+"preview.permission.message" = "Tillad Orbit i Systemindstillinger for at vise forhåndsvisninger af vinduer.";
+"preview.permission.action" = "Åbn indstillinger for skærmoptagelse…";
+"preview.noWindows.title" = "Ingen åbne vinduer";
+"preview.noWindows.message" = "Denne app kører, men har ingen vinduer at forhåndsvise.";
+"preview.unavailable.title" = "Forhåndsvisning ikke tilgængelig";
+"preview.unavailable.message" = "Appen har et vindue, men macOS leverede ingen forhåndsvisning.";
 "preview.empty" = "Vælg en app for at se vinduer";
 "preview.none" = "Ingen vinduer at vise";
 
@@ -98,4 +118,5 @@
 "onboarding.start" = "Kom i gang";
 
 /* Fallbacks */
+"app.orbit" = "Orbit";
 "app.unnamed" = "Unavngivet app";

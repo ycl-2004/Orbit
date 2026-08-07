@@ -17,6 +17,11 @@
 "prefs.access.missing" = "Orbit нужен доступ к универсальному доступу";
 "prefs.access.grant" = "Разрешить…";
 
+/* Settings — ring */
+"prefs.group.ring" = "Кольцо";
+"prefs.ring.showOrbitCard" = "Показывать Orbit в кольце";
+"prefs.ring.showOrbitCard.note" = "Показывать Orbit как карточку для закрытия приложений без открытых окон.";
+
 /* Settings — summoning */
 "prefs.group.trigger" = "Вызов";
 "prefs.trigger.key" = "Вызывать клавишей";
@@ -81,10 +86,25 @@
 "center.cancel" = "Отмена";
 "center.confirm" = "Отпустите для переключения";
 "center.quit" = "Перетащите, чтобы завершить";
+"center.cleanup" = "Перетащите, чтобы закрыть приложения без окон";
 "center.share" = "Перетащите, чтобы поделиться";
 "center.trash" = "Перетащите в корзину";
 
 /* Ring — window preview panel */
+"preview.empty.title" = "Выберите приложение";
+"preview.empty.message" = "Выберите карточку, чтобы увидеть предпросмотр окна.";
+"preview.loading.title" = "Загрузка предпросмотра";
+"preview.loading.message" = "Получаем последнее изображение окна.";
+"preview.orbit.title" = "Orbit запущен";
+"preview.orbit.message" = "Orbit находится в строке меню и не имеет предпросмотра окна.";
+"preview.orbit.hint" = "Перетащите карточку Orbit в центр, чтобы закрыть приложения без открытых окон.";
+"preview.permission.title" = "Требуется запись экрана";
+"preview.permission.message" = "Разрешите Orbit запись экрана в системных настройках, чтобы показывать окна.";
+"preview.permission.action" = "Открыть настройки записи экрана…";
+"preview.noWindows.title" = "Нет открытых окон";
+"preview.noWindows.message" = "Приложение запущено, но в нём нет окна для предпросмотра.";
+"preview.unavailable.title" = "Предпросмотр недоступен";
+"preview.unavailable.message" = "У приложения есть окно, но macOS не предоставила предпросмотр.";
 "preview.empty" = "Выберите приложение, чтобы увидеть окна";
 "preview.none" = "Нет окон для предпросмотра";
 
@@ -98,4 +118,5 @@
 "onboarding.start" = "Начать";
 
 /* Fallbacks */
+"app.orbit" = "Orbit";
 "app.unnamed" = "Приложение без имени";

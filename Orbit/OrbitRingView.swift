@@ -13,6 +13,16 @@ import Combine
 import SwiftUI
 import UniformTypeIdentifiers
 
+enum OrbitPreviewState: Equatable {
+    case idle
+    case loading
+    case ready
+    case orbit
+    case screenRecordingRequired
+    case noOpenWindows
+    case unavailable
+}
+
 @MainActor
 final class OrbitRingViewModel: ObservableObject {
     @Published private(set) var apps: [AppInfo]
@@ -21,10 +31,12 @@ final class OrbitRingViewModel: ObservableObject {
     @Published var dragOffset: CGSize = .zero
     @Published var dragOverCenter = false
     @Published var dissolvingAppID: String?
+    @Published private(set) var bulkDissolvingAppIDs: Set<String> = []
     @Published var fileDropPhase: FileDropPhase = .idle
     @Published var fileTrashReady = false
     @Published private(set) var previews: [WindowPreview] = []
     @Published private(set) var isLoadingPreviews = false
+    @Published private(set) var previewState: OrbitPreviewState = .idle
     /// Which of the selected app's windows the arrow keys point at.
     @Published var selectedWindowIndex = 0
 
@@ -39,15 +51,23 @@ final class OrbitRingViewModel: ObservableObject {
     /// Where the selection stood when it was cleared, so arrowing again picks
     /// up from there instead of starting over.
     private var resumeIndex: Int?
+    private var bulkCleanupPendingIDs: Set<String> = []
+    private var bulkCleanupSucceededIDs: Set<String> = []
 
     /// Captured once per showing: the layout flips and the panel resizes
     /// around this, so it must not change while the ring is on screen.
     let showsPreview: Bool
 
     init(apps: [AppInfo], showsPreview: Bool? = nil) {
-        self.apps = Array(apps.prefix(OrbitConfig.maxVisibleApps))
+        let sourceApps = OrbitConfig.showOrbitCard ? apps : apps.filter { !$0.isOrbit }
+        let limited = Array(sourceApps.prefix(OrbitConfig.maxVisibleApps))
+        if let orbit = sourceApps.first(where: { $0.isOrbit }), !limited.contains(where: { $0.isOrbit }), !limited.isEmpty {
+            self.apps = Array(limited.dropLast()) + [orbit]
+        } else {
+            self.apps = limited
+        }
         self.showsPreview = showsPreview
-            ?? (OrbitConfig.windowPreviewEnabled && WindowPreviewService.hasScreenRecordingPermission())
+            ?? OrbitConfig.windowPreviewEnabled
     }
 
     var selectedApp: AppInfo? {
@@ -57,7 +77,7 @@ final class OrbitRingViewModel: ObservableObject {
 
     var centerMode: OrbitCenterMode {
         if draggedAppID != nil && dragOverCenter {
-            return .quit
+            return apps.first(where: { $0.id == draggedAppID })?.isOrbit == true ? .cleanup : .quit
         }
         if fileTrashReady {
             return .trash
@@ -179,17 +199,44 @@ final class OrbitRingViewModel: ObservableObject {
         guard showsPreview, let app = selectedApp else {
             previews = []
             isLoadingPreviews = false
+            previewState = .idle
+            return
+        }
+
+        previews = []
+        selectedWindowIndex = 0
+
+        if app.isOrbit {
+            isLoadingPreviews = false
+            previewState = .orbit
+            return
+        }
+
+        guard WindowPreviewService.hasScreenRecordingPermission() else {
+            isLoadingPreviews = false
+            previewState = .screenRecordingRequired
             return
         }
 
         isLoadingPreviews = true
-        selectedWindowIndex = 0
+        previewState = .loading
         let captured = await WindowPreviewService.shared
             .previews(forProcessIdentifier: app.processIdentifier)
         guard !Task.isCancelled else { return }
 
         previews = Array(captured.prefix(OrbitConfig.maxVisiblePreviews))
         isLoadingPreviews = false
+        if previews.isEmpty {
+            if let processesWithWindows = WindowVisibilityChecker.processesWithWindows() {
+                previewState = processesWithWindows.contains(app.processIdentifier)
+                    ? .unavailable
+                    : .noOpenWindows
+            } else {
+                previewState = .unavailable
+            }
+        } else {
+            previewState = .ready
+        }
     }
 
     func moveWindowSelection(step: Int) {
@@ -241,6 +288,15 @@ final class OrbitRingViewModel: ObservableObject {
             onCancel?()
             return
         }
+
+        // Orbit has no ordinary application window to activate. Selecting its
+        // card simply dismisses the ring; dragging it to the center is the
+        // explicit cleanup gesture handled in `finishAppDrag` below.
+        if selectedApp.isOrbit {
+            onCancel?()
+            return
+        }
+
         onActivate?(selectedApp, selectedWindowTitle)
     }
 
@@ -290,6 +346,12 @@ final class OrbitRingViewModel: ObservableObject {
         guard shouldQuit else { return }
 
         selectedID = nil
+
+        if app.isOrbit {
+            cleanupWindowlessApps()
+            return
+        }
+
         dissolvingAppID = app.id
         app.terminate { [weak self] success in
             DispatchQueue.main.async {
@@ -309,6 +371,58 @@ final class OrbitRingViewModel: ObservableObject {
                         self.onCancel?()
                     }
                 }
+            }
+        }
+    }
+
+    /// Requests a normal quit for the cards that are truly windowless. A blank
+    /// preview is deliberately not enough: capture can fail while a real app
+    /// window still exists. Finder and Orbit are never candidates.
+    private func cleanupWindowlessApps() {
+        guard let windowedPIDs = WindowVisibilityChecker.processesWithWindows() else {
+            onCancel?()
+            return
+        }
+
+        let candidates = apps.filter { app in
+            !app.isOrbit && !app.isFinder && !windowedPIDs.contains(app.processIdentifier)
+        }
+        guard !candidates.isEmpty else {
+            onCancel?()
+            return
+        }
+
+        selectedID = nil
+        bulkCleanupPendingIDs = Set(candidates.map(\.id))
+        bulkCleanupSucceededIDs = []
+        bulkDissolvingAppIDs = bulkCleanupPendingIDs
+
+        for app in candidates {
+            app.terminate { [weak self] success in
+                DispatchQueue.main.async {
+                    self?.finishBulkCleanup(for: app.id, succeeded: success)
+                }
+            }
+        }
+    }
+
+    private func finishBulkCleanup(for appID: String, succeeded: Bool) {
+        guard bulkCleanupPendingIDs.remove(appID) != nil else { return }
+        if succeeded {
+            bulkCleanupSucceededIDs.insert(appID)
+        }
+        guard bulkCleanupPendingIDs.isEmpty else { return }
+
+        let succeededIDs = bulkCleanupSucceededIDs
+        let failed = succeededIDs.count < bulkDissolvingAppIDs.count
+        let remaining = max(0, OrbitConfig.dissolveDuration - OrbitConfig.terminateGracePeriod)
+        DispatchQueue.main.asyncAfter(deadline: .now() + remaining) { [weak self] in
+            guard let self else { return }
+            self.apps.removeAll { succeededIDs.contains($0.id) }
+            self.bulkDissolvingAppIDs = []
+            self.bulkCleanupSucceededIDs = []
+            if !failed {
+                self.onCancel?()
             }
         }
     }
@@ -477,6 +591,7 @@ enum OrbitCenterMode: CaseIterable {
     case cancel
     case confirm
     case quit
+    case cleanup
     case share
     case trash
 
@@ -494,6 +609,7 @@ enum OrbitCenterMode: CaseIterable {
         case .cancel: "xmark"
         case .confirm: "arrow.right"
         case .quit: "power"
+        case .cleanup: "sparkles"
         case .trash: "trash"
         case .share: "dot.radiowaves.left.and.right"
         }
@@ -531,7 +647,7 @@ struct OrbitRingView: View {
                     angle: model.angle(for: index),
                     isSelected: model.selectedID == app.id,
                     isDragging: model.draggedAppID == app.id,
-                    isDissolving: model.dissolvingAppID == app.id,
+                    isDissolving: model.dissolvingAppID == app.id || model.bulkDissolvingAppIDs.contains(app.id),
                     dragOffset: model.draggedAppID == app.id ? model.dragOffset : .zero,
                     onSelect: { model.select(app) },
                     onHoverSelect: { model.selectFromHover(app) },
@@ -604,14 +720,49 @@ private struct OrbitPreviewPanel: View {
 
     var body: some View {
         Group {
-            if model.selectedApp == nil {
-                placeholder(Text("preview.empty"))
-            } else if !model.previews.isEmpty {
+            switch model.previewState {
+            case .idle:
+                statusCard(
+                    systemName: "square.grid.2x2",
+                    titleKey: "preview.empty.title",
+                    messageKey: "preview.empty.message"
+                )
+            case .loading:
+                statusCard(
+                    systemName: "rectangle.inset.filled",
+                    titleKey: "preview.loading.title",
+                    messageKey: "preview.loading.message",
+                    showsProgress: true
+                )
+            case .ready:
                 carousel
-            } else if model.isLoadingPreviews {
-                placeholder(ProgressView().controlSize(.small))
-            } else {
-                placeholder(Text("preview.none"))
+            case .orbit:
+                statusCard(
+                    app: model.selectedApp,
+                    titleKey: "preview.orbit.title",
+                    messageKey: "preview.orbit.message",
+                    hintKey: "preview.orbit.hint"
+                )
+            case .screenRecordingRequired:
+                statusCard(
+                    systemName: "lock.shield",
+                    titleKey: "preview.permission.title",
+                    messageKey: "preview.permission.message",
+                    actionKey: "preview.permission.action",
+                    action: SystemSettingsLink.screenRecording.open
+                )
+            case .noOpenWindows:
+                statusCard(
+                    app: model.selectedApp,
+                    titleKey: "preview.noWindows.title",
+                    messageKey: "preview.noWindows.message"
+                )
+            case .unavailable:
+                statusCard(
+                    app: model.selectedApp,
+                    titleKey: "preview.unavailable.title",
+                    messageKey: "preview.unavailable.message"
+                )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -714,16 +865,83 @@ private struct OrbitPreviewPanel: View {
         return raw
     }
 
-    /// Carries its own backing so the message stays readable against whatever
-    /// wallpaper the ring happens to open over.
-    private func placeholder(_ content: some View) -> some View {
-        content
-            .font(.system(size: 13))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .background(.regularMaterial, in: Capsule())
-            .offset(x: model.previewOverlap / 2)
+    private func statusCard(
+        systemName: String? = nil,
+        app: AppInfo? = nil,
+        titleKey: String,
+        messageKey: String,
+        hintKey: String? = nil,
+        actionKey: String? = nil,
+        action: (() -> Void)? = nil,
+        showsProgress: Bool = false
+    ) -> some View {
+        VStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(OrbitPalette.burgundy.opacity(0.11))
+                    .frame(width: 74, height: 74)
+
+                if let app {
+                    Image(nsImage: app.icon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 40, height: 40)
+                } else if let systemName {
+                    Image(systemName: systemName)
+                        .font(.system(size: 27, weight: .medium))
+                        .foregroundStyle(OrbitPalette.burgundy)
+                }
+            }
+
+            VStack(spacing: 5) {
+                Text(LocalizedStringKey(titleKey))
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.center)
+
+                Text(LocalizedStringKey(messageKey))
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let hintKey {
+                    Text(LocalizedStringKey(hintKey))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(OrbitPalette.burgundy)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            if showsProgress {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(OrbitPalette.burgundy)
+            }
+
+            if let actionKey, let action {
+                Text(LocalizedStringKey(actionKey))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(OrbitPalette.burgundy)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(OrbitPalette.burgundy.opacity(0.10), in: Capsule())
+                    .contentShape(Capsule())
+                    .onTapGesture(perform: action)
+                    .accessibilityAddTraits(.isButton)
+            }
+        }
+        .frame(maxWidth: 360)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 24)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(.white.opacity(0.24), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
+        .offset(x: model.previewOverlap / 2)
     }
 }
 
@@ -973,7 +1191,7 @@ private struct OrbitCenterControl: View {
             }
         }
         .onTapGesture {
-            if mode != .quit && mode != .trash && mode != .share {
+            if mode != .quit && mode != .cleanup && mode != .trash && mode != .share {
                 onCancel()
             }
         }
@@ -989,6 +1207,7 @@ private struct OrbitCenterControl: View {
         case .cancel: NSLocalizedString("center.cancel", comment: "")
         case .confirm: NSLocalizedString("center.confirm", comment: "")
         case .quit: NSLocalizedString("center.quit", comment: "")
+        case .cleanup: NSLocalizedString("center.cleanup", comment: "")
         case .share: NSLocalizedString("center.share", comment: "")
         case .trash: NSLocalizedString("center.trash", comment: "")
         }
@@ -999,6 +1218,7 @@ private struct OrbitCenterControl: View {
         case .cancel: .black.opacity(0.82)
         case .confirm: OrbitPalette.burgundy.opacity(0.92)
         case .quit, .trash: .black
+        case .cleanup: .black.opacity(0.9)
         case .share: OrbitPalette.denim.opacity(0.96)
         }
     }
@@ -1008,6 +1228,7 @@ private struct OrbitCenterControl: View {
         case .cancel: .white.opacity(0.65)
         case .confirm: OrbitPalette.burgundy
         case .quit, .trash: OrbitPalette.coral
+        case .cleanup: OrbitPalette.burgundy
         case .share: OrbitPalette.burgundy.opacity(0.65)
         }
     }

@@ -17,6 +17,11 @@
 "prefs.access.missing" = "Orbit bezonas alireblecan permeson";
 "prefs.access.grant" = "Permesi…";
 
+/* Settings — ring */
+"prefs.group.ring" = "Ringo";
+"prefs.ring.showOrbitCard" = "Montri Orbit en la ringo";
+"prefs.ring.showOrbitCard.note" = "Montri Orbit kiel purigan karton por aplikaĵoj sen malfermitaj fenestroj.";
+
 /* Settings — summoning */
 "prefs.group.trigger" = "Alvoko";
 "prefs.trigger.key" = "Alvoki per";
@@ -81,10 +86,25 @@
 "center.cancel" = "Nuligi";
 "center.confirm" = "Lasu por ŝalti";
 "center.quit" = "Faligu por fermi";
+"center.cleanup" = "Faligu por fermi aplikaĵojn sen fenestroj";
 "center.share" = "Faligu por kunhavigi";
 "center.trash" = "Faligu en rubujon";
 
 /* Ring — window preview panel */
+"preview.empty.title" = "Elektu aplikaĵon";
+"preview.empty.message" = "Elektu karton por vidi ĝian fenestran antaŭrigardon.";
+"preview.loading.title" = "Ŝargante antaŭrigardon";
+"preview.loading.message" = "Akirante la plej novan fenestran bildon.";
+"preview.orbit.title" = "Orbit funkcias";
+"preview.orbit.message" = "Orbit loĝas en la menubreto kaj ne havas fenestran antaŭrigardon.";
+"preview.orbit.hint" = "Trenu la Orbit-karton al la centro por fermi aplikaĵojn sen malfermitaj fenestroj.";
+"preview.permission.title" = "Aliro al ekranregistrado necesas";
+"preview.permission.message" = "Permesu al Orbit en Sistemaj Agordoj montri fenestrajn antaŭrigardojn.";
+"preview.permission.action" = "Malfermi agordojn de ekranregistrado…";
+"preview.noWindows.title" = "Neniuj malfermitaj fenestroj";
+"preview.noWindows.message" = "Ĉi tiu aplikaĵo funkcias, sed ne havas fenestron por antaŭrigardi.";
+"preview.unavailable.title" = "Antaŭrigardo ne disponeblas";
+"preview.unavailable.message" = "La aplikaĵo havas fenestron, sed macOS ne provizis antaŭrigardon.";
 "preview.empty" = "Elektu aplikaĵon por vidi fenestrojn";
 "preview.none" = "Neniu fenestro por antaŭrigardi";
 
@@ -98,4 +118,5 @@
 "onboarding.start" = "Komenci";
 
 /* Fallbacks */
+"app.orbit" = "Orbit";
 "app.unnamed" = "Sennoma aplikaĵo";

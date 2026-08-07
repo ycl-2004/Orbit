@@ -17,6 +17,11 @@
 "prefs.access.missing" = "Orbit にはアクセシビリティ権限が必要です";
 "prefs.access.grant" = "許可する…";
 
+/* Settings — ring */
+"prefs.group.ring" = "リング";
+"prefs.ring.showOrbitCard" = "リングに Orbit を表示";
+"prefs.ring.showOrbitCard.note" = "開いているウインドウがないアプリを終了するためのカードとして Orbit を表示します。";
+
 /* Settings — summoning */
 "prefs.group.trigger" = "呼び出し";
 "prefs.trigger.key" = "呼び出しキー";
@@ -81,10 +86,25 @@
 "center.cancel" = "キャンセル";
 "center.confirm" = "離して切り替え";
 "center.quit" = "ドロップして終了";
+"center.cleanup" = "ドロップしてウインドウのないアプリを終了";
 "center.share" = "ドロップして共有";
 "center.trash" = "ドロップしてゴミ箱へ";
 
 /* Ring — window preview panel */
+"preview.empty.title" = "アプリを選択";
+"preview.empty.message" = "カードを選択するとウインドウのプレビューが表示されます。";
+"preview.loading.title" = "プレビューを読み込み中";
+"preview.loading.message" = "最新のウインドウ画像を取得しています。";
+"preview.orbit.title" = "Orbit は起動中です";
+"preview.orbit.message" = "Orbit はメニューバーに常駐しているため、ウインドウプレビューはありません。";
+"preview.orbit.hint" = "Orbit カードを中央にドラッグすると、ウインドウのないアプリを終了します。";
+"preview.permission.title" = "画面収録の許可が必要です";
+"preview.permission.message" = "ウインドウプレビューを表示するには、システム設定で Orbit に画面収録を許可してください。";
+"preview.permission.action" = "画面収録設定を開く…";
+"preview.noWindows.title" = "開いているウインドウがありません";
+"preview.noWindows.message" = "このアプリは実行中ですが、プレビューできるウインドウがありません。";
+"preview.unavailable.title" = "プレビューを利用できません";
+"preview.unavailable.message" = "アプリにはウインドウがありますが、macOS がプレビューを提供しませんでした。";
 "preview.empty" = "アプリを選択してウインドウを表示";
 "preview.none" = "プレビューできるウインドウがありません";
 
@@ -98,4 +118,5 @@
 "onboarding.start" = "はじめる";
 
 /* Fallbacks */
+"app.orbit" = "Orbit";
 "app.unnamed" = "名称未設定のアプリ";

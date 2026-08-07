@@ -17,6 +17,11 @@
 "prefs.access.missing" = "Orbit benötigt Zugriff auf die Bedienungshilfen";
 "prefs.access.grant" = "Erlauben …";
 
+/* Settings — ring */
+"prefs.group.ring" = "Ring";
+"prefs.ring.showOrbitCard" = "Orbit im Ring anzeigen";
+"prefs.ring.showOrbitCard.note" = "Orbit als Karte zum Beenden von Apps ohne offene Fenster anzeigen.";
+
 /* Settings — summoning */
 "prefs.group.trigger" = "Aufrufen";
 "prefs.trigger.key" = "Aufrufen mit";
@@ -81,10 +86,25 @@
 "center.cancel" = "Abbrechen";
 "center.confirm" = "Loslassen zum Wechseln";
 "center.quit" = "Hierher ziehen zum Beenden";
+"center.cleanup" = "Hierher ziehen, um fensterlose Apps zu beenden";
 "center.share" = "Hierher ziehen zum Teilen";
 "center.trash" = "Hierher ziehen für den Papierkorb";
 
 /* Ring — window preview panel */
+"preview.empty.title" = "App auswählen";
+"preview.empty.message" = "Wähle eine Karte, um die Fenstervorschau zu sehen.";
+"preview.loading.title" = "Vorschau wird geladen";
+"preview.loading.message" = "Das aktuelle Fensterbild wird abgerufen.";
+"preview.orbit.title" = "Orbit läuft";
+"preview.orbit.message" = "Orbit lebt in der Menüleiste und hat keine Fenstervorschau.";
+"preview.orbit.hint" = "Ziehe die Orbit-Karte in die Mitte, um Apps ohne offene Fenster zu beenden.";
+"preview.permission.title" = "Bildschirmaufnahme erforderlich";
+"preview.permission.message" = "Erlaube Orbit in den Systemeinstellungen die Bildschirmaufnahme, um Fenstervorschauen anzuzeigen.";
+"preview.permission.action" = "Einstellungen für Bildschirmaufnahme öffnen…";
+"preview.noWindows.title" = "Keine offenen Fenster";
+"preview.noWindows.message" = "Diese App läuft, hat aber kein Fenster zur Vorschau.";
+"preview.unavailable.title" = "Vorschau nicht verfügbar";
+"preview.unavailable.message" = "Die App hat ein Fenster, aber macOS stellt keine Vorschau bereit.";
 "preview.empty" = "App auswählen, um Fenster zu sehen";
 "preview.none" = "Keine Fenster zur Vorschau";
 
@@ -98,4 +118,5 @@
 "onboarding.start" = "Loslegen";
 
 /* Fallbacks */
+"app.orbit" = "Orbit";
 "app.unnamed" = "Unbenannte App";

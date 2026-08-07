@@ -70,6 +70,10 @@ final class SettingsModel: ObservableObject {
         didSet { writeThrough { OrbitConfig.hideWindowlessApps = hideWindowlessApps } }
     }
 
+    @Published var showOrbitCard: Bool = OrbitConfig.showOrbitCard {
+        didSet { writeThrough { OrbitConfig.showOrbitCard = showOrbitCard } }
+    }
+
     // MARK: - 窗口预览
 
     @Published var windowPreviewEnabled: Bool = OrbitConfig.windowPreviewEnabled {
@@ -119,6 +123,7 @@ final class SettingsModel: ObservableObject {
             cardMaterial = OrbitConfig.cardMaterial
             accentColor = OrbitConfig.accentColor
             hideWindowlessApps = OrbitConfig.hideWindowlessApps
+            showOrbitCard = OrbitConfig.showOrbitCard
             windowPreviewEnabled = OrbitConfig.windowPreviewEnabled
             launchAtLogin = LoginItemService.reload()
             hasAccessibility = HotKeyService.checkAccessibilityPermission()

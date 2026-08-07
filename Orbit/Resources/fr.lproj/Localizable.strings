@@ -17,6 +17,11 @@
 "prefs.access.missing" = "Orbit a besoin de l'accès à l'accessibilité";
 "prefs.access.grant" = "Autoriser…";
 
+/* Settings — ring */
+"prefs.group.ring" = "Anneau";
+"prefs.ring.showOrbitCard" = "Afficher Orbit dans l’anneau";
+"prefs.ring.showOrbitCard.note" = "Afficher Orbit comme carte pour quitter les apps sans fenêtre ouverte.";
+
 /* Settings — summoning */
 "prefs.group.trigger" = "Invocation";
 "prefs.trigger.key" = "Invoquer avec";
@@ -81,10 +86,25 @@
 "center.cancel" = "Annuler";
 "center.confirm" = "Relâchez pour basculer";
 "center.quit" = "Déposez pour quitter";
+"center.cleanup" = "Déposez pour quitter les apps sans fenêtre";
 "center.share" = "Déposez pour partager";
 "center.trash" = "Déposez pour mettre à la corbeille";
 
 /* Ring — window preview panel */
+"preview.empty.title" = "Choisir une app";
+"preview.empty.message" = "Sélectionnez une carte pour voir son aperçu de fenêtre.";
+"preview.loading.title" = "Chargement de l’aperçu";
+"preview.loading.message" = "Récupération de l’image de fenêtre la plus récente.";
+"preview.orbit.title" = "Orbit est ouvert";
+"preview.orbit.message" = "Orbit vit dans la barre des menus et n’a pas d’aperçu de fenêtre.";
+"preview.orbit.hint" = "Faites glisser la carte Orbit au centre pour quitter les apps sans fenêtre.";
+"preview.permission.title" = "Accès à l’enregistrement d’écran requis";
+"preview.permission.message" = "Autorisez Orbit dans Réglages Système pour afficher les aperçus de fenêtres.";
+"preview.permission.action" = "Ouvrir les réglages d’enregistrement d’écran…";
+"preview.noWindows.title" = "Aucune fenêtre ouverte";
+"preview.noWindows.message" = "Cette app est ouverte, mais n’a aucune fenêtre à prévisualiser.";
+"preview.unavailable.title" = "Aperçu indisponible";
+"preview.unavailable.message" = "L’app a une fenêtre, mais macOS n’a pas fourni d’aperçu.";
 "preview.empty" = "Sélectionnez une app pour voir ses fenêtres";
 "preview.none" = "Aucune fenêtre à prévisualiser";
 
@@ -98,4 +118,5 @@
 "onboarding.start" = "C'est parti";
 
 /* Fallbacks */
+"app.orbit" = "Orbit";
 "app.unnamed" = "App sans nom";

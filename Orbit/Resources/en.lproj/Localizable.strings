@@ -17,6 +17,11 @@
 "prefs.access.missing" = "Orbit needs Accessibility access";
 "prefs.access.grant" = "Grant…";
 
+/* Settings — ring */
+"prefs.group.ring" = "Ring";
+"prefs.ring.showOrbitCard" = "Show Orbit in the ring";
+"prefs.ring.showOrbitCard.note" = "Show Orbit as a cleanup card for apps without open windows.";
+
 /* Settings — summoning */
 "prefs.group.trigger" = "Summoning";
 "prefs.trigger.key" = "Summon with";
@@ -81,10 +86,25 @@
 "center.cancel" = "Cancel";
 "center.confirm" = "Release to switch";
 "center.quit" = "Drop to quit";
+"center.cleanup" = "Drop to close windowless apps";
 "center.share" = "Drop to Share";
 "center.trash" = "Drop to Trash";
 
 /* Ring — window preview panel */
+"preview.empty.title" = "Choose an app";
+"preview.empty.message" = "Select a card to see its window preview.";
+"preview.loading.title" = "Loading preview";
+"preview.loading.message" = "Getting the latest window image.";
+"preview.orbit.title" = "Orbit is running";
+"preview.orbit.message" = "Orbit lives in the menu bar and has no window preview.";
+"preview.orbit.hint" = "Drag the Orbit card to the center to close apps without open windows.";
+"preview.permission.title" = "Screen Recording access required";
+"preview.permission.message" = "Allow Orbit in System Settings to show window previews.";
+"preview.permission.action" = "Open Screen Recording Settings…";
+"preview.noWindows.title" = "No open windows";
+"preview.noWindows.message" = "This app is running, but it has no window to preview.";
+"preview.unavailable.title" = "Preview unavailable";
+"preview.unavailable.message" = "The app has a window, but macOS did not provide a preview.";
 "preview.empty" = "Select an app to see its windows";
 "preview.none" = "No windows to preview";
 
@@ -98,4 +118,5 @@
 "onboarding.start" = "Get Started";
 
 /* Fallbacks */
+"app.orbit" = "Orbit";
 "app.unnamed" = "Untitled app";

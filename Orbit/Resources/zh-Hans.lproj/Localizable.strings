@@ -17,6 +17,11 @@
 "prefs.access.missing" = "Orbit 需要辅助功能权限";
 "prefs.access.grant" = "去授权…";
 
+/* Settings — ring */
+"prefs.group.ring" = "环形界面";
+"prefs.ring.showOrbitCard" = "在环上显示 Orbit";
+"prefs.ring.showOrbitCard.note" = "显示 Orbit 清理卡片，用于关闭没有打开窗口的应用。";
+
 /* Settings — summoning */
 "prefs.group.trigger" = "唤出方式";
 "prefs.trigger.key" = "唤出按键";
@@ -81,10 +86,25 @@
 "center.cancel" = "取消";
 "center.confirm" = "松开切换";
 "center.quit" = "拖入退出应用";
+"center.cleanup" = "拖入关闭无窗口应用";
 "center.share" = "拖入分享";
 "center.trash" = "拖入废纸篓";
 
 /* Ring — window preview panel */
+"preview.empty.title" = "选择一个应用";
+"preview.empty.message" = "选择一张卡片查看它的窗口预览。";
+"preview.loading.title" = "正在加载预览";
+"preview.loading.message" = "正在获取最新的窗口画面。";
+"preview.orbit.title" = "Orbit 正在运行";
+"preview.orbit.message" = "Orbit 常驻菜单栏，没有可预览的窗口。";
+"preview.orbit.hint" = "将 Orbit 卡片拖到中心，关闭没有打开窗口的应用。";
+"preview.permission.title" = "需要屏幕录制权限";
+"preview.permission.message" = "请在系统设置中允许 Orbit 访问屏幕录制，以显示窗口预览。";
+"preview.permission.action" = "打开屏幕录制设置…";
+"preview.noWindows.title" = "没有打开的窗口";
+"preview.noWindows.message" = "此应用正在运行，但没有可预览的窗口。";
+"preview.unavailable.title" = "预览不可用";
+"preview.unavailable.message" = "应用有窗口，但 macOS 没有提供预览。";
 "preview.empty" = "选择一个应用查看窗口";
 "preview.none" = "没有可预览的窗口";
 
@@ -98,4 +118,5 @@
 "onboarding.start" = "上手试试";
 
 /* Fallbacks */
+"app.orbit" = "Orbit";
 "app.unnamed" = "未命名应用";

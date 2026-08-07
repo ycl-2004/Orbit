@@ -155,6 +155,25 @@ struct OrbitTests {
         #expect(OrbitConfig.hideWindowlessApps)
     }
 
+    @Test @MainActor func orbitCardCanBeShownOrHiddenFromTheRing() {
+        let previous = UserDefaults.standard.object(forKey: "showOrbitCard")
+        defer {
+            if let previous {
+                UserDefaults.standard.set(previous, forKey: "showOrbitCard")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "showOrbitCard")
+            }
+        }
+
+        OrbitConfig.showOrbitCard = true
+        let shown = OrbitRingViewModel(apps: [.orbit], showsPreview: false)
+        #expect(shown.apps.contains(where: { $0.isOrbit }))
+
+        OrbitConfig.showOrbitCard = false
+        let hidden = OrbitRingViewModel(apps: [.orbit], showsPreview: false)
+        #expect(!hidden.apps.contains(where: { $0.isOrbit }))
+    }
+
     @Test func firstLetterFoldsAccentsAndNonLatinNames() {
         func app(named name: String) -> AppInfo {
             AppInfo(

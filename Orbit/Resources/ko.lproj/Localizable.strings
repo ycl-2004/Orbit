@@ -17,6 +17,11 @@
 "prefs.access.missing" = "Orbit에 손쉬운 사용 권한이 필요합니다";
 "prefs.access.grant" = "허용…";
 
+/* Settings — ring */
+"prefs.group.ring" = "링";
+"prefs.ring.showOrbitCard" = "링에 Orbit 표시";
+"prefs.ring.showOrbitCard.note" = "열린 윈도우가 없는 앱을 종료하는 정리 카드로 Orbit을 표시합니다.";
+
 /* Settings — summoning */
 "prefs.group.trigger" = "호출";
 "prefs.trigger.key" = "호출 키";
@@ -81,10 +86,25 @@
 "center.cancel" = "취소";
 "center.confirm" = "놓으면 전환";
 "center.quit" = "끌어다 놓아 종료";
+"center.cleanup" = "끌어다 놓아 윈도우 없는 앱 종료";
 "center.share" = "끌어다 놓아 공유";
 "center.trash" = "끌어다 놓아 휴지통으로";
 
 /* Ring — window preview panel */
+"preview.empty.title" = "앱 선택";
+"preview.empty.message" = "카드를 선택하면 윈도우 미리보기가 표시됩니다.";
+"preview.loading.title" = "미리보기 로드 중";
+"preview.loading.message" = "최신 윈도우 이미지를 가져오는 중입니다.";
+"preview.orbit.title" = "Orbit 실행 중";
+"preview.orbit.message" = "Orbit은 메뉴 막대에 상주하며 윈도우 미리보기가 없습니다.";
+"preview.orbit.hint" = "Orbit 카드를 중앙으로 드래그하면 열린 윈도우가 없는 앱을 종료합니다.";
+"preview.permission.title" = "화면 기록 권한 필요";
+"preview.permission.message" = "윈도우 미리보기를 표시하려면 시스템 설정에서 Orbit의 화면 기록을 허용하세요.";
+"preview.permission.action" = "화면 기록 설정 열기…";
+"preview.noWindows.title" = "열린 윈도우 없음";
+"preview.noWindows.message" = "이 앱은 실행 중이지만 미리볼 윈도우가 없습니다.";
+"preview.unavailable.title" = "미리보기 사용 불가";
+"preview.unavailable.message" = "앱에 윈도우가 있지만 macOS가 미리보기를 제공하지 않았습니다.";
 "preview.empty" = "앱을 선택해 윈도우 보기";
 "preview.none" = "미리볼 윈도우가 없습니다";
 
@@ -98,4 +118,5 @@
 "onboarding.start" = "시작하기";
 
 /* Fallbacks */
+"app.orbit" = "Orbit";
 "app.unnamed" = "이름 없는 앱";

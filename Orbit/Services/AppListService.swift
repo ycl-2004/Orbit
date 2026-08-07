@@ -54,8 +54,15 @@ final class AppListService {
             listed
         }
 
-        return survivors
+        let apps = survivors
             .map(makeAppInfo)
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+
+        // Orbit is a menu-bar app and intentionally does not pass the normal
+        // activation-policy filter above. Add it explicitly when the user has
+        // chosen to represent Orbit in its own ring.
+        guard OrbitConfig.showOrbitCard else { return apps }
+        return (apps + [.orbit])
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 

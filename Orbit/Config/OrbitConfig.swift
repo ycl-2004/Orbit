@@ -155,6 +155,14 @@ enum OrbitConfig {
         set { defaults.set(newValue, forKey: "hideWindowlessApps") }
     }
 
+    /// Orbit can be represented as a card in its own ring, but some users
+    /// prefer the ring to contain only other running apps. Keep the card on by
+    /// default and persist the choice alongside the other ring filters.
+    static var showOrbitCard: Bool {
+        get { defaults.object(forKey: "showOrbitCard") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "showOrbitCard") }
+    }
+
     /// Opt-in because window capture needs the Screen Recording permission,
     /// which the ring itself does not.
     static var windowPreviewEnabled: Bool {

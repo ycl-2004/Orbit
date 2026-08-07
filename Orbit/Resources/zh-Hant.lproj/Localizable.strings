@@ -17,6 +17,11 @@
 "prefs.access.missing" = "Orbit 需要輔助使用權限";
 "prefs.access.grant" = "去授權…";
 
+/* Settings — ring */
+"prefs.group.ring" = "環形介面";
+"prefs.ring.showOrbitCard" = "在環上顯示 Orbit";
+"prefs.ring.showOrbitCard.note" = "顯示 Orbit 清理卡片，用來結束沒有開啟視窗的應用程式。";
+
 /* Settings — summoning */
 "prefs.group.trigger" = "喚出方式";
 "prefs.trigger.key" = "喚出按鍵";
@@ -81,10 +86,25 @@
 "center.cancel" = "取消";
 "center.confirm" = "放開切換";
 "center.quit" = "拖入結束應用程式";
+"center.cleanup" = "拖入結束無視窗應用程式";
 "center.share" = "拖入分享";
 "center.trash" = "拖入垃圾桶";
 
 /* Ring — window preview panel */
+"preview.empty.title" = "選擇一個應用程式";
+"preview.empty.message" = "選擇一張卡片查看它的視窗預覽。";
+"preview.loading.title" = "正在載入預覽";
+"preview.loading.message" = "正在取得最新的視窗畫面。";
+"preview.orbit.title" = "Orbit 正在執行";
+"preview.orbit.message" = "Orbit 常駐選單列，沒有可預覽的視窗。";
+"preview.orbit.hint" = "將 Orbit 卡片拖到中心，結束沒有開啟視窗的應用程式。";
+"preview.permission.title" = "需要螢幕錄製權限";
+"preview.permission.message" = "請在系統設定中允許 Orbit 存取螢幕錄製，以顯示視窗預覽。";
+"preview.permission.action" = "打開螢幕錄製設定…";
+"preview.noWindows.title" = "沒有開啟的視窗";
+"preview.noWindows.message" = "此應用程式正在執行，但沒有可預覽的視窗。";
+"preview.unavailable.title" = "預覽無法使用";
+"preview.unavailable.message" = "應用程式有視窗，但 macOS 沒有提供預覽。";
 "preview.empty" = "選擇一個應用程式查看視窗";
 "preview.none" = "沒有可預覽的視窗";
 
@@ -98,4 +118,5 @@
 "onboarding.start" = "開始體驗";
 
 /* Fallbacks */
+"app.orbit" = "Orbit";
 "app.unnamed" = "未命名應用程式";

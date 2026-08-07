@@ -13,10 +13,47 @@ struct AppInfo: Identifiable, Equatable {
     let icon: NSImage
     let bundleURL: URL?
     let processIdentifier: pid_t
+    let isOrbit: Bool
+
+    init(
+        id: String,
+        name: String,
+        icon: NSImage,
+        bundleURL: URL?,
+        processIdentifier: pid_t,
+        isOrbit: Bool = false
+    ) {
+        self.id = id
+        self.name = name
+        self.icon = icon
+        self.bundleURL = bundleURL
+        self.processIdentifier = processIdentifier
+        self.isOrbit = isOrbit
+    }
 
     /// 两条记录指向同一个应用即视为相等；图标对象换了新实例不算变化。
     static func == (lhs: AppInfo, rhs: AppInfo) -> Bool {
         lhs.id == rhs.id
+    }
+
+    var isFinder: Bool {
+        id == "com.apple.finder" || bundleURL?.lastPathComponent == "Finder.app"
+    }
+}
+
+extension AppInfo {
+    /// Orbit is a menu-bar app, so it has no regular document window to discover
+    /// through `NSWorkspace`. It is still a real card in the ring, built from
+    /// the app's own icon and process identity.
+    static var orbit: AppInfo {
+        AppInfo(
+            id: Bundle.main.bundleIdentifier ?? "app.orbit",
+            name: NSLocalizedString("app.orbit", comment: "Orbit app name"),
+            icon: NSApp.applicationIconImage,
+            bundleURL: Bundle.main.bundleURL,
+            processIdentifier: ProcessInfo.processInfo.processIdentifier,
+            isOrbit: true
+        )
     }
 }
 

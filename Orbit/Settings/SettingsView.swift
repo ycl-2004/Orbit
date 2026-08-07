@@ -89,6 +89,14 @@ private struct GeneralSettingsPane: View {
             }
 
             Section {
+                Toggle("prefs.ring.showOrbitCard", isOn: $model.showOrbitCard)
+            } header: {
+                Text("prefs.group.ring")
+            } footer: {
+                Text("prefs.ring.showOrbitCard.note")
+            }
+
+            Section {
                 Toggle("prefs.preview.enabled", isOn: $model.windowPreviewEnabled)
 
                 if model.windowPreviewEnabled && !model.hasScreenRecording {
