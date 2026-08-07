@@ -21,6 +21,7 @@
 "prefs.group.language" = "Sprog";
 "prefs.language.picker" = "Grænsefladens sprog";
 "prefs.language.restartNote" = "Orbit skal genstartes, før det nye sprog vises.";
+"prefs.language.restartFailed" = "Orbit kunne ikke genstarte. Den nuværende version kører videre — prøv igen, eller afslut og åbn Orbit manuelt.";
 "prefs.language.restart" = "Genstart Orbit";
 "language.system" = "Følg systemet";
 
@@ -109,6 +110,7 @@
 "center.cleanup" = "Slip for at lukke apps uden vinduer";
 "center.share" = "Slip for at dele";
 "center.trash" = "Slip for at flytte til papirkurv";
+"center.failed" = "Kunne ikke gennemføres";
 
 /* Ring — window preview panel */
 "preview.empty.title" = "Vælg en app";

@@ -97,7 +97,7 @@ release is still `v1.3.0`; source-only improvements are recorded under
 
 - Hold the trigger modifier to open Orbit near the cursor.
 - Hover or click a card to select it; release the trigger or press Enter to confirm.
-- Press Escape or click the center to cancel.
+- Press Escape to cancel. Clicking the center does whatever it currently says it does: Cancel when nothing is selected, Confirm when an app is selected.
 - Use the arrow keys (and Tab) to navigate apps by default. Settings can enable number keys `1`–`9` or first-letter matching as additional shortcuts.
 - When previews are enabled and the selected app has multiple windows, use left/right to choose a window; release the trigger or press Enter to activate it.
 - Press the clear-selection key (Shift by default) to remove the highlight; releasing the trigger then closes Orbit without switching.

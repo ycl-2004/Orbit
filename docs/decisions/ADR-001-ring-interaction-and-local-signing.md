@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted; the center-target rule amended 2026-08-07 (see Amendments).
 
 ## Date
 
@@ -29,9 +29,11 @@ Orbit uses three distinct states:
 3. App dragged into the center: the center changes to a Quit target; only
    releasing an explicit card drag can terminate the app.
 
-Escape and clicking the center cancel the ring. Releasing the trigger without
-   a selected app also cancels, so a user cannot accidentally jump to an app
-   merely by opening and closing the ring.
+Escape cancels the ring. Clicking the center performs whatever the center
+   currently announces — Cancel in state 1, Confirm in state 2 (see
+   Amendments). Releasing the trigger without a selected app also cancels, so a
+   user cannot accidentally jump to an app merely by opening and closing the
+   ring.
 
 While the ring is open, the event tap is an active filter and consumes keyboard
 navigation events after translating them into Orbit commands. This prevents
@@ -95,3 +97,26 @@ be committed to a portable project.
 - Window previews add a privacy-sensitive permission and a restart step, but
   they remain optional so the core app switcher does not depend on Screen
   Recording access.
+
+## Amendments
+
+### 2026-08-07 — the center is labelled, not fixed
+
+The original decision made "click the center" mean Cancel in every state. That
+held only while the center had one thing to say. Once the hub started drawing
+its own state — an arrow and "release to switch" once an app is selected, a
+share glyph while files hover over it — a hub reading *Confirm* that cancelled
+instead was a control lying about itself, and the safety argument no longer
+applied: in state 2 the user has already made a choice, so acting on it is not
+a destructive surprise.
+
+The rule is now: clicking the center performs the action the center is
+displaying. Cancel with no selection, Confirm with one. The drag-owned states
+(Quit, Cleanup, Share, Trash, and the failure notice) still ignore clicks —
+those gestures decide their own outcome when released.
+
+Escape remains the unconditional cancel, with one exception: while a dropped
+file's URLs are still being read, a cancel is recorded and applied once the
+file operation settles. Closing the ring releases the view model that owns that
+operation, so cancelling mid-drop used to make an accepted AirDrop or Trash move
+vanish silently.

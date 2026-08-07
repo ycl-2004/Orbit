@@ -111,6 +111,14 @@ private struct GeneralSettingsPane: View {
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
+
+                            // 新实例没起来时旧的不会退，所以这里说的是"还没换过去"，
+                            // 而不是"Orbit 已经没了"。
+                            if model.restartFailed {
+                                Label("prefs.language.restartFailed", systemImage: "exclamationmark.triangle.fill")
+                                    .foregroundStyle(.secondary)
+                                    .font(.caption)
+                            }
                         }
                     }
                     .font(.callout)

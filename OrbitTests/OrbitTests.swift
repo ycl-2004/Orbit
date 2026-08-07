@@ -6,6 +6,7 @@
 
 import Testing
 import AppKit
+import UniformTypeIdentifiers
 @testable import Orbit
 
 struct OrbitTests {
@@ -375,6 +376,70 @@ struct OrbitTests {
         #expect(didCancel)
     }
 
+    /// 文件已经松手、URL 还在读的时候按 Escape，环不能说走就走。
+    ///
+    /// Dismissing releases the view model, and the completion handler that
+    /// finishes the drop holds it weakly — so a cancel landing inside that
+    /// window used to make an accepted AirDrop or Trash move disappear without
+    /// a trace. The cancel is recorded and applied once the drop settles.
+    @Test @MainActor func cancellingMidDropWaitsForTheDropToSettle() async throws {
+        let model = OrbitRingViewModel(apps: [])
+        var didCancel = false
+        model.onCancel = { didCancel = true }
+
+        _ = model.handleFileDrop([])
+        #expect(model.fileDropPhase == .completing)
+
+        model.cancel()
+        #expect(!didCancel)
+
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(model.fileDropPhase == .idle)
+        #expect(didCancel)
+    }
+
+    /// 同一个窗口里点中心也不能切走 —— 切换会关闭环，代价和取消一样。
+    @Test @MainActor func theHubDoesNotSwitchAppsWhileADropIsCompleting() async throws {
+        let model = OrbitRingViewModel(apps: [listed("com.a", "Alpha")])
+        var activated: AppInfo?
+        model.onActivate = { app, _ in activated = app }
+        model.select(model.apps[0])
+
+        _ = model.handleFileDrop([])
+        model.confirmFromHub()
+        #expect(activated == nil)
+
+        try await Task.sleep(for: .milliseconds(200))
+        model.confirmFromHub()
+        #expect(activated?.id == "com.a")
+    }
+
+    /// 扔不进废纸篓的文件必须说出来。
+    ///
+    /// `trashItem` used to be called with `try?`, so a locked file, a volume
+    /// with no Trash, or a path that no longer exists ended exactly like a
+    /// success: the ring closed and the file stayed put.
+    @Test @MainActor func aFailedTrashIsReportedOnTheHub() async throws {
+        let missing = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("orbit-not-a-real-file-\(UUID().uuidString)")
+        let provider = NSItemProvider(
+            item: missing.dataRepresentation as NSData,
+            typeIdentifier: UTType.fileURL.identifier
+        )
+
+        let model = OrbitRingViewModel(apps: [])
+        var didCancel = false
+        model.onCancel = { didCancel = true }
+
+        model.fileTrashReady = true
+        _ = model.handleFileDrop([provider])
+        try await Task.sleep(for: .milliseconds(300))
+
+        #expect(model.fileDropFailed)
+        #expect(model.centerMode == .failed)
+        #expect(!didCancel)
+    }
+
     /// 触发键设成 `.disabled` 会让环再也唤不出来，所以它连存都不该存得住。
     @Test func triggerModifierNeverResolvesToDisabled() {
         let previous = UserDefaults.standard.object(forKey: "triggerModifier")
@@ -391,7 +456,7 @@ struct OrbitTests {
         )
     }
 
-    /// 中心区域的五个状态必须各画各的，而且画得出来。
+    /// 中心区域的每个状态都必须各画各的，而且画得出来。
     ///
     /// A symbol name SwiftUI cannot resolve fails silently — the hub just renders
     /// empty — and two modes sharing one glyph is how "quit this app" and "throw

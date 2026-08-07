@@ -21,6 +21,7 @@
 "prefs.group.language" = "Язык";
 "prefs.language.picker" = "Язык интерфейса";
 "prefs.language.restartNote" = "Чтобы новый язык вступил в силу, перезапустите Orbit.";
+"prefs.language.restartFailed" = "Не удалось перезапустить Orbit. Текущая копия продолжает работать — попробуйте ещё раз или завершите и откройте Orbit вручную.";
 "prefs.language.restart" = "Перезапустить Orbit";
 "language.system" = "Как в системе";
 
@@ -109,6 +110,7 @@
 "center.cleanup" = "Перетащите, чтобы закрыть приложения без окон";
 "center.share" = "Перетащите, чтобы поделиться";
 "center.trash" = "Перетащите в корзину";
+"center.failed" = "Не удалось выполнить";
 
 /* Ring — window preview panel */
 "preview.empty.title" = "Выберите приложение";

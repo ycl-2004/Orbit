@@ -108,18 +108,31 @@ final class SettingsModel: ObservableObject {
         appLanguage != languageAtLaunch
     }
 
+    /// 新实例没能起来，这一个就没有退。
+    @Published private(set) var restartFailed = false
+
     /// 重开一个新实例，然后让这一个退出。
     ///
     /// 顺序不能反：先退出就没人负责把新的拉起来了。`.accessory` 应用没有窗口要
     /// 保存，重启对用户几乎无感 —— 这也是敢把语言做成应用内设置的前提。
+    ///
+    /// 但"重开"这一步是会失败的：Gatekeeper 拦下这份拷贝、磁盘映像被弹出、
+    /// launch services 找不到 bundle，都会让回调带着 error 回来。以前无论回调
+    /// 说什么都照样 `terminate`，于是一次失败的重启等于把 Orbit 关掉 —— 一个
+    /// 菜单栏应用悄悄消失，用户既没换到新语言，也没有 Orbit 可用了。
     func restart() {
+        restartFailed = false
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.createsNewApplicationInstance = true
         NSWorkspace.shared.openApplication(
             at: Bundle.main.bundleURL,
             configuration: configuration
-        ) { _, _ in
+        ) { [weak self] application, error in
             DispatchQueue.main.async {
+                guard error == nil, application != nil else {
+                    self?.restartFailed = true
+                    return
+                }
                 NSApp.terminate(nil)
             }
         }

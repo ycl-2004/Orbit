@@ -108,8 +108,8 @@ final class WindowPreviewService {
 
     // MARK: - Capture
 
-    /// Thumbnails for every window belonging to `processIdentifier`, largest
-    /// first.
+    /// Thumbnails for the windows belonging to `processIdentifier`, largest
+    /// first, and never more than the carousel can show.
     ///
     /// Deliberately asks for off-screen windows too: `isOnScreen` is false for
     /// anything the user has covered with another window, so filtering on it
@@ -147,13 +147,26 @@ final class WindowPreviewService {
             return []
         }
 
-        // Any of these can be brought to the front of the carousel, so all of
-        // them are captured for that slot.
+        // Any window that gets captured can be brought to the front of the
+        // carousel, so each is captured at the size of that front slot.
         let captureWidth = OrbitConfig.previewCaptureWidth(scale: scale)
 
+        // 只截转盘放得下的那几个窗口。
+        //
+        // Every window used to be captured, and the caller then kept the first
+        // `maxVisiblePreviews`. A browser with twenty windows open paid twenty
+        // stream captures for six pictures — and paid for them inside the pause
+        // between summoning the ring and the panel filling in.
+        //
+        // 计数数的是"截出内容的窗口"而不是"截过的窗口"：空白的辅助窗口在下面会
+        // 被丢掉，把它们算进席位会让面板少几张图。
         var previews: [WindowPreview] = []
+        var windowsWithContent = 0
+
         for window in windows {
             if Task.isCancelled { return previews }
+            guard windowsWithContent < OrbitConfig.maxVisiblePreviews,
+                  previews.count < OrbitConfig.maxPreviewCaptures else { break }
 
             let fresh = await Self.capture(window, width: captureWidth, scale: scale)
             if let fresh {
@@ -194,6 +207,10 @@ final class WindowPreviewService {
                     isStale: fresh == nil && image != nil
                 )
             )
+
+            if variance >= Self.blankVarianceThreshold {
+                windowsWithContent += 1
+            }
         }
 
         return Self.droppingBlankWindows(previews)

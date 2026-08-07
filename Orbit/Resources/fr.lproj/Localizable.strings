@@ -21,6 +21,7 @@
 "prefs.group.language" = "Langue";
 "prefs.language.picker" = "Langue de l’interface";
 "prefs.language.restartNote" = "Orbit doit redémarrer pour que la nouvelle langue apparaisse.";
+"prefs.language.restartFailed" = "Orbit n’a pas pu redémarrer. La version en cours reste active — réessayez, ou quittez et rouvrez Orbit vous-même.";
 "prefs.language.restart" = "Redémarrer Orbit";
 "language.system" = "Suivre le système";
 
@@ -109,6 +110,7 @@
 "center.cleanup" = "Déposez pour quitter les apps sans fenêtre";
 "center.share" = "Déposez pour partager";
 "center.trash" = "Déposez pour mettre à la corbeille";
+"center.failed" = "Échec de l’opération";
 
 /* Ring — window preview panel */
 "preview.empty.title" = "Choisir une app";

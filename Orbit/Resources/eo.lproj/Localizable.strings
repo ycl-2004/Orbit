@@ -21,6 +21,7 @@
 "prefs.group.language" = "Lingvo";
 "prefs.language.picker" = "Lingvo de la interfaco";
 "prefs.language.restartNote" = "Orbit devas rekomenci antaŭ ol la nova lingvo aperas.";
+"prefs.language.restartFailed" = "Orbit ne povis rekomenci. La kuranta versio plu funkcias — provu denove, aŭ ĉesigu kaj mem malfermu Orbit.";
 "prefs.language.restart" = "Rekomenci Orbit";
 "language.system" = "Sekvi la sistemon";
 
@@ -109,6 +110,7 @@
 "center.cleanup" = "Faligu por fermi aplikaĵojn sen fenestroj";
 "center.share" = "Faligu por kunhavigi";
 "center.trash" = "Faligu en rubujon";
+"center.failed" = "Ne sukcesis";
 
 /* Ring — window preview panel */
 "preview.empty.title" = "Elektu aplikaĵon";

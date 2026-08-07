@@ -488,6 +488,15 @@ enum OrbitConfig {
     /// Largest number of window thumbnails shown for one app.
     static let maxVisiblePreviews = 6
 
+    /// 一次召唤最多截多少个窗口 —— 席位之外还允许试几个，仅此而已。
+    ///
+    /// Capture stops as soon as `maxVisiblePreviews` windows have come back with
+    /// real content, so this ceiling only matters for an app whose windows are
+    /// *all* flat helper surfaces: those get dropped after capture, and without
+    /// a ceiling such an app would be walked window by window to the end of the
+    /// list looking for content that is not there.
+    static let maxPreviewCaptures = maxVisiblePreviews * 2
+
     /// Capture cost scales with area, and the ring is only on screen for as
     /// long as a key is held. This caps what a Retina foreground card can ask
     /// for.
@@ -529,4 +538,11 @@ enum OrbitConfig {
     /// simply left never leaves the ring stuck in a state it cannot be
     /// dismissed from.
     static let fileDragExitGrace: TimeInterval = 0.2
+
+    /// 拖放失败时，中心把「没成」这件事挂多久。
+    ///
+    /// Long enough to be read at a glance, short enough that it never becomes
+    /// something to dismiss. A deferred close waits this out rather than
+    /// closing on top of the notice.
+    static let fileDropFailureNoticeDuration: TimeInterval = 2.0
 }

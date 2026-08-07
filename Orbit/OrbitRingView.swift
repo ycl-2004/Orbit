@@ -3,9 +3,11 @@
 //  Orbit
 //
 //  The ring deliberately separates selection from activation. A card click or
-//  hover selects an app; activation happens on Enter or when the trigger key
-//  is released. The center is a cancel target unless a card is explicitly
-//  dragged into it.
+//  hover selects an app; activation happens on Enter, on release of the trigger
+//  key, or on a click of the center — which performs whatever it is currently
+//  labelled with: Cancel with nothing selected, Confirm with an app selected.
+//  The drag-owned center states (quit, cleanup, share, trash) belong to their
+//  gesture and ignore clicks entirely.
 //
 
 import AppKit
@@ -34,6 +36,8 @@ final class OrbitRingViewModel: ObservableObject {
     @Published private(set) var bulkDissolvingAppIDs: Set<String> = []
     @Published var fileDropPhase: FileDropPhase = .idle
     @Published var fileTrashReady = false
+    /// 上一次拖放没做成，中心正在把这件事说出来。
+    @Published private(set) var fileDropFailed = false
     @Published private(set) var previews: [WindowPreview] = []
     @Published private(set) var isLoadingPreviews = false
     @Published private(set) var previewState: OrbitPreviewState = .idle
@@ -46,6 +50,7 @@ final class OrbitRingViewModel: ObservableObject {
 
     private var fileTrashTask: DispatchWorkItem?
     private var dragExitTask: DispatchWorkItem?
+    private var fileFailureTask: DispatchWorkItem?
     /// A trigger release can arrive while the dropped URLs are still being
     /// read. Defer dismissal until that asynchronous file operation finishes.
     private var dismissAfterFileDrop = false
@@ -117,6 +122,9 @@ final class OrbitRingViewModel: ObservableObject {
     var centerMode: OrbitCenterMode {
         if draggedAppID != nil && dragOverCenter {
             return apps.first(where: { $0.id == draggedAppID })?.isOrbit == true ? .cleanup : .quit
+        }
+        if fileDropFailed {
+            return .failed
         }
         if fileTrashReady {
             return .trash
@@ -418,18 +426,32 @@ final class OrbitRingViewModel: ObservableObject {
         hoverAnchor = NSEvent.mouseLocation
     }
 
+    /// 关闭圆环 —— 除非文件拖放还没落地。
+    ///
+    /// Dismissing releases the panel and with it this view model, and the
+    /// completion handler that finishes a drop holds `self` weakly. So an
+    /// Escape pressed in the moment between letting the files go and the URLs
+    /// coming back used to make the AirDrop or the move to Trash disappear
+    /// without a trace — the files looked dropped and nothing happened. Record
+    /// the intent instead; `handleFileDrop` and the drag-exit reset both close
+    /// the ring once the file work has reached a stable state.
     func cancel() {
-        guard draggedAppID == nil, !fileDropPhase.isReceiving else { return }
+        guard draggedAppID == nil else { return }
+        guard fileDropPhase == .idle else {
+            dismissAfterFileDrop = true
+            return
+        }
         onCancel?()
     }
 
     /// 点中心那颗按钮把选中的 App 切过去，跟松开触发键是同一件事。
     ///
-    /// Guarded exactly like `cancel()`: a card in flight or a file drop in
-    /// progress owns the hub, and a stray tap must not switch apps out from
-    /// under either of them.
+    /// Guarded like `cancel()`: a card in flight or a file drop in progress owns
+    /// the hub, and a stray tap must not switch apps out from under either of
+    /// them. Unlike a cancel this is not deferred — switching apps is not what
+    /// the user was in the middle of, and `.completing` lasts a few frames.
     func confirmFromHub() {
-        guard draggedAppID == nil, !fileDropPhase.isReceiving else { return }
+        guard draggedAppID == nil, fileDropPhase == .idle else { return }
         confirmSelection()
     }
 
@@ -558,6 +580,11 @@ final class OrbitRingViewModel: ObservableObject {
             dragExitTask?.cancel()
             dragExitTask = nil
             fileTrashTask?.cancel()
+            // A new drag is a new question; the previous drop's verdict is no
+            // longer what the hub should be saying.
+            fileFailureTask?.cancel()
+            fileFailureTask = nil
+            fileDropFailed = false
             fileTrashReady = false
             fileDropPhase = .hovering
 
@@ -602,6 +629,30 @@ final class OrbitRingViewModel: ObservableObject {
         }
         dragExitTask = task
         DispatchQueue.main.asyncAfter(deadline: .now() + OrbitConfig.fileDragExitGrace, execute: task)
+    }
+
+    /// 把「没成」挂在中心上，等它被看见了再谈关不关。
+    ///
+    /// A deferred dismissal is honoured *after* the notice rather than instead
+    /// of it: the trigger key having been let go is no reason to close the ring
+    /// on a message nobody got to read.
+    private func reportFileDropFailure(thenDismiss shouldDismiss: Bool) {
+        fileDropFailed = true
+        fileFailureTask?.cancel()
+
+        let task = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.fileFailureTask = nil
+            self.fileDropFailed = false
+            if shouldDismiss {
+                self.onCancel?()
+            }
+        }
+        fileFailureTask = task
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + OrbitConfig.fileDropFailureNoticeDuration,
+            execute: task
+        )
     }
 
     func handleFileDrop(_ providers: [NSItemProvider]) -> Bool {
@@ -651,12 +702,34 @@ final class OrbitRingViewModel: ObservableObject {
                 return
             }
 
+            // 失败必须看得见。
+            //
+            // A locked file, a volume with no Trash, an AirDrop the system will
+            // not offer — all of them used to end the same way as a success:
+            // the ring closed and the files stayed where they were. The hub is
+            // the thing the files were dropped on, so it is the thing that says
+            // the drop did not take.
+            var failed = false
             if shouldTrash {
+                // 一个文件失败不该拖累后面的：全部试完，再报告有没有失手的。
                 for url in urls {
-                    try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                    do {
+                        try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                    } catch {
+                        failed = true
+                    }
                 }
-            } else if let service = NSSharingService(named: .sendViaAirDrop), service.canPerform(withItems: urls) {
+            } else if let service = NSSharingService(named: .sendViaAirDrop),
+                      service.canPerform(withItems: urls) {
                 service.perform(withItems: urls)
+                failed = false
+            } else {
+                failed = true
+            }
+
+            guard !failed else {
+                self.reportFileDropFailure(thenDismiss: shouldDismiss)
+                return
             }
 
             // Keep the ring visible while the trigger is still held. If the
@@ -730,6 +803,8 @@ enum OrbitCenterMode: CaseIterable {
     case cleanup
     case share
     case trash
+    /// 刚才那次拖放没做成。
+    case failed
 
     /// 每个模式一个图标，而且要能自己说清自己是什么。
     ///
@@ -748,6 +823,7 @@ enum OrbitCenterMode: CaseIterable {
         case .cleanup: "sparkles"
         case .trash: "trash"
         case .share: "dot.radiowaves.left.and.right"
+        case .failed: "exclamationmark.triangle"
         }
     }
 }
@@ -1364,7 +1440,7 @@ private struct OrbitCenterControl: View {
             switch mode {
             case .cancel: onCancel()
             case .confirm: onConfirm()
-            case .quit, .cleanup, .trash, .share: break
+            case .quit, .cleanup, .trash, .share, .failed: break
             }
         }
         .onDrop(of: [UTType.fileURL], isTargeted: $isFileTargeted, perform: onDrop)
@@ -1382,6 +1458,7 @@ private struct OrbitCenterControl: View {
         case .cleanup: NSLocalizedString("center.cleanup", comment: "")
         case .share: NSLocalizedString("center.share", comment: "")
         case .trash: NSLocalizedString("center.trash", comment: "")
+        case .failed: NSLocalizedString("center.failed", comment: "")
         }
     }
 
@@ -1439,7 +1516,7 @@ private struct OrbitCenterControl: View {
         switch mode {
         case .cancel: .clear
         case .confirm: OrbitPalette.burgundy.opacity(0.62)
-        case .quit, .trash: OrbitPalette.coral.opacity(0.50)
+        case .quit, .trash, .failed: OrbitPalette.coral.opacity(0.50)
         case .cleanup: OrbitPalette.burgundy.opacity(0.40)
         case .share: OrbitPalette.denim.opacity(0.46)
         }
@@ -1450,7 +1527,7 @@ private struct OrbitCenterControl: View {
         switch mode {
         case .cancel: nil
         case .confirm, .cleanup: OrbitPalette.burgundy
-        case .quit, .trash: OrbitPalette.coral
+        case .quit, .trash, .failed: OrbitPalette.coral
         case .share: OrbitPalette.denim
         }
     }
@@ -1458,7 +1535,7 @@ private struct OrbitCenterControl: View {
     /// 退出 App 和丢进废纸篓是唯一两个不可撤销的状态，光圈允许比别人亮一点。
     private var glowOpacity: Double {
         switch mode {
-        case .quit, .trash: 0.20
+        case .quit, .trash, .failed: 0.20
         default: 0.16
         }
     }

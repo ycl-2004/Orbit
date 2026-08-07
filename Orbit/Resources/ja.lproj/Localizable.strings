@@ -21,6 +21,7 @@
 "prefs.group.language" = "言語";
 "prefs.language.picker" = "表示言語";
 "prefs.language.restartNote" = "新しい言語は Orbit を再起動すると反映されます。";
+"prefs.language.restartFailed" = "Orbit を再起動できませんでした。起動中の Orbit はそのまま動いています。もう一度試すか、手動で終了して開き直してください。";
 "prefs.language.restart" = "Orbit を再起動";
 "language.system" = "システムに従う";
 
@@ -109,6 +110,7 @@
 "center.cleanup" = "ドロップしてウインドウのないアプリを終了";
 "center.share" = "ドロップして共有";
 "center.trash" = "ドロップしてゴミ箱へ";
+"center.failed" = "実行できませんでした";
 
 /* Ring — window preview panel */
 "preview.empty.title" = "アプリを選択";

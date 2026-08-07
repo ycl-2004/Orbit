@@ -13,10 +13,18 @@
 
 - Window previews capture from the display where Orbit was summoned, preserving the intended sharpness across mixed-resolution displays.
 - A pending summon is canceled when another key, mouse button, or scroll gesture arrives before the hold completes.
+- Preview capture now stops once the carousel is full instead of capturing every window an app has open. An app with twenty windows no longer pays twenty captures for six thumbnails inside the pause between the summon and the panel appearing.
+- Both READMEs, ADR-001, and the source comments now describe the center hub as it behaves: it performs the action it displays — Cancel with nothing selected, Confirm with an app selected.
+
+### Fixed
+
+- Escape or a hub click can no longer discard an accepted file drop. While a drop's URLs are still being read, a cancel is recorded and applied once the file operation settles, instead of releasing the view model that owns it.
+- A failed move to the Trash, or an AirDrop macOS will not offer, is now reported on the hub instead of ending in silence. Every dropped file is attempted even when an earlier one fails.
+- A failed language restart leaves the running Orbit alone. The old instance now terminates only after the new one has actually launched, and the settings window says so when it has not.
 
 ### Validation
 
-- The full clean test suite passed: 34 `OrbitTests` tests and 2 `OrbitUITests` tests, with 0 failures.
+- The full clean test suite passed: 37 `OrbitTests` tests and 2 `OrbitUITests` tests, with 0 failures.
 - The current project metadata remains marketing version `1.3.0`, build `2`; the next published release version has not been selected.
 
 ## 1.3.0 — 2026-08-06

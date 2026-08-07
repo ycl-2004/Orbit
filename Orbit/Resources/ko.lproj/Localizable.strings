@@ -21,6 +21,7 @@
 "prefs.group.language" = "언어";
 "prefs.language.picker" = "인터페이스 언어";
 "prefs.language.restartNote" = "새 언어는 Orbit을 다시 실행해야 적용됩니다.";
+"prefs.language.restartFailed" = "Orbit을 다시 시작하지 못했습니다. 실행 중인 Orbit은 그대로 있습니다. 다시 시도하거나 직접 종료 후 실행해 주세요.";
 "prefs.language.restart" = "Orbit 다시 실행";
 "language.system" = "시스템 설정 따르기";
 
@@ -109,6 +110,7 @@
 "center.cleanup" = "끌어다 놓아 윈도우 없는 앱 종료";
 "center.share" = "끌어다 놓아 공유";
 "center.trash" = "끌어다 놓아 휴지통으로";
+"center.failed" = "완료하지 못했습니다";
 
 /* Ring — window preview panel */
 "preview.empty.title" = "앱 선택";
