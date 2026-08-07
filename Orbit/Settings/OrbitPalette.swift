@@ -18,6 +18,8 @@ enum OrbitPalette {
 
     /// The live accent used by the ring, settings window, and previews.
     static var burgundy: Color { OrbitConfig.accentColor }
+    /// The wash behind the fan. Follows the accent until it is set on its own.
+    static var backdrop: Color { OrbitConfig.ringBackdropColor }
     static let denim = Color(red: 0.69, green: 0.80, blue: 0.85)
     static let ivory = Color(red: 0.97, green: 0.95, blue: 0.91)
     static let coral = Color(red: 0.91, green: 0.60, blue: 0.53)

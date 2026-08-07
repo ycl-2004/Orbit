@@ -7,6 +7,8 @@
 - Orbit can appear as an optional special card in the app ring.
 - Dragging the Orbit card to the center safely requests a normal quit for ordinary apps confirmed to have no open windows.
 - The right-side preview now explains empty, unavailable, permission-required, loading, and Orbit states.
+- The ring now has an optional circular backdrop with a separate appearance color control.
+- Appearance settings now include a live preview for the ring backdrop and its material/card styling.
 
 ### Fixed
 
@@ -14,6 +16,8 @@
 - File deletion and AirDrop now follow the same trigger-key lifetime, including asynchronous file URL loading.
 - Finder and Orbit are excluded from the windowless-app cleanup candidates.
 - The AirDrop center state now uses Orbit’s ivory and burgundy palette instead of the previous blue treatment.
+- Small app groups now use a tighter, more balanced fan while preserving the full preview width.
+- The ring and preview now share a centered two-column layout with consistent spacing and screen margins.
 
 ### Validation
 

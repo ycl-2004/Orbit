@@ -39,6 +39,11 @@
 "prefs.appearance.cardFinish" = "Материал карточек";
 "prefs.appearance.preview" = "Предпросмотр карточки";
 "prefs.appearance.accentColor" = "Цвет акцента";
+
+"prefs.group.ringBackdrop" = "Фон кольца";
+"prefs.appearance.ringBackdrop" = "Показывать фон кольца";
+"prefs.appearance.ringBackdropColor" = "Цвет фона";
+"prefs.appearance.ringBackdrop.note" = "Диск за карточками приложений. Его цвет следует цвету акцента, пока вы не зададите его здесь. Предпросмотр окон в любом случае сохраняет собственную подложку.";
 "prefs.appearance.hideWindowless" = "Скрывать приложения без окон";
 "prefs.appearance.hideWindowless.note" = "Запущенные приложения, у которых не открыто ни одного окна, не появляются в кольце. Свёрнутые и полноэкранные окна по-прежнему учитываются.";
 

@@ -124,9 +124,47 @@ final class OrbitRingViewModel: ObservableObject {
             : fanAxis - span / 2 + offset
     }
 
+    /// 开着预览时，圆环和预览各占窗口的一半，并各自停在那一半的正中间。
+    ///
+    /// The previous layout let the preview claim every point the fan left over
+    /// and then centred the carousel inside that oversized frame. Because the
+    /// ring canvas is a fixed square pinned to the window's left edge, the pair
+    /// ended up sitting well left of the screen's centre line even though the
+    /// window itself was centred. Two equal halves anchored to the same centre
+    /// line is what puts the ring and the preview on opposite ends instead.
+    var columnWidth: CGFloat {
+        layoutWidth / 2
+    }
+
+    /// 窗口整体的宽度：刻意留一圈屏幕边距，不铺满。
+    ///
+    /// Filling the visible frame is what exiled the ring to the left corner:
+    /// each half is centred on its own contents, so the wider the window, the
+    /// further apart the two halves' centres sit. Holding the window to
+    /// `layoutWidthRatio` of the screen keeps a real margin outside the pair,
+    /// which is what lets it read as one centred object rather than a bar
+    /// pinned to both edges. The centre line the two halves share is a layout
+    /// reference only; nothing is ever drawn on it.
+    private var layoutWidth: CGFloat {
+        let visibleWidth = NSScreen.main?.visibleFrame.width ?? 1440
+        let maximum = canvasSize + OrbitConfig.previewPanelMaximumWidth + OrbitConfig.previewGap * 2
+        // A full twelve-card fan makes a disc wider than the ratio leaves room
+        // for, and a disc that overruns its half would sit on the carousel.
+        // Widen for it rather than crop it — the ratio is there to keep the
+        // ring out of the corner, not to decide how big the fan may get.
+        let discDemand = (backdropDiameter + OrbitConfig.previewGap * 2) * 2
+        return max(
+            canvasSize,
+            min(
+                max(visibleWidth * OrbitConfig.layoutWidthRatio, discDemand),
+                visibleWidth - OrbitConfig.screenMargin * 2,
+                maximum
+            )
+        )
+    }
+
     /// Total size of the panel that hosts the ring, plus the preview when it
-    /// is enabled. The preview tucks into the fan's gap rather than sitting
-    /// beside an untouched square canvas.
+    /// is enabled.
     var panelSize: CGSize {
         guard showsPreview else {
             return CGSize(width: canvasSize, height: canvasSize)
@@ -137,33 +175,27 @@ final class OrbitRingViewModel: ObservableObject {
         let screenHeight = NSScreen.main?.visibleFrame.height ?? 900
         let stageHeight = previewCardWidth / OrbitConfig.previewStageAspectRatio + 120
         return CGSize(
-            width: canvasSize + previewPanelWidth - previewOverlap,
+            width: layoutWidth,
             height: min(max(canvasSize, stageHeight), screenHeight - 60)
         )
     }
 
-    /// Sized from what the fan leaves over, so it must be read once and shared
-    /// by the window frame and the carousel inside it.
-    var previewPanelWidth: CGFloat {
-        OrbitConfig.previewPanelWidth(cardCount: apps.count, overlap: previewOverlap)
-    }
-
-    /// Width of the foreground carousel card. Driven by the horizontal room
-    /// the fan leaves over — never by the selected window — so that the stage,
-    /// and with it the page control, holds still while arrowing through.
+    /// Width of the foreground carousel card. Driven by the half of the window
+    /// the preview owns — never by the selected window — so that the stage, and
+    /// with it the page control, holds still while arrowing through.
     var previewCardWidth: CGFloat {
-        let byWidth = (previewPanelWidth - previewOverlap - 48) / OrbitConfig.previewCarouselSpan
-        return max(160, min(OrbitConfig.previewCardMaximumWidth, byWidth))
+        let usable = columnWidth - OrbitConfig.previewGap * 2
+        return max(160, min(OrbitConfig.previewCardMaximumWidth, usable / OrbitConfig.previewCarouselSpan))
     }
 
-    /// How far the preview slides back over the canvas. The fan's end cards
-    /// reach `cos(span/2) * radius` past the center, so stop just clear of them.
-    var previewOverlap: CGFloat {
-        let step = OrbitConfig.ringStep(cardCount: apps.count)
-        let halfSpan = step * Double(max(apps.count - 1, 0)) / 2
-        let reach = abs(cos(halfSpan)) * ringRadius + OrbitConfig.cardSize.dimension * 0.5
-        return max(0, canvasSize / 2 - reach - OrbitConfig.previewGap)
+    /// Diameter of the disc the fan sits on, measured from the cards.
+    var backdropDiameter: CGFloat {
+        OrbitConfig.ringBackdropRadius(cardCount: apps.count) * 2
     }
+
+    /// Read once per showing, like `showsPreview`: the disc must not appear or
+    /// vanish underneath a fan that is already on screen.
+    let showsBackdrop = OrbitConfig.ringBackdropEnabled
 
     func position(for index: Int) -> CGPoint {
         let center = canvasSize / 2
@@ -642,24 +674,44 @@ struct OrbitRingView: View {
     @State private var hasAppeared = false
 
     var body: some View {
-        HStack(spacing: -model.previewOverlap) {
-            ringCanvas
-                .offset(x: model.showsPreview ? OrbitConfig.previewRingShift : 0)
+        layout
+            .frame(width: model.panelSize.width, height: model.panelSize.height)
+            .scaleEffect(hasAppeared ? 1 : 0.9)
+            .opacity(hasAppeared ? 1 : 0)
+            .animation(.spring(response: 0.32, dampingFraction: 0.78), value: hasAppeared)
+            .onAppear { hasAppeared = true }
+    }
 
-            if model.showsPreview {
+    /// Two equal halves rather than an HStack sized by its contents. The ring
+    /// canvas and the preview are very different widths, and letting either one
+    /// absorb the leftover space is what pulled the pair off the screen's
+    /// centre line; giving each the same half puts them on opposite ends of it.
+    @ViewBuilder
+    private var layout: some View {
+        if model.showsPreview {
+            HStack(spacing: 0) {
+                ringCanvas
+                    .frame(width: model.columnWidth)
+
                 OrbitPreviewPanel(model: model)
-                    .frame(width: model.previewPanelWidth)
+                    .frame(width: model.columnWidth)
             }
+        } else {
+            ringCanvas
         }
-        .frame(width: model.panelSize.width, height: model.panelSize.height)
-        .scaleEffect(hasAppeared ? 1 : 0.9)
-        .opacity(hasAppeared ? 1 : 0)
-        .animation(.spring(response: 0.32, dampingFraction: 0.78), value: hasAppeared)
-        .onAppear { hasAppeared = true }
     }
 
     private var ringCanvas: some View {
         ZStack {
+            if model.showsBackdrop {
+                OrbitRingBackdrop(diameter: model.backdropDiameter)
+                    .position(
+                        x: model.canvasSize / 2,
+                        y: model.canvasSize / 2
+                    )
+                    .zIndex(-1)
+            }
+
             ForEach(Array(model.apps.enumerated()), id: \.element.id) { index, app in
                 let basePosition = model.position(for: index)
                 OrbitAppCard(
@@ -720,18 +772,80 @@ struct OrbitRingView: View {
     }
 }
 
+/// 卡片背后的圆形舞台：给整把扇子一个视觉落点，而不是再多一块不透明面板。
+///
+/// Centred on the hub, because that is where the cancel button already is and
+/// every card sits the same distance from it. The earlier version was both
+/// smaller than the fan and nudged off the hub, so the cards cut across a hard
+/// accent stroke and the whole thing read as a pink plate laid under the ring.
+/// Here the edge is a material rim that fades as it comes round, and the accent
+/// only survives as a wash and an outer halo.
+private struct OrbitRingBackdrop: View {
+    let diameter: CGFloat
+
+    private var accent: Color { OrbitPalette.backdrop }
+
+    var body: some View {
+        ZStack {
+            // No edge at all on the halo: it is what ties the disc to the
+            // desktop behind it, and any rim here would just read as a second
+            // circle outside the first.
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [accent.opacity(0.16), accent.opacity(0.05), .clear],
+                        center: .center,
+                        startRadius: diameter * 0.32,
+                        endRadius: diameter * 0.68
+                    )
+                )
+                .frame(width: diameter * 1.3, height: diameter * 1.3)
+                .blur(radius: 26)
+
+            Circle()
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    // Lit from the top-left, the same direction the cards are
+                    // lit from, so the disc sits in the same room as them.
+                    Circle().fill(
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(0.20),
+                                accent.opacity(0.05),
+                                accent.opacity(0.13)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                )
+                .overlay(
+                    Circle().strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(0.50),
+                                accent.opacity(0.14),
+                                .clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+                )
+                .frame(width: diameter, height: diameter)
+                .shadow(color: .black.opacity(0.10), radius: 30, y: 14)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
 /// A compact carousel of every window belonging to the selected app. The
 /// selected window stays in front while its neighbours peek out on either
 /// side, matching the way a person scans a small stack of related screens.
 private struct OrbitPreviewPanel: View {
     @ObservedObject var model: OrbitRingViewModel
-
-    /// The panel frame tucks under the fan, but its content only needs a small
-    /// nudge toward the open side. Keeping this below half the overlap avoids
-    /// recreating the large visual gap that the frame geometry is meant to fix.
-    private var contentOffset: CGFloat {
-        model.previewOverlap * 0.2
-    }
 
     private var selectedIndex: Int {
         guard model.previews.indices.contains(model.selectedWindowIndex) else { return 0 }
@@ -827,9 +941,6 @@ private struct OrbitPreviewPanel: View {
                 windowControls
             }
         }
-        // Center the group on the visible part of the panel rather than on the
-        // panel itself, whose left edge sits under the fan.
-        .offset(x: contentOffset)
     }
 
     private var windowControls: some View {
@@ -960,7 +1071,10 @@ private struct OrbitPreviewPanel: View {
                     .accessibilityAddTraits(.isButton)
             }
         }
-        .frame(maxWidth: 360)
+        // Wide enough to carry roughly the disc's visual weight on its own half
+        // — at 360 the empty state was noticeably lighter than the ring facing
+        // it — while still keeping the message to a couple of short lines.
+        .frame(maxWidth: 420)
         .padding(.horizontal, 28)
         .padding(.vertical, 24)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -969,7 +1083,6 @@ private struct OrbitPreviewPanel: View {
                 .stroke(.white.opacity(0.24), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
-        .offset(x: contentOffset)
     }
 }
 
@@ -1202,6 +1315,11 @@ private struct OrbitCenterControl: View {
                                 height: OrbitConfig.centerRadius * 2
                             )
                             .overlay(Circle().stroke(centerStroke, lineWidth: 2))
+                            .overlay(
+                                Circle()
+                                    .stroke(centerStroke.opacity(0.20), lineWidth: 6)
+                                    .scaleEffect(1.12)
+                            )
                             .shadow(
                                 color: centerStroke.opacity(0.28),
                                 radius: 12,

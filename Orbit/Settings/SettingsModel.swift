@@ -63,7 +63,23 @@ final class SettingsModel: ObservableObject {
     }
 
     @Published var accentColor: Color = OrbitConfig.accentColor {
-        didSet { writeThrough { OrbitConfig.accentColor = accentColor } }
+        didSet {
+            writeThrough {
+                OrbitConfig.accentColor = accentColor
+                // 圆盘颜色没被单独设过时是跟着 accent 走的，所以要把它读回来，
+                // 否则设置窗口里的色块会停在旧 accent 上，而圆环已经换色了。
+                guard !OrbitConfig.hasCustomRingBackdropColor else { return }
+                syncing { ringBackdropColor = OrbitConfig.ringBackdropColor }
+            }
+        }
+    }
+
+    @Published var ringBackdropEnabled: Bool = OrbitConfig.ringBackdropEnabled {
+        didSet { writeThrough { OrbitConfig.ringBackdropEnabled = ringBackdropEnabled } }
+    }
+
+    @Published var ringBackdropColor: Color = OrbitConfig.ringBackdropColor {
+        didSet { writeThrough { OrbitConfig.ringBackdropColor = ringBackdropColor } }
     }
 
     @Published var hideWindowlessApps: Bool = OrbitConfig.hideWindowlessApps {
@@ -122,6 +138,8 @@ final class SettingsModel: ObservableObject {
             cardSize = OrbitConfig.cardSize
             cardMaterial = OrbitConfig.cardMaterial
             accentColor = OrbitConfig.accentColor
+            ringBackdropEnabled = OrbitConfig.ringBackdropEnabled
+            ringBackdropColor = OrbitConfig.ringBackdropColor
             hideWindowlessApps = OrbitConfig.hideWindowlessApps
             showOrbitCard = OrbitConfig.showOrbitCard
             windowPreviewEnabled = OrbitConfig.windowPreviewEnabled

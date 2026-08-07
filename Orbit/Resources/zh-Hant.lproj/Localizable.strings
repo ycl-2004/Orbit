@@ -39,6 +39,11 @@
 "prefs.appearance.cardFinish" = "卡片材質";
 "prefs.appearance.preview" = "卡片預覽";
 "prefs.appearance.accentColor" = "強調顏色";
+
+"prefs.group.ringBackdrop" = "圓環背景";
+"prefs.appearance.ringBackdrop" = "顯示圓環背景";
+"prefs.appearance.ringBackdropColor" = "背景顏色";
+"prefs.appearance.ringBackdrop.note" = "應用程式卡片背後的那塊圓盤。在這裡設定之前，它的顏色會跟隨強調顏色。無論開關如何，視窗預覽都保留自己的背景。";
 "prefs.appearance.hideWindowless" = "隱藏沒有視窗的應用程式";
 "prefs.appearance.hideWindowless.note" = "正在執行但沒有開啟任何視窗的應用程式不會出現在環上。最小化和全螢幕的視窗仍然算數。";
 

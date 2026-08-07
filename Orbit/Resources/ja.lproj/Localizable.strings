@@ -39,6 +39,11 @@
 "prefs.appearance.cardFinish" = "カードの材質";
 "prefs.appearance.preview" = "カードプレビュー";
 "prefs.appearance.accentColor" = "アクセントカラー";
+
+"prefs.group.ringBackdrop" = "リングの背景";
+"prefs.appearance.ringBackdrop" = "リングの背景を表示";
+"prefs.appearance.ringBackdropColor" = "背景の色";
+"prefs.appearance.ringBackdrop.note" = "アプリカードの背後にある円盤です。ここで設定するまで、色はアクセントカラーに従います。ウインドウプレビューはどちらの場合も独自の背景を保ちます。";
 "prefs.appearance.hideWindowless" = "ウインドウのないアプリを隠す";
 "prefs.appearance.hideWindowless.note" = "起動中でもウインドウを開いていないアプリはリングに表示しません。最小化されたウインドウやフルスクリーンのウインドウは対象に含まれます。";
 

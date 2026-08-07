@@ -39,6 +39,11 @@
 "prefs.appearance.cardFinish" = "Materialo de kartoj";
 "prefs.appearance.preview" = "Antaŭrigardo de karto";
 "prefs.appearance.accentColor" = "Akcentkoloro";
+
+"prefs.group.ringBackdrop" = "Fono de la ringo";
+"prefs.appearance.ringBackdrop" = "Montri fonon de la ringo";
+"prefs.appearance.ringBackdropColor" = "Fona koloro";
+"prefs.appearance.ringBackdrop.note" = "La disko malantaŭ la aplikaĵkartoj. Ĝia koloro sekvas la akcentkoloron ĝis vi agordas ĝin ĉi tie. La fenestra antaŭrigardo konservas sian propran surfacon ĉiukaze.";
 "prefs.appearance.hideWindowless" = "Kaŝi aplikaĵojn sen fenestroj";
 "prefs.appearance.hideWindowless.note" = "Aplikaĵoj kiuj rulas sed havas neniun malfermitan fenestron ne aperas sur la ringo. Minimumigitaj kaj plenekranaj fenestroj plu validas.";
 

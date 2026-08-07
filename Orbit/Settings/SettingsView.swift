@@ -282,10 +282,30 @@ private struct AppearanceSettingsPane: View {
             }
 
             Section {
+                Toggle("prefs.appearance.ringBackdrop", isOn: $model.ringBackdropEnabled)
+
+                ColorPicker(
+                    "prefs.appearance.ringBackdropColor",
+                    selection: $model.ringBackdropColor,
+                    supportsOpacity: false
+                )
+                // A colour for something that is not drawn is a dead control,
+                // not a preference worth keeping live.
+                .disabled(!model.ringBackdropEnabled)
+            } header: {
+                Text("prefs.group.ringBackdrop")
+            } footer: {
+                Text("prefs.appearance.ringBackdrop.note")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 AppearancePreview(
                     cardSize: model.cardSize,
                     cardMaterial: model.cardMaterial,
-                    accentColor: model.accentColor
+                    accentColor: model.accentColor,
+                    backdropColor: model.ringBackdropEnabled ? model.ringBackdropColor : nil
                 )
             } header: {
                 Text("prefs.appearance.preview")
@@ -299,33 +319,18 @@ private struct AppearancePreview: View {
     let cardSize: CardSize
     let cardMaterial: OrbitConfig.CardMaterial
     let accentColor: Color
+    /// `nil` when the ring is set to show no backdrop at all.
+    let backdropColor: Color?
 
     var body: some View {
         HStack(spacing: 16) {
             ZStack {
-                RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
-                    .fill(cardFill)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
-                            .strokeBorder(cardBorder, lineWidth: 1)
-                    }
-                    .overlay {
-                        RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
-                            .strokeBorder(accentColor.opacity(0.9), lineWidth: 1.5)
-                    }
-
-                VStack(spacing: 6) {
-                    Image(nsImage: NSApp.applicationIconImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: previewDimension * 0.47, height: previewDimension * 0.47)
-                    Text("Orbit")
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                }
-                .foregroundStyle(cardForeground)
+                backdrop
+                card
             }
-            .frame(width: previewDimension, height: previewDimension * 1.2)
-            .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+            // Sized for the disc, not the card: the row has to reserve the
+            // space the backdrop takes, or it draws over the label beside it.
+            .frame(width: stageDimension, height: stageDimension)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Orbit")
@@ -339,6 +344,81 @@ private struct AppearancePreview: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 6)
+    }
+
+    /// A slice of the real disc, built from the same opacities the ring uses,
+    /// so the colour is judged as it will actually appear rather than as a
+    /// solid swatch.
+    @ViewBuilder
+    private var backdrop: some View {
+        if let backdropColor {
+            Circle()
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    Circle().fill(
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(0.20),
+                                backdropColor.opacity(0.05),
+                                backdropColor.opacity(0.13)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                }
+                .overlay {
+                    Circle().strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(0.50),
+                                backdropColor.opacity(0.14),
+                                .clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+                }
+                .frame(width: stageDimension, height: stageDimension)
+        }
+    }
+
+    private var card: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
+                .fill(cardFill)
+                .overlay {
+                    RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
+                        .strokeBorder(cardBorder, lineWidth: 1)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
+                        .strokeBorder(accentColor.opacity(0.9), lineWidth: 1.5)
+                }
+
+            VStack(spacing: 6) {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: previewDimension * 0.47, height: previewDimension * 0.47)
+                Text("Orbit")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+            }
+            .foregroundStyle(cardForeground)
+        }
+        .frame(width: previewDimension, height: previewDimension * 1.2)
+        // Only the card casts one. Shadowing the stack would smear the disc's
+        // soft edge into a hard one.
+        .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+    }
+
+    /// The disc has to clear the card's corners once the card is rotated on the
+    /// real ring, so it is sized off the card's diagonal the same way
+    /// `OrbitConfig.ringBackdropRadius` is.
+    private var stageDimension: CGFloat {
+        hypot(previewDimension, previewDimension * 1.2) + 16
     }
 
     /// Keep the preview proportional to a real ring card while making the

@@ -200,26 +200,59 @@ enum OrbitConfig {
     /// archive because SwiftUI Color itself is environment-resolved rather
     /// than a stable UserDefaults value.
     static var accentColor: Color {
-        get {
-            guard let data = defaults.data(forKey: "accentColor"),
-                  let color = try? NSKeyedUnarchiver.unarchivedObject(
-                    ofClass: NSColor.self,
-                    from: data
-                  ) else {
-                return OrbitPalette.defaultBurgundy
-            }
-            return Color(nsColor: color)
+        get { color(forKey: "accentColor") ?? OrbitPalette.defaultBurgundy }
+        set { setColor(newValue, forKey: "accentColor") }
+    }
+
+    /// 圆环背后那块圆盘要不要显示。
+    ///
+    /// Only the ring's own backdrop is optional. The preview panel's surface is
+    /// what makes a captured window legible against an arbitrary desktop, so it
+    /// is not a matter of taste and gets no switch.
+    static var ringBackdropEnabled: Bool {
+        get { defaults.object(forKey: "ringBackdropEnabled") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "ringBackdropEnabled") }
+    }
+
+    /// 圆盘自己的颜色，跟 accent 分开存。
+    ///
+    /// The accent also paints the selected card's hairline, the confirm hub and
+    /// the preview's icons, where it has to stay saturated enough to read as a
+    /// deliberate mark. The backdrop is a large, very transparent wash, and the
+    /// colour that works for one rarely works for the other. Falling back to
+    /// the accent keeps an untouched install looking exactly as it did.
+    static var ringBackdropColor: Color {
+        get { color(forKey: "ringBackdropColor") ?? accentColor }
+        set { setColor(newValue, forKey: "ringBackdropColor") }
+    }
+
+    /// Whether the backdrop colour has been chosen on its own rather than
+    /// inherited from the accent. The settings window needs this to know when
+    /// its swatch has to follow an accent change.
+    static var hasCustomRingBackdropColor: Bool {
+        defaults.data(forKey: "ringBackdropColor") != nil
+    }
+
+    private static func color(forKey key: String) -> Color? {
+        guard let data = defaults.data(forKey: key),
+              let color = try? NSKeyedUnarchiver.unarchivedObject(
+                ofClass: NSColor.self,
+                from: data
+              ) else {
+            return nil
         }
-        set {
-            let color = NSColor(newValue).usingColorSpace(.sRGB) ?? NSColor(newValue)
-            guard let data = try? NSKeyedArchiver.archivedData(
-                withRootObject: color,
-                requiringSecureCoding: true
-            ) else {
-                return
-            }
-            defaults.set(data, forKey: "accentColor")
+        return Color(nsColor: color)
+    }
+
+    private static func setColor(_ newValue: Color, forKey key: String) {
+        let color = NSColor(newValue).usingColorSpace(.sRGB) ?? NSColor(newValue)
+        guard let data = try? NSKeyedArchiver.archivedData(
+            withRootObject: color,
+            requiringSecureCoding: true
+        ) else {
+            return
         }
+        defaults.set(data, forKey: key)
     }
 
     // Geometry is driven by one rule: neighbouring cards always overlap by the
@@ -234,10 +267,15 @@ enum OrbitConfig {
     /// shallow arc, and the rotation difference alone makes the corners
     /// overlap the way a spread deck does.
     static let ringPreferredStep = Double.pi * 40 / 180
+    /// A small fan should read as a compact cluster rather than a sparse arc.
+    /// This only applies to the four-card case and below; a fuller ring keeps
+    /// the normal 40° rhythm.
+    static let compactRingStep = Double.pi * 36 / 180
 
     static func ringStep(cardCount: Int) -> Double {
         guard cardCount > 1 else { return ringPreferredStep }
-        return min(ringPreferredStep, ringMaximumSpan / Double(cardCount - 1))
+        let preferred = cardCount <= 4 ? compactRingStep : ringPreferredStep
+        return min(preferred, ringMaximumSpan / Double(cardCount - 1))
     }
 
     /// Distance from the ring center to the center of a card. Sized so the arc
@@ -245,15 +283,37 @@ enum OrbitConfig {
     static func ringRadius(cardCount: Int) -> CGFloat {
         let spacing = cardSize.dimension * 0.86
         let byOverlap = spacing / CGFloat(ringStep(cardCount: cardCount))
-        // The hollow center is what makes the fan read as a ring: keep its
-        // radius at roughly 0.7 of a card height, as in the reference layout.
-        let minimum = cardSize.height * 1.15
-        return max(minimum, byOverlap)
+        let compactScale: CGFloat = cardCount <= 4 ? 0.78 : 1
+        // Keep the center clear even in compact mode: the card's inner edge
+        // gets real breathing room beyond the hub rather than crowding it.
+        let minimum = centerFootprintRadius + cardSize.height * 0.5 + centerClearance
+        return max(minimum, byOverlap * compactScale)
     }
 
     static var centerRadius: CGFloat {
         (cardSize.dimension * 0.42).rounded()
     }
+
+    /// 中心控件真正占掉的半径：圆盘本身，加上它下面那颗状态标签。
+    ///
+    /// The hub is a `VStack` — the circle with its Cancel/Confirm label under
+    /// it — centred on the ring's centre, so the label reaches further down
+    /// than the circle reaches in any other direction. Clearance measured
+    /// against `centerRadius` alone therefore lies: it reads as comfortable on
+    /// the sides while the bottom of the fan sits right on top of the label.
+    static var centerFootprintRadius: CGFloat {
+        let labelHeight: CGFloat = 27
+        let labelSpacing: CGFloat = 8
+        return (centerRadius * 2 + labelSpacing + labelHeight) / 2
+    }
+
+    /// Empty space between the hub's footprint and the nearest card edge.
+    ///
+    /// The fan keeps overlapping at this radius even though the arc between
+    /// two cards grows past a card's width: neighbours differ by a full
+    /// `ringStep` of rotation, and a rotated card reaches its half-diagonal
+    /// sideways rather than its half-width.
+    static let centerClearance: CGFloat = 34
 
     /// File drops need a forgiving target: a Finder drag should not require
     /// pixel-perfect aim at the compact visual hub. Keep the target inside the
@@ -268,26 +328,35 @@ enum OrbitConfig {
         (ringRadius(cardCount: cardCount) + cardSize.height * 0.5 + 72) * 2
     }
 
-    /// Widest the preview panel is allowed to get.
-    static let previewPanelMaximumWidth: CGFloat = 1040
-    /// Breathing room between the fan's outer edge and the preview panel.
-    static let previewGap: CGFloat = 28
-    /// Pulls the fan toward the preview without changing the preview's size.
-    static let previewRingShift: CGFloat = 20
-
-    /// The panel claims whatever the fan leaves on screen, up to its maximum.
-    /// A fixed width cannot serve both ends of this: the ring canvas grows
-    /// with the number of cards and with the card size setting, so the same
-    /// 720pt that fits beside a twelve-card fan of extra-large cards leaves
-    /// the carousel needlessly small beside a five-card one.
-    static func previewPanelWidth(cardCount: Int, overlap: CGFloat) -> CGFloat {
-        let screenWidth = NSScreen.main?.visibleFrame.width ?? 1440
-        // The panel overlaps the canvas, so that much of it costs no width.
-        let available = screenWidth - 40 - ringCanvasSize(cardCount: cardCount) + overlap
-        return max(420, min(previewPanelMaximumWidth, available))
+    /// 卡片背后那块圆形舞台的半径。
+    ///
+    /// Every card centre sits exactly `ringRadius` from the hub, so one circle
+    /// centred on the hub contains the whole fan as soon as it clears a single
+    /// card's half-diagonal — grown by the 1.1 scale the selected card takes,
+    /// since that card is the one that would otherwise poke out. Sizing it from
+    /// the cards rather than from the canvas is what keeps the disc from
+    /// cropping the fan at some card counts and swimming around it at others.
+    static func ringBackdropRadius(cardCount: Int) -> CGFloat {
+        let cardReach = hypot(cardSize.dimension, cardSize.height) / 2 * 1.1
+        return ringRadius(cardCount: cardCount) + cardReach + 18
     }
-    /// Upper bound on the foreground card in the window carousel. The panel
-    /// narrows it further when the fan leaves less room.
+
+    /// Widest the preview half is allowed to get.
+    static let previewPanelMaximumWidth: CGFloat = 1040
+    /// Breathing room around the preview inside the half it owns.
+    static let previewGap: CGFloat = 28
+    /// Clearance the ring window keeps from the edges of the visible frame.
+    static let screenMargin: CGFloat = 24
+    /// 窗口占可见区域宽度的比例。
+    ///
+    /// The ring and the preview each sit at the middle of their own half, so
+    /// the window's width is also the distance between them: at full width the
+    /// disc gets pushed into the screen's left corner. 0.88 lands the disc near
+    /// the 28% mark and the carousel near 72%, which reads as one centred pair
+    /// with the ring clear of the corner.
+    static let layoutWidthRatio: CGFloat = 0.88
+    /// Upper bound on the foreground card in the window carousel. The half it
+    /// sits in narrows it further on a small display.
     static let previewCardMaximumWidth: CGFloat = 600
 
     /// Carousel geometry: a neighbour sits `previewSideOffsetRatio` of a card

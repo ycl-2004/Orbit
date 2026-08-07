@@ -39,6 +39,11 @@
 "prefs.appearance.cardFinish" = "Kortmateriale";
 "prefs.appearance.preview" = "Kortforhåndsvisning";
 "prefs.appearance.accentColor" = "Aksentfarge";
+
+"prefs.group.ringBackdrop" = "Ringbakgrunn";
+"prefs.appearance.ringBackdrop" = "Vis ringbakgrunn";
+"prefs.appearance.ringBackdropColor" = "Bakgrunnsfarge";
+"prefs.appearance.ringBackdrop.note" = "Skiven bak app-kortene. Fargen følger aksentfargen til du angir den her. Vindusforhåndsvisningen beholder sin egen flate uansett.";
 "prefs.appearance.hideWindowless" = "Skjul apper uten vinduer";
 "prefs.appearance.hideWindowless.note" = "Apper som kjører uten et åpent vindu, vises ikke i ringen. Minimerte vinduer og fullskjermvinduer teller fortsatt med.";
 

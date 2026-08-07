@@ -39,6 +39,11 @@
 "prefs.appearance.cardFinish" = "카드 재질";
 "prefs.appearance.preview" = "카드 미리보기";
 "prefs.appearance.accentColor" = "강조 색상";
+
+"prefs.group.ringBackdrop" = "링 배경";
+"prefs.appearance.ringBackdrop" = "링 배경 표시";
+"prefs.appearance.ringBackdropColor" = "배경 색상";
+"prefs.appearance.ringBackdrop.note" = "앱 카드 뒤에 있는 원반입니다. 여기서 설정하기 전까지 색상은 강조 색상을 따릅니다. 윈도우 미리보기는 어느 경우든 자체 배경을 유지합니다.";
 "prefs.appearance.hideWindowless" = "창이 없는 앱 숨기기";
 "prefs.appearance.hideWindowless.note" = "실행 중이지만 열린 창이 없는 앱은 링에 표시하지 않습니다. 최소화된 창과 전체 화면 창은 창으로 인정됩니다.";
 
