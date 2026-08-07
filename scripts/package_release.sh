@@ -1,9 +1,9 @@
 #!/bin/bash
 # Build the distributable macOS app and create the GitHub Release asset.
-# Usage: scripts/package_release.sh [version]   (default: 1.3.0)
+# Usage: scripts/package_release.sh [version]   (default: 1.4.0)
 set -euo pipefail
 
-VERSION="${1:-1.3.0}"
+VERSION="${1:-1.4.0}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$PROJECT_DIR/Build"
 BUILT_APP="$BUILD_DIR/Release/Orbit.app"

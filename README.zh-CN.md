@@ -57,8 +57,8 @@ open /Applications/Orbit.app
 
 只有启用窗口预览时，Orbit 才会请求屏幕录制权限。
 
-当前 Xcode 工程版本为 `1.3.0（build 2）`。已发布版本仍是 `v1.3.0`；源码中
-尚未切出新 release 的改进统一记录在 [Unreleased](CHANGELOG.md) 中。
+当前 Xcode 工程版本为 `1.4.0（build 3）`。从 `v1.3.0` 以来的改动见
+[1.4.0 发布说明](CHANGELOG.md)。
 
 ## 为什么用 Orbit
 
@@ -268,7 +268,7 @@ Orbit 是一个独立的原生 macOS 项目，围绕环形、手势优先的工�
 - 使用 `app.orbit.local` 作为可替换的 bundle identifier。
 - 不包含开发者 Team ID、签名证书或机器专属的 Xcode 状态文件。
 - 默认提供英文 README，并单独提供这份简体中文 README。
-- 当前源码版本：`1.3.0（build 2）`。
+- 当前源码版本：`1.4.0（build 3）`。
 - App 默认使用英文界面；应用内语言选择器提供 English、简体中文、繁體中文、日本語、한국어、Deutsch、Français、Русский、Dansk、Norsk bokmål 和 Esperanto。
 
 ## 许可证
