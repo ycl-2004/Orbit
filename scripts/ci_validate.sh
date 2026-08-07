@@ -5,7 +5,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-BUILD_SETTINGS="$(xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Release -showBuildSettings 2>/dev/null)"
+BUILD_SETTINGS="$(xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Release -showBuildSettings)"
 MARKETING_VERSION="$(awk -F' = ' '$1 ~ /^[[:space:]]*MARKETING_VERSION$/ { print $2; exit }' <<< "$BUILD_SETTINGS")"
 BUILD_NUMBER="$(awk -F' = ' '$1 ~ /^[[:space:]]*CURRENT_PROJECT_VERSION$/ { print $2; exit }' <<< "$BUILD_SETTINGS")"
 ARCHS="$(awk -F' = ' '$1 ~ /^[[:space:]]*ARCHS$/ { print $2; exit }' <<< "$BUILD_SETTINGS")"

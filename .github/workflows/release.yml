@@ -9,15 +9,21 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-14
+    runs-on: macos-26
     timeout-minutes: 45
 
     steps:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Inspect Xcode
-        run: xcodebuild -version
+      - name: Select Xcode 26
+        run: |
+          XCODE_APP="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -n 1)"
+          [[ -n "$XCODE_APP" ]] || { echo "Xcode 26 is not installed on this runner" >&2; exit 1; }
+          sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+          echo "DEVELOPER_DIR=$XCODE_APP/Contents/Developer" >> "$GITHUB_ENV"
+          xcode-select --print-path
+          xcodebuild -version
 
       - name: Validate version, tag, architecture, and test counts
         run: bash scripts/ci_validate.sh
