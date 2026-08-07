@@ -380,7 +380,7 @@ private struct AppearancePreview: View {
     /// 方向，正如环上那些卡片的长边指向中心。The card standing a little proud of
     /// the band top and bottom is the real ring's proportion, not a mistake.
     private var trackThickness: CGFloat {
-        previewDimension
+        previewDimension * 0.88
     }
 
     /// Runs a little past the card at both ends, the way the real band runs

@@ -369,6 +369,16 @@ final class OrbitRingViewModel: ObservableObject {
         onCancel?()
     }
 
+    /// 点中心那颗按钮把选中的 App 切过去，跟松开触发键是同一件事。
+    ///
+    /// Guarded exactly like `cancel()`: a card in flight or a file drop in
+    /// progress owns the hub, and a stray tap must not switch apps out from
+    /// under either of them.
+    func confirmFromHub() {
+        guard draggedAppID == nil, !fileDropPhase.isReceiving else { return }
+        confirmSelection()
+    }
+
     func triggerReleased() {
         guard draggedAppID == nil else { return }
         guard fileDropPhase == .idle else {
@@ -782,6 +792,7 @@ struct OrbitRingView: View {
                     set: { model.setFileDragTargeted($0) }
                 ),
                 onCancel: { model.cancel() },
+                onConfirm: { model.confirmFromHub() },
                 onDrop: { providers in model.handleFileDrop(providers) }
             )
             .position(
@@ -1241,6 +1252,7 @@ private struct OrbitCenterControl: View {
     let mode: OrbitCenterMode
     @Binding var isFileTargeted: Bool
     let onCancel: () -> Void
+    let onConfirm: () -> Void
     let onDrop: ([NSItemProvider]) -> Bool
 
     /// Keep the hub visible so a file drag has an obvious destination. The
@@ -1262,7 +1274,8 @@ private struct OrbitCenterControl: View {
                 .contentShape(Circle())
 
             if isVisible {
-                VStack(spacing: 8) {
+                // 圆点和胶囊之间留够距离，否则整个中心读成一根棒棒糖。
+                VStack(spacing: 10) {
                     ZStack {
                         hub
                             .frame(
@@ -1271,24 +1284,33 @@ private struct OrbitCenterControl: View {
                             )
 
                         Image(systemName: centerIcon)
-                            .font(.system(size: 26, weight: .medium))
+                            .font(.system(size: 24, weight: .medium))
                             .foregroundStyle(.white)
                     }
 
                     Text(centerLabel)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 12, weight: .medium))
                         // 默认状态不该跟卡片抢视线，进入某个动作之后才回到主色。
                         .foregroundStyle(mode == .cancel ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 5)
                         .background(.regularMaterial, in: Capsule())
                 }
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
         }
+        // 点中心 = 中心当时说它会做的那件事。
+        //
+        // Switched on the mode rather than filtered by a list of modes it is
+        // not: `.confirm` used to fall through to the cancel branch, so a hub
+        // painted burgundy, wearing an arrow and captioned "release to switch"
+        // dismissed the ring instead. The drag-owned modes still do nothing —
+        // the drag's own gestures decide what happens when it is let go.
         .onTapGesture {
-            if mode != .quit && mode != .cleanup && mode != .trash && mode != .share {
-                onCancel()
+            switch mode {
+            case .cancel: onCancel()
+            case .confirm: onConfirm()
+            case .quit, .cleanup, .trash, .share: break
             }
         }
         .onDrop(of: [UTType.fileURL], isTargeted: $isFileTargeted, perform: onDrop)
@@ -1324,17 +1346,32 @@ private struct OrbitCenterControl: View {
     /// an icon that is hard to read.
     private var hub: some View {
         ZStack {
-            Circle().fill(.regularMaterial)
-            Circle().fill(.black.opacity(0.46))
+            // 一层平铺的黑只会把它压成一颗失效的灰按钮。让暗部有方向，它才是玻璃。
+            // Lit from the same top-left as the cards and the track.
+            Circle()
+                .fill(.regularMaterial)
+                .overlay {
+                    Circle().fill(
+                        LinearGradient(
+                            colors: [
+                                .black.opacity(0.38),
+                                .black.opacity(0.56)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                }
             Circle().fill(centerTint)
         }
         .overlay(Circle().strokeBorder(.white.opacity(0.30), lineWidth: 1))
-        // 只有真的能按下去的状态才发光，默认状态安静。
+        // 只有真的能按下去的状态才发光，默认状态安静。光圈要贴着圆点，
+        // 再往外一点就变成第二个泡泡了。
         .overlay {
             if let glow = centerGlow {
                 Circle()
-                    .stroke(glow.opacity(0.22), lineWidth: 6)
-                    .scaleEffect(1.12)
+                    .stroke(glow.opacity(glowOpacity), lineWidth: 4)
+                    .scaleEffect(1.08)
             }
         }
         .shadow(
@@ -1361,6 +1398,14 @@ private struct OrbitCenterControl: View {
         case .confirm, .cleanup: OrbitPalette.burgundy
         case .quit, .trash: OrbitPalette.coral
         case .share: OrbitPalette.denim
+        }
+    }
+
+    /// 退出 App 和丢进废纸篓是唯一两个不可撤销的状态，光圈允许比别人亮一点。
+    private var glowOpacity: Double {
+        switch mode {
+        case .quit, .trash: 0.20
+        default: 0.16
         }
     }
 }

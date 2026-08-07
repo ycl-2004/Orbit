@@ -58,8 +58,10 @@ struct OrbitRingBackdrop: View {
                 .stroke(tint.opacity(0.08), style: band)
                 .blur(radius: thickness * 0.15)
 
+            // 一条窄带撑得住比整块圆盘更实的材质，而且越实，白色窗口和花桌布之间的
+            // 差别就越小。
             track
-                .stroke(.ultraThinMaterial, style: band)
+                .stroke(.thinMaterial, style: band)
                 .overlay {
                     // Lit from the top-left, the same direction the cards are
                     // lit from, so the band sits in the same room as them. The
@@ -101,8 +103,40 @@ struct OrbitRingBackdrop: View {
         // The centre line is what the caller positions on the hub; the band
         // spills half its thickness either side of this frame on purpose.
         .frame(width: radius * 2, height: radius * 2)
+        .mask { taper }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+private extension OrbitRingBackdrop {
+    /// 两端顺着弧线淡掉，而不是硬生生收在一个圆头上。
+    ///
+    /// A round cap on a band this thick reads as a bubble stuck to the end of
+    /// the track — the shape is right, the edge is not. Fading the last tenth
+    /// of the sweep instead lets the glass run out from under the first and
+    /// last card, so the track ends where the fan does without announcing it.
+    ///
+    /// The span has to include the caps, not just the arc between the two end
+    /// cards, or a short fan — one app, whose sweep is a few degrees while its
+    /// caps are tens — would be masked away almost entirely.
+    var taper: some View {
+        let capAngle = Double(thickness / 2 / radius)
+        let fade = 0.09
+        return AngularGradient(
+            stops: [
+                .init(color: .clear, location: 0),
+                .init(color: .white, location: fade),
+                .init(color: .white, location: 1 - fade),
+                .init(color: .clear, location: 1)
+            ],
+            center: .center,
+            startAngle: .radians(arc.lowerBound - capAngle),
+            endAngle: .radians(arc.upperBound + capAngle)
+        )
+        // 遮罩要比被遮的内容大：带子本身就溢出自己的 frame 半个厚度，光晕和阴影
+        // 还要再溢出一截，用同尺寸的遮罩会把它们齐根切掉。
+        .frame(width: (radius + thickness) * 2, height: (radius + thickness) * 2)
     }
 }
 

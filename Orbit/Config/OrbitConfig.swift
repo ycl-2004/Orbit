@@ -290,8 +290,13 @@ enum OrbitConfig {
         return max(minimum, byOverlap * compactScale)
     }
 
+    /// 中心那颗圆点看得见的半径。
+    ///
+    /// Deliberately smaller than the target you can hit: the hub is an anchor,
+    /// not the loudest thing on the ring, and `centerDropRadius` keeps a file
+    /// drag just as forgiving as it was.
     static var centerRadius: CGFloat {
-        (cardSize.dimension * 0.42).rounded()
+        (cardSize.dimension * 0.39).rounded()
     }
 
     /// 中心控件真正占掉的半径：圆盘本身，加上它下面那颗状态标签。
@@ -302,8 +307,8 @@ enum OrbitConfig {
     /// against `centerRadius` alone therefore lies: it reads as comfortable on
     /// the sides while the bottom of the fan sits right on top of the label.
     static var centerFootprintRadius: CGFloat {
-        let labelHeight: CGFloat = 27
-        let labelSpacing: CGFloat = 8
+        let labelHeight: CGFloat = 25
+        let labelSpacing: CGFloat = 10
         return (centerRadius * 2 + labelSpacing + labelHeight) / 2
     }
 
@@ -339,7 +344,7 @@ enum OrbitConfig {
     /// top and bottom of each card standing slightly proud of it, which is what
     /// gives the ring its depth and keeps the hollow in the middle wide open.
     static var ringTrackThickness: CGFloat {
-        cardSize.dimension
+        cardSize.dimension * 0.88
     }
 
     /// 轨道在扇面两端各多走出去的角度。
