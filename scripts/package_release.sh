@@ -7,6 +7,7 @@ VERSION="${1:-1.4.1}"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:--}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$PROJECT_DIR/Build"
+DERIVED_DATA_DIR="$BUILD_DIR/DerivedData"
 BUILT_APP="$BUILD_DIR/Release/Orbit.app"
 DIST_DIR="$PROJECT_DIR/dist"
 RELEASE_ASSET="$DIST_DIR/Orbit-macOS.zip"
@@ -21,7 +22,9 @@ cd "$PROJECT_DIR"
 
 echo "==> Building Orbit $VERSION (Release)"
 xcodebuild -quiet -project Orbit.xcodeproj -scheme Orbit \
-    -configuration Release -derivedDataPath Build \
+    -configuration Release -destination 'platform=macOS' \
+    -derivedDataPath "$DERIVED_DATA_DIR" \
+    CONFIGURATION_BUILD_DIR="$BUILD_DIR/Release" \
     MARKETING_VERSION="$VERSION" \
     ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
     CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" build
