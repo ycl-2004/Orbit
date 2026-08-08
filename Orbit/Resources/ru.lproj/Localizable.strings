@@ -69,7 +69,6 @@
 "prefs.preview.note" = "Показывает все окна выбранного приложения справа от кольца. Требуется разрешение на запись экрана.";
 
 /* Settings — login */
-"prefs.group.startup" = "Вход в систему";
 "prefs.startup.launchAtLogin" = "Запуск при входе";
 
 /* Settings — shortcut reference */
@@ -129,8 +128,6 @@
 "preview.noWindows.message" = "Приложение запущено, но в нём нет окна для предпросмотра.";
 "preview.unavailable.title" = "Предпросмотр недоступен";
 "preview.unavailable.message" = "У приложения есть окно, но macOS не предоставила предпросмотр.";
-"preview.empty" = "Выберите приложение, чтобы увидеть окна";
-"preview.none" = "Нет окон для предпросмотра";
 
 /* VoiceOver */
 "accessibility.selected" = "Выбрано. Нажмите Enter или отпустите клавишу, чтобы переключиться.";

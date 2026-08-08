@@ -69,7 +69,6 @@
 "prefs.preview.note" = "Montras ĉiujn fenestrojn de la elektita aplikaĵo dekstre de la ringo. Bezonas ekranregistran permeson.";
 
 /* Settings — login */
-"prefs.group.startup" = "Ensaluto";
 "prefs.startup.launchAtLogin" = "Lanĉi ĉe ensaluto";
 
 /* Settings — shortcut reference */
@@ -129,8 +128,6 @@
 "preview.noWindows.message" = "Ĉi tiu aplikaĵo funkcias, sed ne havas fenestron por antaŭrigardi.";
 "preview.unavailable.title" = "Antaŭrigardo ne disponeblas";
 "preview.unavailable.message" = "La aplikaĵo havas fenestron, sed macOS ne provizis antaŭrigardon.";
-"preview.empty" = "Elektu aplikaĵon por vidi fenestrojn";
-"preview.none" = "Neniu fenestro por antaŭrigardi";
 
 /* VoiceOver */
 "accessibility.selected" = "Elektita. Premu Enter aŭ lasu la ekigan klavon por ŝalti.";

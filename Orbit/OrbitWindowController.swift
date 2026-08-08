@@ -115,9 +115,10 @@ final class OrbitWindowController: NSObject {
         let targetScreen = screen(containing: location)
 
         // Cancel is the safe default. Quick switch is an explicit setting and
-        // always selects the same 12-o'clock target that the first arrow enters.
+        // always selects the same 12-o'clock target that the first arrow enters
+        // — the skip-the-Orbit-card rule here is the one `entryCardID` applies.
         let preselecting = OrbitConfig.ringOpeningBehavior == .quickSwitch
-            ? apps.first(where: { !$0.isOrbit })?.id
+            ? (apps.first(where: { !$0.isOrbit }) ?? apps.first)?.id
             : nil
 
         let ringModel = OrbitRingViewModel(
@@ -271,29 +272,30 @@ final class OrbitWindowController: NSObject {
                         "same-app menu switch target=\(window.id, privacy: .public); no reactivation"
                     )
                 }
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    let visible = WindowServerInspector.isWindowOnScreen(
-                        window.id,
-                        ownedBy: app.processIdentifier
-                    )
-                    windowSwitchLogger.notice(
-                        "verification target=\(window.id, privacy: .public) onScreen=\(visible, privacy: .public)"
-                    )
-                }
                 return
             }
 
             // Apple Events reorder: right window within the current Space.
             // Only when that too comes back empty-handed does this degrade to
             // plain app activation, the behaviour Orbit always had.
+            //
+            // 这一步是唯一可能拖很久才回来的：对一个应用首次发 Apple Event 会弹出
+            // 系统的自动化授权框，而那个框在屏幕上挂多久，这里就阻塞多久。所以回来
+            // 之后要先问一句"这次切换还是用户正在做的事吗"。
+            let requestedAt = Date()
             ScriptedWindowFocus.focus(window, bundleIdentifier: app.id) { switched in
+                let elapsed = Date().timeIntervalSince(requestedAt)
                 windowSwitchLogger.notice(
-                    "AppleScript fallback target=\(window.id, privacy: .public) switched=\(switched, privacy: .public)"
+                    "AppleScript fallback target=\(window.id, privacy: .public) switched=\(switched, privacy: .public) elapsed=\(elapsed, privacy: .public)"
                 )
-                if !switched {
-                    _ = app.bringToFront()
+                guard !switched else { return }
+                guard ScriptedWindowFocus.fallbackActivationIsStillRelevant(elapsed: elapsed) else {
+                    windowSwitchLogger.notice(
+                        "stale fallback abandoned target=\(window.id, privacy: .public)"
+                    )
+                    return
                 }
+                _ = app.bringToFront()
             }
         }
     }

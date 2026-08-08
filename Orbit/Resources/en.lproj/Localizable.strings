@@ -69,7 +69,6 @@
 "prefs.preview.note" = "Shows every window of the selected app to the right of the ring. Requires the Screen Recording permission.";
 
 /* Settings — login */
-"prefs.group.startup" = "Login";
 "prefs.startup.launchAtLogin" = "Launch at login";
 
 /* Settings — shortcut reference */
@@ -129,8 +128,6 @@
 "preview.noWindows.message" = "This app is running, but it has no window to preview.";
 "preview.unavailable.title" = "Preview unavailable";
 "preview.unavailable.message" = "The app has a window, but macOS did not provide a preview.";
-"preview.empty" = "Select an app to see its windows";
-"preview.none" = "No windows to preview";
 
 /* VoiceOver */
 "accessibility.selected" = "Selected. Press Enter or release the trigger key to activate.";

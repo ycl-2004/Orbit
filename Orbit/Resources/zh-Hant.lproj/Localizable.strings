@@ -69,7 +69,6 @@
 "prefs.preview.note" = "選取應用程式時，在環形右側顯示它所有視窗的截圖。需要螢幕錄製權限。";
 
 /* Settings — login */
-"prefs.group.startup" = "登入";
 "prefs.startup.launchAtLogin" = "開機自動啟動";
 
 /* Settings — shortcut reference */
@@ -129,8 +128,6 @@
 "preview.noWindows.message" = "此應用程式正在執行，但沒有可預覽的視窗。";
 "preview.unavailable.title" = "預覽無法使用";
 "preview.unavailable.message" = "應用程式有視窗，但 macOS 沒有提供預覽。";
-"preview.empty" = "選擇一個應用程式查看視窗";
-"preview.none" = "沒有可預覽的視窗";
 
 /* VoiceOver */
 "accessibility.selected" = "已選取。按 Enter 或放開觸發鍵即可切換。";

@@ -4,6 +4,7 @@
 //
 
 import AppKit
+import ApplicationServices
 import SwiftUI
 
 @main
@@ -35,6 +36,7 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
         // 不占 Dock 图标，只在菜单栏出现。
         NSApp.setActivationPolicy(.accessory)
 
+        Self.boundAccessibilityMessaging()
         installStatusItem()
         // 越早开始记越好：环上放得下哪些应用，取决于这份历史有多长。
         AppActivationHistory.shared.start()
@@ -54,6 +56,25 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
             NotificationCenter.default.removeObserver(summonObserver)
         }
         HotKeyService.shared.stopListening()
+    }
+
+    /// 给这个进程发出的每一次辅助功能往返设一个统一的上限。
+    ///
+    /// `AXUIElementSetMessagingTimeout` is documented as per-object: a timeout
+    /// set on an application element covers messages to that element and
+    /// nothing else. So the 0.4 s guards inside `WindowPreviewService` and
+    /// `ScriptedWindowFocus` only ever protected the first hop — the window,
+    /// menu and menu-item objects those two then walk kept the framework
+    /// default of several seconds each.
+    ///
+    /// 这件事要紧，是因为那些遍历跑在主线程上，而事件 tap 的回调也在那条线上：
+    /// 主线程停一拍，全系统的键盘输入就跟着停一拍。而"目标应用正卡着"恰恰是
+    /// 用户最想按切换器的时刻。宁可放弃一次切换，也不能卡住别人的键盘。
+    ///
+    /// Passing the system-wide object is what makes this global; individual
+    /// elements can still ask for more, and the Window-menu press does.
+    private static func boundAccessibilityMessaging() {
+        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 0.4)
     }
 
     /// 只有拿到辅助功能权限时才装事件监听；没权限时反复调用也无副作用。

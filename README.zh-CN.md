@@ -63,8 +63,8 @@ open /Applications/Orbit.app
 
 只有启用窗口预览时，Orbit 才会请求屏幕录制权限。
 
-当前 Xcode 工程版本为 `1.5.0（build 5）`。从 `v1.4.1` 以来的改动见
-[1.5.0 发布说明](CHANGELOG.md)。
+当前 Xcode 工程版本为 `1.5.1（build 6）`。从 `v1.5.0` 以来的改动见
+[1.5.1 发布说明](CHANGELOG.md)。
 
 ## 为什么用 Orbit
 
@@ -80,7 +80,7 @@ open /Applications/Orbit.app
 
 - 长按修饰键呼出环形应用切换器，默认触发键为 Option（⌥）。
 - 默认使用方向键导航；可在设置中按需启用字母和数字快捷键。
-- 可选的环旁窗口预览：在设置中打开"显示窗口预览"，并授予屏幕录制权限；macOS 授权后需要重启 Orbit。
+- 可选的环旁窗口预览：在**设置 → 外观**中打开“显示窗口预览”，并授予屏幕录制权限；macOS 授权后需要重启 Orbit。
 - 设置里的**打开 Orbit 时**可以选择行为。默认的**从取消开始**不会选中任何目标；**快速切换**会预选 12 点目标，松手立即切到当前应用最近的另一扇窗口；没有其他窗口时才切回上一个应用。
 - 长按尚未完成时，如果先按了其他键、鼠标按钮或滚轮，Orbit 会取消这次待触发状态，避免误打开环。
 
@@ -172,6 +172,11 @@ README 与仓库内的产品截图保持同步。
 因为实时窗口缩略图属于屏幕内容；macOS 要求授权后重启 Orbit 才生效。所有画面都
 不会被保存或上传——Orbit 究竟读取和保留了什么，详见[隐私政策](PRIVACY.md)。
 
+屏幕录制权限同时覆盖*窗口标题*，所以它换来的不只是缩略图：有这个权限时，Orbit
+才能把其他 Space 上的同应用窗口列为目标，也才能在应用的“窗口”菜单里找到对应的
+那一项。没有它时，窗口级切换只覆盖当前屏幕上的窗口，浏览器的精确窗口切换也会更
+频繁地走到 Apple Events 兜底。应用之间的切换不受影响。
+
 **正常切换不需要自动化权限。** Orbit 通常通过辅助功能（包括目标应用的“窗口”菜单）
 到达所选窗口。只有这些路径无法完成精确切换时，Orbit 才会尝试 Apple Events 兜底；
 macOS 会在那一刻询问，拒绝后 Orbit 只会退回普通的应用切换。
@@ -181,7 +186,7 @@ macOS 会在那一刻询问，拒绝后 Orbit 只会退回普通的应用切换�
 <details>
 <summary>如何切换 Orbit 的界面语言？</summary>
 
-点击菜单栏图标，进入**设置 → 语言**，选择**跟随系统**或 Orbit 自带的语言。
+点击菜单栏图标，进入**设置 → 通用 → 语言**，选择**跟随系统**或 Orbit 自带的语言。
 选择变化后 Orbit 会显示重启提示；重启后所有视图和菜单都会使用新的语言。
 
 </details>
@@ -259,7 +264,7 @@ xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
 
 Universal 2 检查、干净机器安装和权限回归清单见
 [docs/release-checklist.md](docs/release-checklist.md)。GitHub Actions 会在每次 push
-和 pull request 上执行元数据检查、Debug 构建以及 46 个 `OrbitTests` 测试。
+和 pull request 上执行元数据检查、Debug 构建以及 58 个 `OrbitTests` 测试。
 
 </details>
 
@@ -284,7 +289,7 @@ Orbit 是一个独立的原生 macOS 项目，围绕环形、手势优先的工�
 - 使用 `app.orbit.local` 作为可替换的 bundle identifier。
 - 不包含开发者 Team ID、签名证书或机器专属的 Xcode 状态文件。
 - 默认提供英文 README，并单独提供这份简体中文 README。
-- 当前源码版本：`1.5.0（build 5）`。
+- 当前源码版本：`1.5.1（build 6）`。
 - App 默认使用英文界面；应用内语言选择器提供 English、简体中文、繁體中文、日本語、한국어、Deutsch、Français、Русский、Dansk、Norsk bokmål 和 Esperanto。
 
 ## 许可证与商业使用

@@ -88,7 +88,12 @@ enum WindowServerInspector {
             return nil
         }
 
-        return frontWindow(in: windows, ownedBy: pid)
+        // 跟 `windowCounts` 同一条规矩：标题这条判据只在真读得到标题时才收紧。
+        return frontWindow(
+            in: windows,
+            ownedBy: pid,
+            requiringTitle: CGPreflightScreenCaptureAccess()
+        )
     }
 
     /// Whether one captured document surface is currently present on-screen.
@@ -106,19 +111,23 @@ enum WindowServerInspector {
         }
     }
 
-    /// Picks the frontmost titled document surface from an already ordered
-    /// window list. Chrome splits one fullscreen window into several normal-
-    /// layer surfaces; its untitled toolbar/container can sit ahead of the
-    /// titled page. Hiding that helper ID leaves the page itself in previews.
+    /// Picks the frontmost document surface from an already ordered window list.
+    /// Chrome splits one fullscreen window into several normal-layer surfaces;
+    /// its untitled toolbar/container can sit ahead of the titled page. Skipping
+    /// that helper leaves the page itself as the answer.
     ///
-    /// Titles require Screen Recording permission, but this answer is only
-    /// used to hide a window from those same permission-gated previews.
+    /// 这个答案不只是拿去在预览里藏一扇窗。它还是「当前应用要不要给一张卡」的
+    /// 起点：认不出你正看着哪一扇，就算不出还有没有另一扇可切，那张卡也就不会
+    /// 出现。所以 `requiringTitle` 必须由调用方按权限给 —— 没有屏幕录制权限时
+    /// 标题一律是 nil，硬要求一个标题会把整条「切到同一应用的另一扇窗」的路
+    /// 一起判死，而那正是这个版本的主功能。
     static func frontWindow(
         in windows: [[String: Any]],
-        ownedBy pid: pid_t
+        ownedBy pid: pid_t,
+        requiringTitle: Bool
     ) -> CGWindowID? {
         for window in windows where window[kCGWindowOwnerPID as String] as? Int == Int(pid) {
-            guard qualifiesAsWindow(window, requiringTitle: true),
+            guard qualifiesAsWindow(window, requiringTitle: requiringTitle),
                   let number = window[kCGWindowNumber as String] as? Int else { continue }
             return CGWindowID(number)
         }
@@ -247,6 +256,15 @@ enum WindowServerInspector {
             && bounds.height >= OrbitConfig.minimumRealWindowSize.height
     }
 
+    /// 刻意跟 `qualifiesAsWindow` 用不同的尺寸下限，不是漏改。
+    ///
+    /// The two answer different questions. `qualifiesAsWindow` asks "is this
+    /// worth a card and a thumbnail", so it holds out for a document-sized
+    /// surface. This one backs `hasOnscreenWindow`, whose only caller decides
+    /// whether an activated app needs its bundle reopened to get a window at
+    /// all — there, *anything* the user can see is proof enough. Raising this
+    /// floor to match would make Orbit open a second window behind every app
+    /// whose only window happens to be small.
     private static func isOnscreenEntry(_ window: [String: Any], owner pid: pid_t) -> Bool {
         guard window[kCGWindowOwnerPID as String] as? Int == Int(pid) else {
             return false

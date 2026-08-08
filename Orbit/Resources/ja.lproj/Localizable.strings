@@ -69,7 +69,6 @@
 "prefs.preview.note" = "アプリを選択すると、そのすべてのウインドウをリングの右側に表示します。画面収録の許可が必要です。";
 
 /* Settings — login */
-"prefs.group.startup" = "ログイン";
 "prefs.startup.launchAtLogin" = "ログイン時に起動";
 
 /* Settings — shortcut reference */
@@ -129,8 +128,6 @@
 "preview.noWindows.message" = "このアプリは実行中ですが、プレビューできるウインドウがありません。";
 "preview.unavailable.title" = "プレビューを利用できません";
 "preview.unavailable.message" = "アプリにはウインドウがありますが、macOS がプレビューを提供しませんでした。";
-"preview.empty" = "アプリを選択してウインドウを表示";
-"preview.none" = "プレビューできるウインドウがありません";
 
 /* VoiceOver */
 "accessibility.selected" = "選択中。Enter を押すかトリガーキーを離すと切り替わります。";

@@ -96,13 +96,6 @@ final class HotKeyService {
         AXIsProcessTrusted()
     }
 
-    static func requestAccessibilityPermission() {
-        let options = [
-            kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true
-        ] as CFDictionary
-        _ = AXIsProcessTrustedWithOptions(options)
-    }
-
     func startListening() {
         guard !listening else { return }
         guard Self.checkAccessibilityPermission() else { return }

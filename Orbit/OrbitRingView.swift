@@ -135,6 +135,18 @@ final class OrbitRingViewModel: ObservableObject {
         return apps.first(where: { $0.id == selectedID })
     }
 
+    /// 一个还没有选中项的环，第一次按方向键该落在哪张卡上。
+    ///
+    /// The Orbit card is a cleanup affordance rather than a switch destination —
+    /// confirming it only dismisses the ring — so entry skips it whenever a real
+    /// target exists. This is the same rule `OrbitWindowController` applies when
+    /// Quick switch preselects on open; keyboard entry and quick switch must
+    /// agree, or releasing the trigger would do something different depending on
+    /// which of the two put the highlight there.
+    var entryCardID: String? {
+        (apps.first(where: { !$0.isOrbit }) ?? apps.first)?.id
+    }
+
     var centerMode: OrbitCenterMode {
         if draggedAppID != nil && dragOverCenter {
             return apps.first(where: { $0.id == draggedAppID })?.isOrbit == true ? .cleanup : .quit
@@ -416,7 +428,7 @@ final class OrbitRingViewModel: ObservableObject {
         // make both arrow directions share that predictable first step.
         if selectedID == nil {
             hoverAnchor = nil
-            selectedID = apps[0].id
+            selectedID = entryCardID
             return
         }
 

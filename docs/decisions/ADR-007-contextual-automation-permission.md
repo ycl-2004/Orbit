@@ -70,6 +70,14 @@ menu selection are unavailable.
 
 - General Settings shows only permissions with an immediate, understandable
   effect on the current Orbit experience.
+- The Window menu path recognises a menu by matching its entries against the
+  window titles the app really owns, and reading another app's window titles
+  requires Screen Recording. Without that permission the Window menu cannot be
+  identified, so exact-window switches fall through to Apple Events sooner and
+  the Automation dialog appears more often than the reasoning above implies.
+  Screen Recording is itself optional in Orbit, so this is the expected shape of
+  the trade rather than a defect: the fallback still degrades to plain app
+  activation, which is what a person without either optional permission gets.
 - Users no longer see or manage speculative per-app Automation states in Orbit.
 - A system Automation prompt can still appear during a rare fallback attempt,
   at the moment its purpose is most relevant.

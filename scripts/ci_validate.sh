@@ -34,10 +34,23 @@ grep -Eq "^## ${MARKETING_VERSION//./\\.} —" CHANGELOG.md || {
 
 UNIT_TEST_COUNT="$(grep -Ec '^[[:space:]]*@Test' OrbitTests/OrbitTests.swift)"
 UI_TEST_COUNT="$(find OrbitUITests -type f -name '*.swift' -exec grep -Ehc '^[[:space:]]*func test' {} + | awk '{ total += $1 } END { print total + 0 }')"
-[[ "$UNIT_TEST_COUNT" == "51" ]] || { echo "Expected 51 OrbitTests tests; found $UNIT_TEST_COUNT" >&2; exit 1; }
-[[ "$UI_TEST_COUNT" == "2" ]] || { echo "Expected 2 OrbitUITests methods; found $UI_TEST_COUNT" >&2; exit 1; }
-grep -Eq "51.*OrbitTests.*2.*OrbitUITests|2.*OrbitUITests.*51.*OrbitTests" CHANGELOG.md || {
-    echo "CHANGELOG.md test-count declaration is stale" >&2
+# Keep these three in step with each other. Two commits in a row changed the
+# suite without touching this file, which is exactly the drift the check exists
+# to catch — so it names the file to edit rather than only the number it wanted.
+EXPECTED_UNIT_TESTS=58
+EXPECTED_UI_TESTS=2
+
+[[ "$UNIT_TEST_COUNT" == "$EXPECTED_UNIT_TESTS" ]] || {
+    echo "Expected $EXPECTED_UNIT_TESTS OrbitTests tests; found $UNIT_TEST_COUNT." >&2
+    echo "If the change is intended, update EXPECTED_UNIT_TESTS in $0 and the CHANGELOG test-count line." >&2
+    exit 1
+}
+[[ "$UI_TEST_COUNT" == "$EXPECTED_UI_TESTS" ]] || {
+    echo "Expected $EXPECTED_UI_TESTS OrbitUITests methods; found $UI_TEST_COUNT" >&2
+    exit 1
+}
+grep -Eq "$EXPECTED_UNIT_TESTS.*OrbitTests.*$EXPECTED_UI_TESTS.*OrbitUITests|$EXPECTED_UI_TESTS.*OrbitUITests.*$EXPECTED_UNIT_TESTS.*OrbitTests" CHANGELOG.md || {
+    echo "CHANGELOG.md does not declare $EXPECTED_UNIT_TESTS OrbitTests and $EXPECTED_UI_TESTS OrbitUITests" >&2
     exit 1
 }
 

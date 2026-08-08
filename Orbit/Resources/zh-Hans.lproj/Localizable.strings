@@ -69,7 +69,6 @@
 "prefs.preview.note" = "选中应用时，在环形右侧显示它所有窗口的截图。需要屏幕录制权限。";
 
 /* Settings — login */
-"prefs.group.startup" = "登录";
 "prefs.startup.launchAtLogin" = "开机自动启动";
 
 /* Settings — shortcut reference */
@@ -129,8 +128,6 @@
 "preview.noWindows.message" = "此应用正在运行，但没有可预览的窗口。";
 "preview.unavailable.title" = "预览不可用";
 "preview.unavailable.message" = "应用有窗口，但 macOS 没有提供预览。";
-"preview.empty" = "选择一个应用查看窗口";
-"preview.none" = "没有可预览的窗口";
 
 /* VoiceOver */
 "accessibility.selected" = "已选择。按 Enter 或松开触发键确认切换。";

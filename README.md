@@ -66,8 +66,8 @@ open /Applications/Orbit.app
 
 Screen Recording permission is requested only if you turn on window previews.
 
-The current Xcode project reports version `1.5.0 (build 5)`. See the
-[1.5.0 release notes](CHANGELOG.md) for the changes since `v1.4.1`.
+The current Xcode project reports version `1.5.1 (build 6)`. See the
+[1.5.1 release notes](CHANGELOG.md) for the changes since `v1.5.0`.
 
 ## Why Orbit
 
@@ -83,7 +83,7 @@ The current Xcode project reports version `1.5.0 (build 5)`. See the
 
 - Radial app switcher summoned by holding a modifier key (default: Option ⌥).
 - Arrow-key navigation enabled by default; optional letter and number shortcuts can be turned on in Settings.
-- Optional window previews beside the ring. Enable **Show window previews** in Settings and grant Screen Recording permission; macOS requires an Orbit restart after granting it.
+- Optional window previews beside the ring. Enable **Show window previews** under **Settings → Appearance** and grant Screen Recording permission; macOS requires an Orbit restart after granting it.
 - **When Orbit opens** is selectable in Settings. **Start at Cancel** is the safe default; **Quick switch** preselects the 12-o'clock target so releasing immediately switches to the most recent sibling window or, when none exists, the previous app.
 - A pending summon is canceled if another key, mouse button, or scroll gesture arrives before the hold completes, preventing accidental ring openings.
 
@@ -181,6 +181,12 @@ because live window thumbnails are screen content. macOS requires an Orbit
 restart after you grant it. Nothing captured is stored or transmitted — see the
 [privacy policy](PRIVACY.md) for exactly what Orbit reads and keeps.
 
+Screen Recording also covers *window titles*, so it buys more than thumbnails:
+with it, Orbit can offer sibling windows on other Spaces as targets and can find
+the right entry in an app's Window menu. Without it, window-level switching is
+limited to windows currently on screen, and exact-window switches in browsers
+reach the Apple Events fallback more often. App switching itself is unaffected.
+
 **Automation is not required for normal switching.** Orbit normally uses
 Accessibility, including an app's Window menu, to reach the chosen window. Only
 if those paths cannot complete an exact switch does Orbit try an Apple Events
@@ -192,8 +198,8 @@ the app normally.
 <details>
 <summary>How do I change Orbit's interface language?</summary>
 
-Open the menu bar icon, choose **Settings → Language**, and select **Follow
-System** or one of Orbit's bundled languages. Orbit shows a restart prompt after
+Open the menu bar icon, choose **Settings → General → Language**, and select
+**Follow System** or one of Orbit's bundled languages. Orbit shows a restart prompt after
 the selection changes; restart it for every view and menu to use the new locale.
 
 </details>
@@ -277,7 +283,7 @@ public documentation remain tracked.
 Release verification, including Universal 2 checks and the clean-machine
 installation/permission regression checklist, is documented in
 [docs/release-checklist.md](docs/release-checklist.md). GitHub Actions runs the
-metadata check, Debug build, and 51 `OrbitTests` tests on every push and pull request.
+metadata check, Debug build, and 58 `OrbitTests` tests on every push and pull request.
 
 </details>
 
@@ -302,7 +308,7 @@ gesture-first workflow. This repository provides:
 - Portable placeholder bundle identifiers under `app.orbit.local`.
 - No developer Team ID, signing certificate, or machine-specific Xcode state.
 - English-first documentation with a separate Simplified Chinese version.
-- Current source build: `1.5.0 (build 5)`.
+- Current source build: `1.5.1 (build 6)`.
 - English is the default app localization; the in-app picker ships English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, Russian, Danish, Norwegian Bokmål, and Esperanto.
 
 ## License and commercial use

@@ -318,6 +318,23 @@ struct OrbitTests {
         #expect(movingBackward.selectedID == "com.previous")
     }
 
+    /// Orbit 自己那张卡是清理入口，不是切换目标 —— 确认它只会关掉圆环。所以
+    /// 方向键进入一个空选的环时要跳过它，而这正是快速切换预选时用的同一条规则：
+    /// 两边不一致的话，同样是松开触发键，结果会取决于高亮是谁放上去的。
+    @Test @MainActor func neutralEntrySkipsTheOrbitCardTheWayQuickSwitchDoes() {
+        let withRealTarget = OrbitRingViewModel(
+            apps: [AppRecord.orbitCard, listed("com.previous", "Previous")],
+            showsPreview: false
+        )
+        #expect(withRealTarget.entryCardID == "com.previous")
+        withRealTarget.moveSelection(step: 1)
+        #expect(withRealTarget.selectedID == "com.previous")
+
+        // 环上只剩 Orbit 一张卡时没有别的可落，仍然要有个确定的答案。
+        let orbitOnly = OrbitRingViewModel(apps: [AppRecord.orbitCard], showsPreview: false)
+        #expect(orbitOnly.entryCardID == AppRecord.orbitCard.id)
+    }
+
     @Test @MainActor func currentAppWindowTargetCanConfirmBeforePreviewCaptureFinishes() {
         let current = listed("com.current", "Current", processIdentifier: 42)
         let target = WindowTarget(
@@ -897,7 +914,66 @@ struct OrbitTests {
             window(id: 735, title: "Current page")
         ]
 
-        #expect(WindowServerInspector.frontWindow(in: windows, ownedBy: 42) == 735)
+        #expect(
+            WindowServerInspector.frontWindow(
+                in: windows,
+                ownedBy: 42,
+                requiringTitle: true
+            ) == 735
+        )
+    }
+
+    /// 没有屏幕录制权限时所有标题都读成 nil，此时还硬要一个标题，等于答不出
+    /// 「你正看着哪一扇窗」——而那是「当前应用要不要给一张卡」的起点，整条
+    /// 「切到同一应用的另一扇窗」会跟着一起消失。要求标题必须跟着权限走。
+    @Test func theFrontWindowStaysResolvableWithoutScreenRecording() {
+        let size = OrbitConfig.minimumRealWindowSize
+        func window(id: Int) -> [String: Any] {
+            [
+                kCGWindowOwnerPID as String: 42,
+                kCGWindowNumber as String: id,
+                kCGWindowLayer as String: 0,
+                kCGWindowAlpha as String: 1.0,
+                kCGWindowBounds as String: [
+                    "X": 0,
+                    "Y": 0,
+                    "Width": size.width + 1,
+                    "Height": size.height + 1
+                ]
+            ]
+        }
+
+        // 权限不在时窗口表里一个标题都没有。
+        let untitled = [window(id: 804), window(id: 735)]
+
+        #expect(
+            WindowServerInspector.frontWindow(
+                in: untitled,
+                ownedBy: 42,
+                requiringTitle: false
+            ) == 804
+        )
+        #expect(
+            WindowServerInspector.frontWindow(
+                in: untitled,
+                ownedBy: 42,
+                requiringTitle: true
+            ) == nil
+        )
+    }
+
+    /// 对一个应用首次发 Apple Event 会弹系统授权框，而脚本一直阻塞到那个框被
+    /// 回答为止。等用户一分钟后才点「不允许」，他早就在做别的事了 —— 这时候再
+    /// 兜底激活一个应用是打断，不是把这次切换做完。
+    @Test func aLateAppleEventsAnswerNoLongerActivatesTheApp() {
+        #expect(ScriptedWindowFocus.fallbackActivationIsStillRelevant(elapsed: 0))
+        #expect(ScriptedWindowFocus.fallbackActivationIsStillRelevant(
+            elapsed: OrbitConfig.maximumSwitchFallbackDelay
+        ))
+        #expect(!ScriptedWindowFocus.fallbackActivationIsStillRelevant(
+            elapsed: OrbitConfig.maximumSwitchFallbackDelay + 0.01
+        ))
+        #expect(!ScriptedWindowFocus.fallbackActivationIsStillRelevant(elapsed: 60))
     }
 
     /// A Window-menu press already switches Spaces inside the current app.

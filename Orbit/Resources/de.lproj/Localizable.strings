@@ -69,7 +69,6 @@
 "prefs.preview.note" = "Zeigt beim Auswählen einer App alle ihre Fenster rechts vom Ring. Erfordert die Bildschirmaufnahme-Berechtigung.";
 
 /* Settings — login */
-"prefs.group.startup" = "Anmeldung";
 "prefs.startup.launchAtLogin" = "Beim Login starten";
 
 /* Settings — shortcut reference */
@@ -129,8 +128,6 @@
 "preview.noWindows.message" = "Diese App läuft, hat aber kein Fenster zur Vorschau.";
 "preview.unavailable.title" = "Vorschau nicht verfügbar";
 "preview.unavailable.message" = "Die App hat ein Fenster, aber macOS stellt keine Vorschau bereit.";
-"preview.empty" = "App auswählen, um Fenster zu sehen";
-"preview.none" = "Keine Fenster zur Vorschau";
 
 /* VoiceOver */
 "accessibility.selected" = "Ausgewählt. Enter drücken oder Auslösetaste loslassen, um zu wechseln.";

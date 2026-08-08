@@ -538,6 +538,16 @@ enum OrbitConfig {
     /// so a card never promises a thumbnail the preview then refuses to show.
     static let minimumRealWindowSize = CGSize(width: 200, height: 120)
 
+    /// 一次切换的兜底激活最多可以迟到多久还算数。
+    ///
+    /// Every step of a switch is meant to land inside the beat after the ring
+    /// closes. The one step that can outlive it is the Apple Events fallback:
+    /// its first contact with an app raises the system's Automation dialog and
+    /// blocks until that dialog is answered. Past this point the switch is no
+    /// longer what the person is doing, and activating an app then is an
+    /// interruption rather than a completion.
+    static let maximumSwitchFallbackDelay: TimeInterval = 3
+
     static let maxVisibleApps = 12
     static let dispersionParticleCount = 72
     static let dispersionDuration: TimeInterval = 0.55

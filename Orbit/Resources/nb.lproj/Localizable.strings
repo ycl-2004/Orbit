@@ -69,7 +69,6 @@
 "prefs.preview.note" = "Viser alle vinduene til valgt app til høyre for ringen. Krever tillatelse til skjermopptak.";
 
 /* Settings — login */
-"prefs.group.startup" = "Innlogging";
 "prefs.startup.launchAtLogin" = "Start ved innlogging";
 
 /* Settings — shortcut reference */
@@ -129,8 +128,6 @@
 "preview.noWindows.message" = "Denne appen kjører, men har ingen vinduer å forhåndsvise.";
 "preview.unavailable.title" = "Forhåndsvisning utilgjengelig";
 "preview.unavailable.message" = "Appen har et vindu, men macOS ga ingen forhåndsvisning.";
-"preview.empty" = "Velg en app for å se vinduer";
-"preview.none" = "Ingen vinduer å forhåndsvise";
 
 /* VoiceOver */
 "accessibility.selected" = "Valgt. Trykk Enter eller slipp utløsertasten for å bytte.";

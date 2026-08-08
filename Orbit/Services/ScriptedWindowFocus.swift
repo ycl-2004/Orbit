@@ -102,7 +102,37 @@ enum ScriptedWindowFocus {
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
+    /// Whether an activation arriving `elapsed` seconds after the switch was
+    /// asked for still belongs to the gesture that asked for it.
+    ///
+    /// The first Apple Event sent to a given app raises the system's Automation
+    /// dialog, and `executeAndReturnError` blocks for exactly as long as that
+    /// dialog stays on screen — the script's own `with timeout of 2 seconds`
+    /// covers the event, not the consent in front of it. Someone who leaves the
+    /// dialog sitting and answers a minute later has long since moved on, and
+    /// falling back to plain activation at *that* moment pulls the screen out
+    /// from under whatever they are doing instead of finishing their switch.
+    static func fallbackActivationIsStillRelevant(elapsed: TimeInterval) -> Bool {
+        elapsed <= OrbitConfig.maximumSwitchFallbackDelay
+    }
+
     // MARK: - Window-menu fallback (Accessibility)
+
+    /// How far in from the right of the menu bar the Window menu may sit. It is
+    /// conventionally second to last, ahead of Help.
+    ///
+    /// 这个上限是必须的，不是优化。下面每一次 AX 调用都是一次同步的跨进程往返，
+    /// 而整段遍历跑在主线程上 —— 事件 tap 的回调也在那条线上。一旦 Window 菜单
+    /// 认不出来，没有上限的遍历就会把 History 那几百行逐条问一遍，每一条都可能
+    /// 耗满超时；目标应用正卡着的时候，全系统的键盘输入会跟着一起停。
+    private static let menuBarSearchDepth = 4
+
+    /// Largest menu that can still plausibly be a Window menu. Reading a title
+    /// is the expensive part, so the count is checked before any title is read:
+    /// History and Bookmarks are excluded by their size alone. A Window menu
+    /// holds its handful of fixed commands plus one row per window, so this is
+    /// far above anything real and far below the menus worth skipping.
+    private static let plausibleWindowMenuItemLimit = 64
 
     /// Chromium implements AppleScript's `set index` as a bare reorder — no
     /// makeKey — so it cannot cross Spaces: a fullscreen window on another
@@ -152,9 +182,10 @@ enum ScriptedWindowFocus {
         // The Window menu sits near the right end of the bar, so walking
         // backwards finds it within a couple of menus instead of after
         // History's hundreds of rows.
-        for barItem in topLevel.reversed() {
+        for barItem in topLevel.reversed().prefix(Self.menuBarSearchDepth) {
             guard let submenu = axChildren(of: barItem)?.first,
-                  let items = axChildren(of: submenu) else { continue }
+                  let items = axChildren(of: submenu),
+                  items.count <= Self.plausibleWindowMenuItemLimit else { continue }
 
             let titles = items.map { axTitle(of: $0) ?? "" }
             guard isWindowMenu(itemTitles: titles, windowTitles: knownWindowTitles) else { continue }
@@ -169,9 +200,12 @@ enum ScriptedWindowFocus {
             }
 
             let targetItem = items[index]
-            // AX timeouts are per element. Setting one on `axApp` does not
-            // propagate to menu-item objects, so give the action itself enough
-            // time to survive Chromium doing modal work in its callback.
+            // AX timeouts are per object: neither the one on `axApp` nor the
+            // process-wide ceiling `boundAccessibilityMessaging` installs
+            // reaches a menu-item object. Overriding it here on purpose — this
+            // one call is allowed to take longer than the ceiling, because
+            // Chromium does modal work inside the action's callback and a press
+            // cut short there is a switch that silently does nothing.
             AXUIElementSetMessagingTimeout(targetItem, 1.0)
             let pressStatus = AXUIElementPerformAction(targetItem, kAXPressAction as CFString)
             scriptedWindowFocusLogger.notice(

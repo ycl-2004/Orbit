@@ -69,7 +69,6 @@
 "prefs.preview.note" = "앱을 선택하면 링 오른쪽에 해당 앱의 모든 윈도우를 표시합니다. 화면 기록 권한이 필요합니다.";
 
 /* Settings — login */
-"prefs.group.startup" = "로그인";
 "prefs.startup.launchAtLogin" = "로그인 시 시작";
 
 /* Settings — shortcut reference */
@@ -129,8 +128,6 @@
 "preview.noWindows.message" = "이 앱은 실행 중이지만 미리볼 윈도우가 없습니다.";
 "preview.unavailable.title" = "미리보기 사용 불가";
 "preview.unavailable.message" = "앱에 윈도우가 있지만 macOS가 미리보기를 제공하지 않았습니다.";
-"preview.empty" = "앱을 선택해 윈도우 보기";
-"preview.none" = "미리볼 윈도우가 없습니다";
 
 /* VoiceOver */
 "accessibility.selected" = "선택됨. Enter를 누르거나 트리거 키를 놓으면 전환합니다.";

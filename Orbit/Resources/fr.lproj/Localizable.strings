@@ -69,7 +69,6 @@
 "prefs.preview.note" = "Affiche toutes les fenêtres de l’app sélectionnée à droite de l’anneau. Nécessite l’autorisation d’enregistrement de l’écran.";
 
 /* Settings — login */
-"prefs.group.startup" = "Ouverture de session";
 "prefs.startup.launchAtLogin" = "Lancer à l'ouverture de session";
 
 /* Settings — shortcut reference */
@@ -129,8 +128,6 @@
 "preview.noWindows.message" = "Cette app est ouverte, mais n’a aucune fenêtre à prévisualiser.";
 "preview.unavailable.title" = "Aperçu indisponible";
 "preview.unavailable.message" = "L’app a une fenêtre, mais macOS n’a pas fourni d’aperçu.";
-"preview.empty" = "Sélectionnez une app pour voir ses fenêtres";
-"preview.none" = "Aucune fenêtre à prévisualiser";
 
 /* VoiceOver */
 "accessibility.selected" = "Sélectionné. Appuyez sur Entrée ou relâchez la touche pour basculer.";

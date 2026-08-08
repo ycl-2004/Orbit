@@ -92,7 +92,13 @@ final class SettingsModel: ObservableObject {
 
     // MARK: - 界面语言
 
-    /// 打开设置窗口那一刻的语言。重启提示要不要出现，比的是它。
+    /// 这个模型被建出来那一刻的语言 —— 也就是设置窗口第一次被打开的时候。
+    /// 重启提示要不要出现，比的是它。
+    ///
+    /// 之所以只能取到这个时刻而不是进程启动的时刻：CFBundle 在启动时就按
+    /// `AppleLanguages` 选好了 `.lproj`，而设置窗口可能几个小时后才第一次打开。
+    /// 两者之间只有一条路能改语言 —— 系统设置里的「语言与地区 › 应用程序」——
+    /// 走那条路的人本来也会被系统提示重开应用。
     private let languageAtLaunch = OrbitConfig.appLanguage
 
     /// `nil` = 跟随系统。
@@ -195,6 +201,7 @@ final class SettingsModel: ObservableObject {
             clearSelectionKey = OrbitConfig.clearSelectionKey
             letterShortcutsEnabled = OrbitConfig.letterShortcutsEnabled
             numericShortcutsEnabled = OrbitConfig.numericShortcutsEnabled
+            appLanguage = OrbitConfig.appLanguage
             ringPlacement = OrbitConfig.ringPlacement
             cardSize = OrbitConfig.cardSize
             cardMaterial = OrbitConfig.cardMaterial

@@ -15,7 +15,7 @@ bash scripts/ci_validate.sh
 Build the release archive, then verify its architecture and signature:
 
 ```bash
-bash scripts/package_release.sh 1.4.1
+bash scripts/package_release.sh 1.5.1
 bash scripts/verify_release.sh dist/Orbit-macOS.zip
 ```
 
@@ -24,9 +24,9 @@ architecture is missing, the archive must not be published. The current
 release filename is `Orbit-macOS.zip` because it is Universal 2; an
 architecture-specific filename is not appropriate for this artifact.
 
-GitHub Actions runs the metadata check, a Debug Universal 2 build, and the 36
+GitHub Actions runs the metadata check, a Debug Universal 2 build, and the 58
 `OrbitTests` tests for every push and pull request. A version tag must match the
-Xcode `MARKETING_VERSION`, for example `v1.4.1`.
+Xcode `MARKETING_VERSION`, for example `v1.5.1`.
 
 Tags matching `v*` use `.github/workflows/release.yml`. With the repository
 secrets `MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD`,
