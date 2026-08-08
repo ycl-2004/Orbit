@@ -79,10 +79,19 @@ final class RunningAppCatalog {
         return makeRecord(from: app)
     }
 
-    /// Returns the most recently activated non-Orbit card in a visible set.
-    static func mostRecentlyUsed(in apps: [AppRecord], rank: (String) -> Int?) -> AppRecord? {
+    /// Returns the most recently activated switch target in a visible set.
+    ///
+    /// The frontmost app can still have a special card for reaching its other
+    /// windows. That card is a manual destination, not the "previous app": if
+    /// it participates here, its rank is necessarily first and summon/release
+    /// simply lands back in the app the user is already viewing.
+    static func mostRecentlyUsed(
+        in apps: [AppRecord],
+        excluding process: pid_t? = nil,
+        rank: (String) -> Int?
+    ) -> AppRecord? {
         apps
-            .filter { !$0.isOrbit }
+            .filter { !$0.isOrbit && (process == nil || $0.processIdentifier != process) }
             .compactMap { app in rank(app.id).map { (app, $0) } }
             .min { $0.1 < $1.1 }?
             .0

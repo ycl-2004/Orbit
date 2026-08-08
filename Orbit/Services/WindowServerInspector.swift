@@ -88,8 +88,37 @@ enum WindowServerInspector {
             return nil
         }
 
+        return frontWindow(in: windows, ownedBy: pid)
+    }
+
+    /// Whether one captured document surface is currently present on-screen.
+    /// Fullscreen windows on other Spaces remain in the all-windows table but
+    /// disappear from this one, making this a useful post-switch check.
+    static func isWindowOnScreen(_ id: CGWindowID, ownedBy pid: pid_t) -> Bool {
+        let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+        guard let windows = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
+            return false
+        }
+
+        return windows.contains { window in
+            window[kCGWindowOwnerPID as String] as? Int == Int(pid)
+                && window[kCGWindowNumber as String] as? Int == Int(id)
+        }
+    }
+
+    /// Picks the frontmost titled document surface from an already ordered
+    /// window list. Chrome splits one fullscreen window into several normal-
+    /// layer surfaces; its untitled toolbar/container can sit ahead of the
+    /// titled page. Hiding that helper ID leaves the page itself in previews.
+    ///
+    /// Titles require Screen Recording permission, but this answer is only
+    /// used to hide a window from those same permission-gated previews.
+    static func frontWindow(
+        in windows: [[String: Any]],
+        ownedBy pid: pid_t
+    ) -> CGWindowID? {
         for window in windows where window[kCGWindowOwnerPID as String] as? Int == Int(pid) {
-            guard qualifiesAsWindow(window),
+            guard qualifiesAsWindow(window, requiringTitle: true),
                   let number = window[kCGWindowNumber as String] as? Int else { continue }
             return CGWindowID(number)
         }

@@ -4,7 +4,13 @@
 //
 
 import AppKit
+import OSLog
 import SwiftUI
+
+private let windowSwitchLogger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "app.orbit.local",
+    category: "WindowSwitch"
+)
 
 private final class OrbitPanel: NSPanel {
     override var canBecomeKey: Bool { true }
@@ -80,7 +86,11 @@ final class OrbitWindowController: NSObject {
 
         // 开着「唤出即选中最近应用」时，按住再松开就等价于 ⌘Tab。
         let preselecting = OrbitConfig.preselectRecentApp
-            ? RunningAppCatalog.mostRecentlyUsed(in: apps, rank: AppActivationHistory.shared.rank(of:))?.id
+            ? RunningAppCatalog.mostRecentlyUsed(
+                in: apps,
+                excluding: frontmostPID,
+                rank: AppActivationHistory.shared.rank(of:)
+            )?.id
             : nil
 
         let ringModel = OrbitRingViewModel(
@@ -94,7 +104,11 @@ final class OrbitWindowController: NSObject {
             self?.dismissImmediately()
         }
         ringModel.onActivate = { [weak self] app, window in
-            self?.activate(app, window: window)
+            self?.activate(
+                app,
+                window: window,
+                originatingFrontmostProcess: frontmostPID
+            )
         }
 
         model = ringModel
@@ -133,15 +147,26 @@ final class OrbitWindowController: NSObject {
         model.handle(command, value: value)
     }
 
-    private func activate(_ app: AppRecord, window: WindowTarget?) {
+    private func activate(
+        _ app: AppRecord,
+        window: WindowTarget?,
+        originatingFrontmostProcess: pid_t?
+    ) {
         dismissImmediately()
 
         // Let the ring leave the screen before anything else comes forward.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             guard let window else {
+                windowSwitchLogger.notice(
+                    "app-only activation pid=\(app.processIdentifier, privacy: .public)"
+                )
                 _ = app.bringToFront()
                 return
             }
+
+            windowSwitchLogger.notice(
+                "request pid=\(app.processIdentifier, privacy: .public) target=\(window.id, privacy: .public) origin=\(originatingFrontmostProcess ?? -1, privacy: .public)"
+            )
 
             // Name the window *before* activating the app. macOS follows an
             // application onto the Space its main window lives on, so a window
@@ -151,9 +176,22 @@ final class OrbitWindowController: NSObject {
             // 顺序反过来就是之前那个 bug：先激活应用，系统已经切到"上次那个窗口"
             // 所在的 Space 了，之后再 raise 只是在这个 Space 内部重排，选中的窗
             // 口如果在别的 Space 上就永远到不了。
+            let targetWasOnScreen = WindowServerInspector.isWindowOnScreen(
+                window.id,
+                ownedBy: app.processIdentifier
+            )
             let picked = WindowPreviewService.focus(window, pid: app.processIdentifier)
+            let directFocusCompletesSwitch = WindowPreviewService.directFocusCanCompleteSwitch(
+                focusSucceeded: picked,
+                targetWasOnScreen: targetWasOnScreen,
+                targetProcess: app.processIdentifier,
+                originatingFrontmostProcess: originatingFrontmostProcess
+            )
+            windowSwitchLogger.notice(
+                "direct AX target=\(window.id, privacy: .public) picked=\(picked, privacy: .public) wasOnScreen=\(targetWasOnScreen, privacy: .public) completes=\(directFocusCompletesSwitch, privacy: .public)"
+            )
 
-            if picked {
+            if directFocusCompletesSwitch {
                 // `.activateAllWindows` would restore the app's own
                 // front-to-back order, undoing the choice just made.
                 _ = app.bringToFront(raisingAllWindows: false)
@@ -174,19 +212,44 @@ final class OrbitWindowController: NSObject {
             // cross Spaces — a fullscreen window on another Space is exactly
             // the case AppleScript's reorder-only `set index` cannot reach.
             let knownTitles = WindowServerInspector.windowTitles(ownedBy: app.processIdentifier)
-            if ScriptedWindowFocus.focusViaWindowMenu(
+            let menuPressed = ScriptedWindowFocus.focusViaWindowMenu(
                 window,
                 pid: app.processIdentifier,
                 knownWindowTitles: knownTitles
-            ) {
-                // The press makes that window key *inside Chromium*, but the
-                // registration races an immediate activation — measured: an
-                // activate issued right after the press still followed the old
-                // key window's Space. One beat of delay lets the key change
-                // land, and the activation then follows it to the right Space
-                // in a single hop.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    _ = app.bringToFront(raisingAllWindows: false)
+            )
+            windowSwitchLogger.notice(
+                "menu result target=\(window.id, privacy: .public) pressed=\(menuPressed, privacy: .public) known=\(knownTitles.count, privacy: .public)"
+            )
+            if menuPressed {
+                // The Window-menu action is itself the cross-Space operation.
+                // If Chrome was already frontmost behind Orbit, activating the
+                // process again can restore the old fullscreen window and undo
+                // the selection. Only a switch originating in another process
+                // needs a follow-up application activation.
+                if ScriptedWindowFocus.needsActivationAfterWindowMenu(
+                    targetProcess: app.processIdentifier,
+                    originatingFrontmostProcess: originatingFrontmostProcess
+                ) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        let activated = app.bringToFront(raisingAllWindows: false)
+                        windowSwitchLogger.notice(
+                            "cross-app activation target=\(window.id, privacy: .public) result=\(activated, privacy: .public)"
+                        )
+                    }
+                } else {
+                    windowSwitchLogger.notice(
+                        "same-app menu switch target=\(window.id, privacy: .public); no reactivation"
+                    )
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    let visible = WindowServerInspector.isWindowOnScreen(
+                        window.id,
+                        ownedBy: app.processIdentifier
+                    )
+                    windowSwitchLogger.notice(
+                        "verification target=\(window.id, privacy: .public) onScreen=\(visible, privacy: .public)"
+                    )
                 }
                 return
             }
@@ -195,6 +258,9 @@ final class OrbitWindowController: NSObject {
             // Only when that too comes back empty-handed does this degrade to
             // plain app activation, the behaviour Orbit always had.
             ScriptedWindowFocus.focus(window, bundleIdentifier: app.id) { switched in
+                windowSwitchLogger.notice(
+                    "AppleScript fallback target=\(window.id, privacy: .public) switched=\(switched, privacy: .public)"
+                )
                 if !switched {
                     _ = app.bringToFront()
                 }

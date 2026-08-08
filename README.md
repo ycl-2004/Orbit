@@ -271,7 +271,7 @@ public documentation remain tracked.
 Release verification, including Universal 2 checks and the clean-machine
 installation/permission regression checklist, is documented in
 [docs/release-checklist.md](docs/release-checklist.md). GitHub Actions runs the
-metadata check, Debug build, and 46 `OrbitTests` tests on every push and pull request.
+metadata check, Debug build, and 51 `OrbitTests` tests on every push and pull request.
 
 </details>
 

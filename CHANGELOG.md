@@ -4,12 +4,15 @@
 
 ### Fixed
 
+- Preselecting the previous app now skips the frontmost app even when that app keeps a special ring card for its other windows. This restores summon-and-release switching from fullscreen browser Spaces instead of selecting the fullscreen app again.
+- Fullscreen Chrome now hides the page currently under Orbit instead of accidentally hiding an untitled browser helper surface. Same-Chrome off-Space targets always use the Window-menu action even when `AXRaise` misleadingly reports success, and Orbit does not reactivate Chrome afterward; either shortcut could leave or restore the old fullscreen Space instead of reaching the selected window.
+- A Chromium Window-menu action that times out is no longer treated as a definite failure. Accessibility actions can be accepted before the target app finishes replying; immediately running the AppleScript fallback in that state reactivated the old fullscreen Space and undid the pending switch. Orbit now gives the actual menu item its own timeout and preserves an indeterminate-but-possibly-accepted action.
 - Selecting a specific window in the preview carousel now lands on that window, including one buried under the app's other windows. Windows are re-identified by title *and* frame instead of an exact-title match — ScreenCaptureKit and Accessibility report different title formats for the same window, so the old equality test silently failed for browsers.
 - The chosen window is now focused *before* the application is activated. macOS follows an application onto the Space its main window lives on, so naming the window first is what makes a switch to a fullscreen window's Space actually land there; the old order could only reorder windows on the Space it had already arrived at.
 - Activating a chosen window no longer restores the app's own front-to-back window order on top of it, and a minimized target window is restored before being raised.
 - A failed raise now reports failure instead of success, so the plain app-activation fallback runs instead of leaving the wrong window in front.
 
-- A fullscreen Chromium window on another Space is now reachable. Chromium implements the scripted window reorder without making the window key, so a switch used to stop on whichever Space the app was last active on. Orbit now presses the matching entry in the app's own Window menu — which Chromium does expose to Accessibility, and which performs a real makeKeyAndOrderFront — then activates the app one beat later so macOS follows the key change to the right Space in a single hop. The Window menu is recognised by its contents (it is the only menu listing all of the app's window titles), never by its localized title.
+- A fullscreen Chromium window on another Space is now reachable. Chromium implements the scripted window reorder without making the window key, so a switch used to stop on whichever Space the app was last active on. Orbit now presses the matching entry in the app's own Window menu — which Chromium does expose to Accessibility, and which performs a real makeKeyAndOrderFront. Orbit activates the process afterward only when the switch originated in a different app; same-Chrome switches must not reassert the old fullscreen window. The Window menu is recognised by its contents (it is the only menu listing all of the app's window titles), never by its localized title.
 
 - The app you are currently in is reachable again when it has more than one window. The ring used to drop the frontmost app's card entirely, so standing in one Chrome window put every other Chrome window out of reach. That card now appears whenever the app owns more than one window — its only purpose being to reach the others — and its preview hides the window you are looking at. An app with a single window still has no card, since selecting it would only return you where you already are.
 
@@ -21,8 +24,9 @@
 
 ### Validation
 
-- The test targets now contain 46 `OrbitTests` tests and 2 `OrbitUITests` methods, including new unit coverage for cross-framework title matching (with real Chrome title pairs), frame-tolerance boundaries, AppleScript title escaping, Window-menu recognition, current-app card eligibility, current-window hiding, pre-authorization candidate selection, and `AEDeterminePermissionToAutomateTarget` status mapping.
+- The test targets now contain 51 `OrbitTests` tests and 2 `OrbitUITests` methods, including new unit coverage for cross-framework title matching (with real Chrome title pairs), frame-tolerance boundaries, AppleScript title escaping, Window-menu recognition, cross-Space direct-focus and activation policy, current-app card eligibility, current-window hiding, pre-authorization candidate selection, and `AEDeterminePermissionToAutomateTarget` status mapping.
 - Both activation paths were verified against real window stacks via `CGWindowListCopyWindowInfo` z-order: the Accessibility path raised the bottom of three Finder windows, and the Apple Events path raised the bottom of five Chrome windows.
+- The installed `/Applications/Orbit.app` was manually verified across fullscreen Chrome Spaces and into a normal Chrome window. Public switch diagnostics confirmed each selected window became on-screen, including the formerly failing fullscreen target that reports a misleading successful `AXRaise` before the Window-menu fallback completes the Space switch.
 
 ## 1.4.1 — 2026-08-07
 

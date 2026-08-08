@@ -18,6 +18,12 @@
 //
 
 import AppKit
+import OSLog
+
+private let scriptedWindowFocusLogger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "app.orbit.local",
+    category: "WindowSwitch"
+)
 
 enum ScriptedWindowFocus {
     /// Asks the app itself, over Apple Events, to bring the window named
@@ -118,15 +124,30 @@ enum ScriptedWindowFocus {
         // With a single window there is nothing to pick between, and plain
         // activation already follows it — while the menu heuristic below
         // genuinely needs two titles to be trustworthy.
-        guard knownWindowTitles.count >= 2, !target.title.isEmpty else { return false }
+        guard knownWindowTitles.count >= 2, !target.title.isEmpty else {
+            scriptedWindowFocusLogger.notice(
+                "menu precondition failed target=\(target.id, privacy: .public) known=\(knownWindowTitles.count, privacy: .public)"
+            )
+            return false
+        }
 
         let axApp = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(axApp, 0.4)
 
         var value: AnyObject?
-        guard AXUIElementCopyAttributeValue(axApp, kAXMenuBarAttribute as CFString, &value) == .success,
+        let menuBarStatus = AXUIElementCopyAttributeValue(
+            axApp,
+            kAXMenuBarAttribute as CFString,
+            &value
+        )
+        guard menuBarStatus == .success,
               let barRef = value, CFGetTypeID(barRef) == AXUIElementGetTypeID(),
-              let topLevel = axChildren(of: barRef as! AXUIElement) else { return false }
+              let topLevel = axChildren(of: barRef as! AXUIElement) else {
+            scriptedWindowFocusLogger.notice(
+                "menu bar unavailable target=\(target.id, privacy: .public) status=\(menuBarStatus.rawValue, privacy: .public)"
+            )
+            return false
+        }
 
         // The Window menu sits near the right end of the bar, so walking
         // backwards finds it within a couple of menus instead of after
@@ -140,11 +161,48 @@ enum ScriptedWindowFocus {
 
             guard let index = titles.firstIndex(where: {
                 WindowPreviewService.titles($0, agreeWith: target.title)
-            }) else { return false }
+            }) else {
+                scriptedWindowFocusLogger.notice(
+                    "target absent from Window menu target=\(target.id, privacy: .public)"
+                )
+                return false
+            }
 
-            return AXUIElementPerformAction(items[index], kAXPressAction as CFString) == .success
+            let targetItem = items[index]
+            // AX timeouts are per element. Setting one on `axApp` does not
+            // propagate to menu-item objects, so give the action itself enough
+            // time to survive Chromium doing modal work in its callback.
+            AXUIElementSetMessagingTimeout(targetItem, 1.0)
+            let pressStatus = AXUIElementPerformAction(targetItem, kAXPressAction as CFString)
+            scriptedWindowFocusLogger.notice(
+                "Window menu press target=\(target.id, privacy: .public) status=\(pressStatus.rawValue, privacy: .public)"
+            )
+            return actionWasAccepted(pressStatus)
         }
+        scriptedWindowFocusLogger.notice(
+            "Window menu not recognised target=\(target.id, privacy: .public)"
+        )
         return false
+    }
+
+    /// Apple documents `cannotComplete` as indeterminate rather than failed:
+    /// an app doing modal work may time out after it already accepted the AX
+    /// action. Falling through to AppleScript in that state immediately
+    /// activates Chrome's old window and cancels a pending Space switch.
+    static func actionWasAccepted(_ status: AXError) -> Bool {
+        status == .success || status == .cannotComplete
+    }
+
+    /// The Window-menu press is enough when the selected window belongs to the
+    /// app the user was already in. Reactivating that same process can restore
+    /// its old key fullscreen window and cancel the cross-Space selection.
+    /// A target app that was not frontmost still needs ordinary activation so
+    /// macOS gives it focus after its Window-menu selection has registered.
+    static func needsActivationAfterWindowMenu(
+        targetProcess: pid_t,
+        originatingFrontmostProcess: pid_t?
+    ) -> Bool {
+        targetProcess != originatingFrontmostProcess
     }
 
     /// Whether a menu is the app's Window menu, judged by its contents rather

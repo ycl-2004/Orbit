@@ -149,6 +149,29 @@ final class WindowPreviewService {
         return AXUIElementPerformAction(window, kAXRaiseAction as CFString) == .success
     }
 
+    /// Whether a successful Accessibility raise is enough to finish the
+    /// requested switch.
+    ///
+    /// `kAXRaiseAction` can report success for a window on another Space while
+    /// leaving that Space unchanged. This matters when the target belongs to
+    /// the app the user is already in: activating the same process afterward
+    /// does not make macOS follow a newly selected app, so the old fullscreen
+    /// Space remains visible. In that one case the caller must continue to the
+    /// app's Window-menu path, whose action really does cross Spaces.
+    ///
+    /// A target already on-screen can be raised normally. A target in another
+    /// process can still use direct focus because the process activation that
+    /// follows makes macOS travel to the focused window's Space.
+    nonisolated static func directFocusCanCompleteSwitch(
+        focusSucceeded: Bool,
+        targetWasOnScreen: Bool,
+        targetProcess: pid_t,
+        originatingFrontmostProcess: pid_t?
+    ) -> Bool {
+        guard focusSucceeded else { return false }
+        return targetWasOnScreen || targetProcess != originatingFrontmostProcess
+    }
+
     /// The app's window that best answers to `target`.
     ///
     /// Titles do not survive the trip between frameworks intact — Chrome hands

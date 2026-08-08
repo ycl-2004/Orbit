@@ -181,13 +181,13 @@ struct OrbitTests {
     }
 
     /// 排序只看 id 和 name，其余字段给个能过编译的值就行。
-    private func listed(_ id: String, _ name: String) -> AppRecord {
+    private func listed(_ id: String, _ name: String, processIdentifier: pid_t = 0) -> AppRecord {
         AppRecord(
             id: id,
             name: name,
             icon: NSImage(size: NSSize(width: 1, height: 1)),
             bundleURL: nil,
-            processIdentifier: 0
+            processIdentifier: processIdentifier
         )
     }
 
@@ -246,6 +246,24 @@ struct OrbitTests {
 
         #expect(recentApp?.isOrbit == false)
         #expect(recentApp?.id == "com.a")
+    }
+
+    /// 多窗口的当前应用会保留一张手动卡，用来访问它的其他窗口；但它不能参与
+    /// “上一个应用”的自动预选，否则它永远以 rank 0 胜出，松手只会回到原地。
+    /// 全屏 Chrome 最容易触发：不同 Space 上的窗口都会计入它的窗口总数。
+    @Test func theFrontmostAppsOtherWindowsCardIsNeverThePreselection() {
+        let apps = [
+            listed("com.current", "Current", processIdentifier: 42),
+            listed("com.previous", "Previous", processIdentifier: 99)
+        ]
+        let recent = ["com.current", "com.previous"]
+
+        let recentApp = RunningAppCatalog.mostRecentlyUsed(
+            in: apps,
+            excluding: 42
+        ) { recent.firstIndex(of: $0) }
+
+        #expect(recentApp?.id == "com.previous")
     }
 
     /// 预选一个不在环上的应用，会让中心显示确认态、松手却什么也切不过去。
@@ -719,6 +737,96 @@ struct OrbitTests {
         let current = CurrentWindow(processIdentifier: 42, id: 7)
         #expect(current.hiddenWindow(inAppWith: 42) == 7)
         #expect(current.hiddenWindow(inAppWith: 99) == nil)
+    }
+
+    /// Fullscreen Chrome puts untitled normal-layer toolbar/container surfaces
+    /// ahead of the titled page in the on-screen window list. The page ID is
+    /// what ScreenCaptureKit previews and therefore the one Orbit must hide.
+    @Test func currentWindowSkipsChromesUntitledFullscreenSurfaces() {
+        let size = OrbitConfig.minimumRealWindowSize
+        func window(id: Int, title: String?) -> [String: Any] {
+            var value: [String: Any] = [
+                kCGWindowOwnerPID as String: 42,
+                kCGWindowNumber as String: id,
+                kCGWindowLayer as String: 0,
+                kCGWindowAlpha as String: 1.0,
+                kCGWindowBounds as String: [
+                    "X": 0,
+                    "Y": 0,
+                    "Width": size.width + 1,
+                    "Height": size.height + 1
+                ]
+            ]
+            if let title { value[kCGWindowName as String] = title }
+            return value
+        }
+
+        let windows = [
+            window(id: 804, title: nil),
+            window(id: 735, title: "Current page")
+        ]
+
+        #expect(WindowServerInspector.frontWindow(in: windows, ownedBy: 42) == 735)
+    }
+
+    /// A Window-menu press already switches Spaces inside the current app.
+    /// Reactivating that process afterwards can restore its old fullscreen
+    /// window. Only a target app that was not frontmost needs activation.
+    @Test func currentAppWindowMenuSwitchIsNotUndoneByReactivation() {
+        #expect(!ScriptedWindowFocus.needsActivationAfterWindowMenu(
+            targetProcess: 42,
+            originatingFrontmostProcess: 42
+        ))
+        #expect(ScriptedWindowFocus.needsActivationAfterWindowMenu(
+            targetProcess: 42,
+            originatingFrontmostProcess: 99
+        ))
+        #expect(ScriptedWindowFocus.needsActivationAfterWindowMenu(
+            targetProcess: 42,
+            originatingFrontmostProcess: nil
+        ))
+    }
+
+    /// `cannotComplete` means the target app did not answer before the AX
+    /// timeout; Apple explicitly warns that the requested action may still
+    /// have happened. Treating it as failure would run the fallback and undo
+    /// a fullscreen Space switch that is already underway.
+    @Test func anAXTimeoutDoesNotCancelAPossiblyAcceptedWindowMenuAction() {
+        #expect(ScriptedWindowFocus.actionWasAccepted(.success))
+        #expect(ScriptedWindowFocus.actionWasAccepted(.cannotComplete))
+        #expect(!ScriptedWindowFocus.actionWasAccepted(.actionUnsupported))
+        #expect(!ScriptedWindowFocus.actionWasAccepted(.invalidUIElement))
+    }
+
+    /// Chrome can expose an AX window and return success for `AXRaise` even
+    /// though that fullscreen window remains on another Space. Same-process,
+    /// off-screen targets must continue to the Window-menu fallback; ordinary
+    /// same-Space raises and cross-application activation remain valid.
+    @Test func aSuccessfulAXRaiseCannotFinishASameAppCrossSpaceSwitch() {
+        #expect(!WindowPreviewService.directFocusCanCompleteSwitch(
+            focusSucceeded: true,
+            targetWasOnScreen: false,
+            targetProcess: 42,
+            originatingFrontmostProcess: 42
+        ))
+        #expect(WindowPreviewService.directFocusCanCompleteSwitch(
+            focusSucceeded: true,
+            targetWasOnScreen: true,
+            targetProcess: 42,
+            originatingFrontmostProcess: 42
+        ))
+        #expect(WindowPreviewService.directFocusCanCompleteSwitch(
+            focusSucceeded: true,
+            targetWasOnScreen: false,
+            targetProcess: 42,
+            originatingFrontmostProcess: 99
+        ))
+        #expect(!WindowPreviewService.directFocusCanCompleteSwitch(
+            focusSucceeded: false,
+            targetWasOnScreen: true,
+            targetProcess: 42,
+            originatingFrontmostProcess: 99
+        ))
     }
 
     /// Window 菜单靠内容认，不靠菜单标题 —— 标题跟着应用自己的界面语言走。
