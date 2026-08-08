@@ -16,6 +16,11 @@
 "prefs.access.granted" = "Orbit har tilgang til Tilgjengelighet";
 "prefs.access.missing" = "Orbit trenger tilgang til Tilgjengelighet";
 "prefs.access.grant" = "Tillat …";
+"prefs.automation.note" = "Noen apper (Chrome og andre Chromium-baserte) skjuler vinduene sine for Tilgjengelighet, så Orbit bytter vinduene deres via Automatisering. macOS spør én gang per app — trykk på knappen for å svare på alle forespørslene nå i stedet for midt i et bytte.";
+"prefs.automation.grantAll" = "Forhåndsgodkjenn nå";
+"prefs.automation.running" = "Ber om tillatelse …";
+"prefs.automation.none" = "Ingen kjørende apper trenger det akkurat nå.";
+"prefs.automation.result" = "%1$d tillatt, %2$d avslått.";
 
 /* Settings — language */
 "prefs.group.language" = "Språk";

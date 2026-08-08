@@ -643,4 +643,112 @@ struct OrbitTests {
         }
     }
 
+    // MARK: - 窗口重定位（focus 的匹配逻辑）
+
+    /// ScreenCaptureKit 和 Accessibility 对同一个窗口报的标题格式不同 ——
+    /// Chrome 实测：SC 报 `PV UV 数据处理`，AX 报
+    /// `PV UV 数据处理 - Google Chrome - YC (AI Profile)`。
+    /// 匹配必须双向前缀，否则浏览器窗口永远对不上。
+    @Test func windowTitlesAgreeAcrossFrameworkFormats() {
+        // Chrome 真实标题对：AX 比 SC 长
+        #expect(WindowPreviewService.titles(
+            "PV UV 数据处理 - Google Chrome - YC (AI Profile)",
+            agreeWith: "PV UV 数据处理"
+        ))
+        // 反方向：SC 比 AX 长（有些应用 AX 报短标题）
+        #expect(WindowPreviewService.titles(
+            "Notes",
+            agreeWith: "Notes — All iCloud"
+        ))
+        // 严格相等自然算
+        #expect(WindowPreviewService.titles("Terminal", agreeWith: "Terminal"))
+        // 无前缀关系不算
+        #expect(!WindowPreviewService.titles("Settings", agreeWith: "PV UV 数据处理"))
+        // 中途不同只有共同前缀，也不算
+        #expect(!WindowPreviewService.titles("Report v1", agreeWith: "Report v2"))
+    }
+
+    /// 空标题谁也不匹配：无标题窗口靠 frame 兜底，绝不能靠「空==空」误配。
+    @Test func emptyWindowTitlesNeverAgree() {
+        #expect(!WindowPreviewService.titles("", agreeWith: ""))
+        #expect(!WindowPreviewService.titles("", agreeWith: "Safari"))
+        #expect(!WindowPreviewService.titles("Safari", agreeWith: ""))
+        #expect(!WindowPreviewService.titles(nil, agreeWith: "Safari"))
+    }
+
+    /// SC 和 AX 报同一个窗口的 frame 允许 2pt 舍入差；再大就是另一扇窗。
+    @Test func windowFrameMatchingToleratesRounding() {
+        let base = CGRect(x: 100, y: 200, width: 800, height: 600)
+        #expect(base.matches(base))
+        #expect(base.matches(CGRect(x: 102, y: 198, width: 798, height: 602)))
+        #expect(!base.matches(CGRect(x: 103, y: 200, width: 800, height: 600)))
+        #expect(!base.matches(CGRect(x: 100, y: 200, width: 800, height: 597)))
+        // 位置相同、尺寸不同 = 不同窗口（同 app 常见同位置层叠）
+        #expect(!base.matches(CGRect(x: 100, y: 200, width: 400, height: 300)))
+    }
+
+    /// 标题要嵌进 AppleScript 字符串字面量，引号和反斜杠必须转义 ——
+    /// 网页标题里出现引号是常态，不转义就是脚本注入。
+    @Test func appleScriptTitleEscaping() {
+        #expect(ScriptedWindowFocus.escaped(#"He said "hi""#) == #"He said \"hi\""#)
+        #expect(ScriptedWindowFocus.escaped(#"C:\path"#) == #"C:\\path"#)
+        // 反斜杠先转义，再转义引号：\" → \\\"
+        #expect(ScriptedWindowFocus.escaped(#"\""#) == #"\\\""#)
+        #expect(ScriptedWindowFocus.escaped("普通标题") == "普通标题")
+    }
+
+    /// Window 菜单靠内容认，不靠菜单标题 —— 标题跟着应用自己的界面语言走。
+    /// History/Bookmarks 可能回显*一个*窗口标题（当前页面），只有 Window 菜单
+    /// 全都列；两个不同命中是判据。
+    @Test func windowMenuIsRecognisedByItsContentsNotItsTitle() {
+        let windows = ["Browser Organizer", "【百战程序员】Agent智能体开发"]
+        // 真正的 Window 菜单：两个窗口标题都在（还有别的条目）
+        #expect(ScriptedWindowFocus.isWindowMenu(
+            itemTitles: ["Minimize", "Zoom", "", "Browser Organizer", "【百战程序员】Agent智能体开发"],
+            windowTitles: windows
+        ))
+        // History 菜单：只回显了一个窗口标题
+        #expect(!ScriptedWindowFocus.isWindowMenu(
+            itemTitles: ["Home", "Browser Organizer", "Recently Closed"],
+            windowTitles: windows
+        ))
+        // 单窗口时判据不可信，直接拒绝（调用方也不该走到这里）
+        #expect(!ScriptedWindowFocus.isWindowMenu(
+            itemTitles: ["Browser Organizer"],
+            windowTitles: ["Browser Organizer"]
+        ))
+    }
+
+    /// 预授权只该找「有真实窗口但 AX 一个都看不见」的应用 —— 这正是运行时会走
+    /// Apple Events 兜底的那批（Chromium 系）。别的应用弹授权框纯属骚扰。
+    @Test func onlyAXBlindAppsWithRealWindowsNeedPreauthorization() {
+        #expect(ScriptedWindowFocus.needsAppleEventsFallback(hasRealWindows: true, axWindowCount: 0))
+        // AX 看得见窗口的应用走原生路径，不需要 Apple Events
+        #expect(!ScriptedWindowFocus.needsAppleEventsFallback(hasRealWindows: true, axWindowCount: 2))
+        // 没有真实窗口的应用没什么可切换的
+        #expect(!ScriptedWindowFocus.needsAppleEventsFallback(hasRealWindows: false, axWindowCount: 0))
+    }
+
+    /// `AEDeterminePermissionToAutomateTarget` 的返回码翻译。
+    /// -600（没在运行）不能算拒绝：下次它运行时首跳还会正常弹框。
+    @Test func automationConsentMapsOSStatusFaithfully() {
+        #expect(ScriptedWindowFocus.AutomationConsent(status: noErr) == .granted)
+        #expect(ScriptedWindowFocus.AutomationConsent(status: -1743) == .denied)
+        #expect(ScriptedWindowFocus.AutomationConsent(status: -600) == .notRunning)
+        #expect(ScriptedWindowFocus.AutomationConsent(status: -1744) == .undetermined)
+        #expect(ScriptedWindowFocus.AutomationConsent(status: -25211) == .undetermined)
+    }
+
+    /// 生成的脚本必须把标题作为字面量嵌入，且带超时保护 ——
+    /// Apple Events 默认超时两分钟，卡住的应用不能拖住 Orbit。
+    @Test func appleScriptCarriesEscapedTitleAndTimeout() {
+        let script = ScriptedWindowFocus.script(
+            bundleIdentifier: "com.google.Chrome",
+            title: #"A "B" C"#
+        )
+        #expect(script.contains(#"application id "com.google.Chrome""#))
+        #expect(script.contains(#"A \"B\" C"#))
+        #expect(script.contains("with timeout of"))
+    }
+
 }

@@ -16,6 +16,11 @@
 "prefs.access.granted" = "Orbit에 손쉬운 사용 권한이 있습니다";
 "prefs.access.missing" = "Orbit에 손쉬운 사용 권한이 필요합니다";
 "prefs.access.grant" = "허용…";
+"prefs.automation.note" = "일부 앱(Chrome 등 Chromium 계열)은 창을 손쉬운 사용에 공개하지 않아 Orbit이 \"자동화\" 권한으로 창을 전환합니다. macOS는 앱마다 한 번만 묻습니다 — 전환 도중이 아니라 지금 버튼을 눌러 한꺼번에 허용하세요.";
+"prefs.automation.grantAll" = "지금 사전 허용";
+"prefs.automation.running" = "요청 중…";
+"prefs.automation.none" = "지금 이 권한이 필요한 실행 중인 앱이 없습니다.";
+"prefs.automation.result" = "%1$d개 허용, %2$d개 거부.";
 
 /* Settings — language */
 "prefs.group.language" = "언어";

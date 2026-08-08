@@ -16,6 +16,11 @@
 "prefs.access.granted" = "Orbit 已取得輔助使用權限";
 "prefs.access.missing" = "Orbit 需要輔助使用權限";
 "prefs.access.grant" = "去授權…";
+"prefs.automation.note" = "部分應用程式（Chrome 等 Chromium 系）的視窗對輔助使用不可見，Orbit 需要透過「自動化」權限來切換它們的視窗。macOS 對每個應用程式只詢問一次——點按按鈕現在集中授權，避免之後切換時被彈窗打斷。";
+"prefs.automation.grantAll" = "立即預先授權";
+"prefs.automation.running" = "正在請求…";
+"prefs.automation.none" = "目前沒有執行中的應用程式需要此權限。";
+"prefs.automation.result" = "已允許 %1$d 個，拒絕 %2$d 個。";
 
 /* Settings — language */
 "prefs.group.language" = "語言";

@@ -88,15 +88,20 @@ extension AppRecord {
     /// 分两级降级：先用 `NSRunningApplication` 直接激活；如果它成功了但应用一个
     /// 可见窗口都没有（Dock 里点一下才会重新开窗的那类应用），再用 `NSWorkspace`
     /// 重新 open 一次 bundle，等价于用户点 Dock 图标。
+    /// - Parameter raisingAllWindows: Whether to restore the app's own
+    ///   front-to-back window order along with it. Off when the caller has
+    ///   already singled out a window, since bringing every window forward
+    ///   would bury it again.
     /// - Returns: 是否已经发出了有效的激活请求。
     @discardableResult
-    func bringToFront() -> Bool {
+    func bringToFront(raisingAllWindows: Bool = true) -> Bool {
         if let running = NSRunningApplication(processIdentifier: processIdentifier) {
             if running.isHidden {
                 running.unhide()
             }
 
-            if running.activate(options: [.activateAllWindows]) {
+            let options: NSApplication.ActivationOptions = raisingAllWindows ? [.activateAllWindows] : []
+            if running.activate(options: options) {
                 // 激活成功但没有窗口：让 bundle 自己重开一个。
                 if !WindowServerInspector.hasOnscreenWindow(processIdentifier: processIdentifier) {
                     reopenBundle()

@@ -16,6 +16,11 @@
 "prefs.access.granted" = "Orbit hat Zugriff auf die Bedienungshilfen";
 "prefs.access.missing" = "Orbit benötigt Zugriff auf die Bedienungshilfen";
 "prefs.access.grant" = "Erlauben …";
+"prefs.automation.note" = "Manche Apps (Chrome und andere Chromium-basierte) verbergen ihre Fenster vor der Bedienungshilfe, daher wechselt Orbit ihre Fenster über die Automation-Berechtigung. macOS fragt pro App nur einmal — mit diesem Knopf beantworten Sie alle Abfragen jetzt statt mitten im Wechsel.";
+"prefs.automation.grantAll" = "Jetzt vorab erlauben";
+"prefs.automation.running" = "Wird angefragt …";
+"prefs.automation.none" = "Derzeit benötigt keine laufende App diese Berechtigung.";
+"prefs.automation.result" = "%1$d erlaubt, %2$d abgelehnt.";
 
 /* Settings — language */
 "prefs.group.language" = "Sprache";

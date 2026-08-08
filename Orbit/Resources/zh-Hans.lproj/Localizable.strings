@@ -16,6 +16,11 @@
 "prefs.access.granted" = "Orbit 已获得辅助功能权限";
 "prefs.access.missing" = "Orbit 需要辅助功能权限";
 "prefs.access.grant" = "去授权…";
+"prefs.automation.note" = "部分应用（Chrome 等 Chromium 系）的窗口对辅助功能不可见，Orbit 需要通过「自动化」权限来切换它们的窗口。macOS 对每个应用只询问一次——点击按钮现在集中授权，避免以后切换时被弹窗打断。";
+"prefs.automation.grantAll" = "立即预授权";
+"prefs.automation.running" = "正在请求…";
+"prefs.automation.none" = "当前没有运行中的应用需要此权限。";
+"prefs.automation.result" = "已允许 %1$d 个，拒绝 %2$d 个。";
 
 /* Settings — language */
 "prefs.group.language" = "语言";

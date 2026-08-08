@@ -45,8 +45,8 @@ final class OrbitRingViewModel: ObservableObject {
     @Published var selectedWindowIndex = 0
 
     var onCancel: (() -> Void)?
-    /// Second argument is the window title to raise, when one was picked.
-    var onActivate: ((AppRecord, String?) -> Void)?
+    /// Second argument is the window to switch to, when one was picked.
+    var onActivate: ((AppRecord, WindowTarget?) -> Void)?
 
     private var fileTrashTask: DispatchWorkItem?
     private var dragExitTask: DispatchWorkItem?
@@ -361,11 +361,11 @@ final class OrbitRingViewModel: ObservableObject {
         selectedWindowIndex = (selectedWindowIndex + step + previews.count) % previews.count
     }
 
-    /// Title of the window the arrow keys landed on, if the app has more than
-    /// one to choose between.
-    var selectedWindowTitle: String? {
+    /// The window the arrow keys landed on, if the app had any to choose
+    /// between.
+    var selectedWindowTarget: WindowTarget? {
         guard previews.indices.contains(selectedWindowIndex) else { return nil }
-        return previews[selectedWindowIndex].title
+        return previews[selectedWindowIndex].target
     }
 
     func moveSelection(step: Int) {
@@ -414,7 +414,7 @@ final class OrbitRingViewModel: ObservableObject {
             return
         }
 
-        onActivate?(selectedApp, selectedWindowTitle)
+        onActivate?(selectedApp, selectedWindowTarget)
     }
 
     /// Clears the highlight so releasing the trigger dismisses the ring

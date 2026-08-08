@@ -16,6 +16,11 @@
 "prefs.access.granted" = "Orbit にアクセシビリティ権限があります";
 "prefs.access.missing" = "Orbit にはアクセシビリティ権限が必要です";
 "prefs.access.grant" = "許可する…";
+"prefs.automation.note" = "一部のアプリ（Chrome などの Chromium 系）はウインドウをアクセシビリティに公開しないため、Orbit は「オートメーション」権限でウインドウを切り替えます。macOS の確認はアプリごとに一度だけ——切り替えの途中ではなく、今ここでまとめて許可できます。";
+"prefs.automation.grantAll" = "今すぐ事前許可";
+"prefs.automation.running" = "リクエスト中…";
+"prefs.automation.none" = "現在、この権限を必要とする実行中のアプリはありません。";
+"prefs.automation.result" = "%1$d 件を許可、%2$d 件を拒否。";
 
 /* Settings — language */
 "prefs.group.language" = "言語";

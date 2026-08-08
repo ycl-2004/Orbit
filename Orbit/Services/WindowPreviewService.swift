@@ -15,9 +15,25 @@ import CoreVideo
 import ScreenCaptureKit
 import VideoToolbox
 
+/// Everything Orbit knows about one window at the moment it was listed, kept
+/// so the window can be found again when the user picks it.
+///
+/// A title alone is not an identity: an app can have several windows carrying
+/// the same one, and the string ScreenCaptureKit reports is not always the
+/// string Accessibility reports for the same window. The frame settles both.
+struct WindowTarget: Sendable, Equatable {
+    let id: CGWindowID
+    let title: String
+    /// CoreGraphics global coordinates, top-left origin — the space
+    /// `kAXPositionAttribute` answers in too, so the two compare directly.
+    let frame: CGRect
+}
+
 struct WindowPreview: Identifiable, Sendable {
     let id: CGWindowID
     let title: String
+    /// Where the window sat when it was listed. Only used to find it again.
+    let frame: CGRect
     /// Nil when the window could not be captured and nothing was cached —
     /// the panel then falls back to showing the title alone.
     let image: CGImage?
@@ -29,6 +45,10 @@ struct WindowPreview: Identifiable, Sendable {
     let contentVariance: Double
     /// True when the image came from cache because a fresh capture failed.
     let isStale: Bool
+
+    var target: WindowTarget {
+        WindowTarget(id: id, title: title, frame: frame)
+    }
 }
 
 @MainActor
@@ -82,28 +102,111 @@ final class WindowPreviewService {
 
     // MARK: - Activation
 
-    /// Brings one specific window of an app to the front. There is no public
-    /// API from CGWindowID to a window, so match on title via Accessibility —
-    /// which Orbit already has permission for. Returns false when the app
-    /// exposes no matching AX window, and the caller just activates the app.
-    static func raise(windowTitled title: String, pid: pid_t) -> Bool {
-        guard !title.isEmpty else { return false }
+    /// Points an app at one specific window. There is no public API from
+    /// CGWindowID to a window, so the window is found again through
+    /// Accessibility — which Orbit already holds permission for.
+    ///
+    /// Call this *before* activating the app. macOS follows an application onto
+    /// the Space its main window lives on, so naming the window first is what
+    /// makes the switch land there; raising a window after the app is already
+    /// frontmost only reorders windows on the Space you have already arrived at,
+    /// which leaves every fullscreen window unreachable.
+    ///
+    /// - Returns: false when the app exposes no matching window, and the caller
+    ///   should fall back to activating the application on its own.
+    @discardableResult
+    static func focus(_ target: WindowTarget, pid: pid_t) -> Bool {
+        guard let window = axWindow(matching: target, pid: pid) else { return false }
 
+        // A minimized window will not come forward for either call below.
+        var minimized: AnyObject?
+        if AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minimized) == .success,
+           minimized as? Bool == true {
+            AXUIElementSetAttributeValue(window, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
+        }
+
+        AXUIElementSetAttributeValue(window, kAXMainAttribute as CFString, kCFBooleanTrue)
+
+        // The raise is the part that moves the user somewhere. If it failed,
+        // reporting success would suppress the caller's fallback and leave the
+        // wrong window in front. (kAXMain above is allowed to fail on its own:
+        // some windows reject it yet still raise fine.)
+        return AXUIElementPerformAction(window, kAXRaiseAction as CFString) == .success
+    }
+
+    /// The app's window that best answers to `target`.
+    ///
+    /// Titles do not survive the trip between frameworks intact — Chrome hands
+    /// ScreenCaptureKit `PV UV 数据处理` and Accessibility
+    /// `PV UV 数据处理 - Google Chrome - YC (AI Profile)` for the same window —
+    /// so an equality test alone misses, and several windows can legitimately
+    /// share a title anyway. Agreement on both title and frame is taken as
+    /// certain; either one alone is a fallback.
+    private static func axWindow(matching target: WindowTarget, pid: pid_t) -> AXUIElement? {
         let axApp = AXUIElementCreateApplication(pid)
-        var value: CFTypeRef?
+        // An app busy on its main thread answers slowly or not at all, and the
+        // app switch is waiting on this call. Give up rather than stall.
+        AXUIElementSetMessagingTimeout(axApp, 0.4)
+
+        var value: AnyObject?
         guard AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &value) == .success,
-              let windows = value as? [AXUIElement] else { return false }
+              let windows = value as? [AXUIElement], !windows.isEmpty else { return nil }
+
+        var titleOnly: AXUIElement?
+        var frameOnly: AXUIElement?
 
         for window in windows {
-            var titleValue: CFTypeRef?
-            guard AXUIElementCopyAttributeValue(window, kAXTitleAttribute as CFString, &titleValue) == .success,
-                  let windowTitle = titleValue as? String,
-                  windowTitle == title else { continue }
+            let titleAgrees = titles(axTitle(of: window), agreeWith: target.title)
+            let frameAgrees = frame(of: window).map { $0.matches(target.frame) } == true
 
-            AXUIElementPerformAction(window, kAXRaiseAction as CFString)
-            return true
+            if titleAgrees, frameAgrees { return window }
+            if titleAgrees, titleOnly == nil { titleOnly = window }
+            if frameAgrees, frameOnly == nil { frameOnly = window }
         }
-        return false
+
+        // Title before frame: windows people keep several of are usually the
+        // same size as each other, so a frame is the weaker discriminator.
+        return titleOnly ?? frameOnly
+    }
+
+    /// Internal for the unit tests; pure, so `nonisolated` is safe.
+    nonisolated static func titles(_ axTitle: String?, agreeWith captured: String) -> Bool {
+        guard let axTitle, !axTitle.isEmpty, !captured.isEmpty else { return false }
+        return axTitle == captured || axTitle.hasPrefix(captured) || captured.hasPrefix(axTitle)
+    }
+
+    private static func axTitle(of window: AXUIElement) -> String? {
+        var value: AnyObject?
+        guard AXUIElementCopyAttributeValue(window, kAXTitleAttribute as CFString, &value) == .success else {
+            return nil
+        }
+        return value as? String
+    }
+
+    private static func frame(of window: AXUIElement) -> CGRect? {
+        guard let origin = axValue(kAXPositionAttribute, of: window, .cgPoint, CGPoint.zero),
+              let size = axValue(kAXSizeAttribute, of: window, .cgSize, CGSize.zero) else { return nil }
+        return CGRect(origin: origin, size: size)
+    }
+
+    /// `AXValue` unwrapping needs somewhere typed to write into, which is what
+    /// `empty` is for — its only job is to carry the type.
+    private static func axValue<T>(
+        _ attribute: String,
+        of window: AXUIElement,
+        _ type: AXValueType,
+        _ empty: T
+    ) -> T? {
+        var value: AnyObject?
+        guard AXUIElementCopyAttributeValue(window, attribute as CFString, &value) == .success,
+              let value, CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
+
+        var result = empty
+        let unwrapped = withUnsafeMutablePointer(to: &result) {
+            // Safe: the type ID was just checked.
+            AXValueGetValue(value as! AXValue, type, $0)
+        }
+        return unwrapped ? result : nil
     }
 
     // MARK: - Capture
@@ -200,6 +303,7 @@ final class WindowPreviewService {
                 WindowPreview(
                     id: window.windowID,
                     title: window.title ?? "",
+                    frame: window.frame,
                     image: image,
                     aspectRatio: ratio,
                     scale: scale,
@@ -357,6 +461,19 @@ final class WindowPreviewService {
         let streamed = await SingleFrameStreamCapture()
             .image(filter: filter, configuration: configuration)
         return streamed.map(Self.trimmingTransparentEdges)
+    }
+}
+
+extension CGRect {
+    /// Same window, allowing for the rounding that separates what
+    /// ScreenCaptureKit reports from what Accessibility reports.
+    /// Internal for the unit tests.
+    func matches(_ other: CGRect) -> Bool {
+        let tolerance: CGFloat = 2
+        return abs(minX - other.minX) <= tolerance
+            && abs(minY - other.minY) <= tolerance
+            && abs(width - other.width) <= tolerance
+            && abs(height - other.height) <= tolerance
     }
 }
 

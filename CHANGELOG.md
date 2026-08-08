@@ -1,5 +1,27 @@
 # Orbit release notes
 
+## 1.5.0 — 2026-08-07
+
+### Fixed
+
+- Selecting a specific window in the preview carousel now lands on that window, including one buried under the app's other windows. Windows are re-identified by title *and* frame instead of an exact-title match — ScreenCaptureKit and Accessibility report different title formats for the same window, so the old equality test silently failed for browsers.
+- The chosen window is now focused *before* the application is activated. macOS follows an application onto the Space its main window lives on, so naming the window first is what makes a switch to a fullscreen window's Space actually land there; the old order could only reorder windows on the Space it had already arrived at.
+- Activating a chosen window no longer restores the app's own front-to-back window order on top of it, and a minimized target window is restored before being raised.
+- A failed raise now reports failure instead of success, so the plain app-activation fallback runs instead of leaving the wrong window in front.
+
+- A fullscreen Chromium window on another Space is now reachable. Chromium implements the scripted window reorder without making the window key, so a switch used to stop on whichever Space the app was last active on. Orbit now presses the matching entry in the app's own Window menu — which Chromium does expose to Accessibility, and which performs a real makeKeyAndOrderFront — then activates the app one beat later so macOS follows the key change to the right Space in a single hop. The Window menu is recognised by its contents (it is the only menu listing all of the app's window titles), never by its localized title.
+
+### Added
+
+- Apple Events fallback for apps whose windows Accessibility cannot see. Chromium-based apps (Chrome, Edge, Brave …) expose no windows to the Accessibility API at all, so Orbit now asks such an app directly, over Apple Events, to bring the chosen window forward. First use prompts for the Automation permission; declining it degrades gracefully to plain app activation — the behaviour Orbit always had.
+- The bundle now declares `NSAppleEventsUsageDescription` for the Automation prompt.
+- Settings › General gains a one-shot Automation pre-authorization button. The permission is per target app and macOS only asks on first contact, which used to interrupt the first switch into each Chromium-based app with a dialog; the button walks the running apps that will need the fallback (real windows, none visible to Accessibility) and fronts all of those prompts now. Localized in all 11 bundled languages.
+
+### Validation
+
+- The unit test target grew to 42 `OrbitTests` tests, including new coverage for cross-framework title matching (with real Chrome title pairs), frame-tolerance boundaries, AppleScript title escaping, Window-menu recognition, pre-authorization candidate selection, and `AEDeterminePermissionToAutomateTarget` status mapping.
+- Both activation paths were verified against real window stacks via `CGWindowListCopyWindowInfo` z-order: the Accessibility path raised the bottom of three Finder windows, and the Apple Events path raised the bottom of five Chrome windows.
+
 ## 1.4.1 — 2026-08-07
 
 ### Changed

@@ -66,6 +66,24 @@ enum WindowServerInspector {
         return pids
     }
 
+    /// 属于该进程的真实窗口的标题，含别的 Space 上的和最小化的。
+    ///
+    /// 读别家应用的 `kCGWindowName` 需要屏幕录制权限；没有权限时标题全是
+    /// nil，这里就返回空数组，调用方按「不知道」处理。
+    static func windowTitles(ownedBy pid: pid_t) -> [String] {
+        let options: CGWindowListOption = [.excludeDesktopElements]
+        guard let windows = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
+            return []
+        }
+
+        return windows.compactMap { window in
+            guard window[kCGWindowOwnerPID as String] as? Int == Int(pid),
+                  qualifiesAsWindow(window, requiringTitle: true),
+                  let name = window[kCGWindowName as String] as? String, !name.isEmpty else { return nil }
+            return name
+        }
+    }
+
     /// 一个窗口条目是不是「用户心里的那种窗口」。
     ///
     /// The window list is full of bookkeeping surfaces: autofill panels, menu

@@ -16,6 +16,11 @@
 "prefs.access.granted" = "Orbit has Accessibility access";
 "prefs.access.missing" = "Orbit needs Accessibility access";
 "prefs.access.grant" = "Grant…";
+"prefs.automation.note" = "Some apps (Chrome and other Chromium-based apps) hide their windows from Accessibility, so Orbit switches their windows via Automation instead. macOS asks once per app — press the button to answer all of those prompts now instead of during a switch.";
+"prefs.automation.grantAll" = "Pre-authorize now";
+"prefs.automation.running" = "Requesting…";
+"prefs.automation.none" = "No running app needs it right now.";
+"prefs.automation.result" = "%1$d allowed, %2$d declined.";
 
 /* Settings — language */
 "prefs.group.language" = "Language";

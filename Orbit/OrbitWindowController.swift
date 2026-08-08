@@ -84,8 +84,8 @@ final class OrbitWindowController: NSObject {
         ringModel.onCancel = { [weak self] in
             self?.dismissImmediately()
         }
-        ringModel.onActivate = { [weak self] app, windowTitle in
-            self?.activate(app, windowTitle: windowTitle)
+        ringModel.onActivate = { [weak self] app, window in
+            self?.activate(app, window: window)
         }
 
         model = ringModel
@@ -124,19 +124,71 @@ final class OrbitWindowController: NSObject {
         model.handle(command, value: value)
     }
 
-    private func activate(_ app: AppRecord, windowTitle: String?) {
+    private func activate(_ app: AppRecord, window: WindowTarget?) {
         dismissImmediately()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            _ = app.bringToFront()
 
-            // Raising has to follow activation, or the app pulls its own
-            // frontmost window forward again.
-            guard let windowTitle else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                _ = WindowPreviewService.raise(
-                    windowTitled: windowTitle,
-                    pid: app.processIdentifier
-                )
+        // Let the ring leave the screen before anything else comes forward.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            guard let window else {
+                _ = app.bringToFront()
+                return
+            }
+
+            // Name the window *before* activating the app. macOS follows an
+            // application onto the Space its main window lives on, so a window
+            // chosen first is a window the switch actually lands on — including
+            // the fullscreen windows that each hold a Space of their own.
+            //
+            // 顺序反过来就是之前那个 bug：先激活应用，系统已经切到"上次那个窗口"
+            // 所在的 Space 了，之后再 raise 只是在这个 Space 内部重排，选中的窗
+            // 口如果在别的 Space 上就永远到不了。
+            let picked = WindowPreviewService.focus(window, pid: app.processIdentifier)
+
+            if picked {
+                // `.activateAllWindows` would restore the app's own
+                // front-to-back order, undoing the choice just made.
+                _ = app.bringToFront(raisingAllWindows: false)
+
+                // Some apps re-assert their own front window as they come
+                // forward. One settle pass after activation catches them.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                    WindowPreviewService.focus(window, pid: app.processIdentifier)
+                }
+                return
+            }
+
+            // Accessibility saw no such window — for Chromium-based apps it
+            // never sees any. Two fallbacks, the more capable one first:
+            //
+            // The app's own Window menu (which Chromium *does* expose to
+            // Accessibility) performs a real makeKeyAndOrderFront, so it can
+            // cross Spaces — a fullscreen window on another Space is exactly
+            // the case AppleScript's reorder-only `set index` cannot reach.
+            let knownTitles = WindowServerInspector.windowTitles(ownedBy: app.processIdentifier)
+            if ScriptedWindowFocus.focusViaWindowMenu(
+                window,
+                pid: app.processIdentifier,
+                knownWindowTitles: knownTitles
+            ) {
+                // The press makes that window key *inside Chromium*, but the
+                // registration races an immediate activation — measured: an
+                // activate issued right after the press still followed the old
+                // key window's Space. One beat of delay lets the key change
+                // land, and the activation then follows it to the right Space
+                // in a single hop.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    _ = app.bringToFront(raisingAllWindows: false)
+                }
+                return
+            }
+
+            // Apple Events reorder: right window within the current Space.
+            // Only when that too comes back empty-handed does this degrade to
+            // plain app activation, the behaviour Orbit always had.
+            ScriptedWindowFocus.focus(window, bundleIdentifier: app.id) { switched in
+                if !switched {
+                    _ = app.bringToFront()
+                }
             }
         }
     }

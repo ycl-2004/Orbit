@@ -185,6 +185,38 @@ final class SettingsModel: ObservableObject {
     @Published private(set) var hasAccessibility = HotKeyService.checkAccessibilityPermission()
     @Published private(set) var hasScreenRecording = WindowPreviewService.hasScreenRecordingPermission()
 
+    // MARK: - Automation 预授权
+
+    enum AutomationPreauthState: Equatable {
+        case idle
+        case running
+        /// 这一轮问完了：多少家批了、多少家拒了。
+        case finished(granted: Int, denied: Int)
+        /// 当前没有任何在跑的应用需要 Apple Events 兜底。
+        case nothingToDo
+    }
+
+    @Published private(set) var automationPreauth: AutomationPreauthState = .idle
+
+    /// 把所有会走 Apple Events 兜底的应用的授权弹窗现在集中弹完，
+    /// 而不是散落在以后每次切换里。
+    func preauthorizeAutomation() {
+        guard automationPreauth != .running else { return }
+        automationPreauth = .running
+
+        ScriptedWindowFocus.preauthorizeRunningApps { [weak self] results in
+            guard let self else { return }
+            guard !results.isEmpty else {
+                automationPreauth = .nothingToDo
+                return
+            }
+            automationPreauth = .finished(
+                granted: results.count(where: { $0.consent == .granted }),
+                denied: results.count(where: { $0.consent == .denied })
+            )
+        }
+    }
+
     /// 窗口出现时重新读一遍所有值。
     ///
     /// 权限可能在设置窗口关着的时候被用户改掉，配置也可能被另一个窗口改过。

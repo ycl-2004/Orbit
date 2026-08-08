@@ -86,6 +86,7 @@ private struct GeneralSettingsPane: View {
         Form {
             Section {
                 AccessibilityStatusRow(model: model)
+                AutomationPreauthRow(model: model)
             }
 
             Section {
@@ -218,6 +219,53 @@ private struct AccessibilityStatusRow: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+            }
+        }
+        .font(.callout)
+    }
+}
+
+/// One button that fronts every Automation prompt Orbit would otherwise show
+/// mid-switch. The permission is per target app and macOS only asks on first
+/// contact — so the first jump into each Chromium-based app used to interrupt
+/// the switch with a dialog. Asking here, all at once, is the whole feature.
+private struct AutomationPreauthRow: View {
+    @ObservedObject var model: SettingsModel
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "bolt.badge.checkmark")
+                .foregroundStyle(OrbitPalette.burgundy)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("prefs.automation.note")
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 10) {
+                    Button("prefs.automation.grantAll") {
+                        model.preauthorizeAutomation()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(model.automationPreauth == .running)
+
+                    switch model.automationPreauth {
+                    case .idle:
+                        EmptyView()
+                    case .running:
+                        ProgressView()
+                            .controlSize(.small)
+                    case .nothingToDo:
+                        Text("prefs.automation.none")
+                            .foregroundStyle(.secondary)
+                    case let .finished(granted, denied):
+                        Text(String(
+                            format: NSLocalizedString("prefs.automation.result", comment: "granted/denied counts"),
+                            granted, denied
+                        ))
+                        .foregroundStyle(.secondary)
+                    }
+                }
             }
         }
         .font(.callout)

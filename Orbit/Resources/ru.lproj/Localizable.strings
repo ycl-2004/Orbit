@@ -16,6 +16,11 @@
 "prefs.access.granted" = "У Orbit есть доступ к универсальному доступу";
 "prefs.access.missing" = "Orbit нужен доступ к универсальному доступу";
 "prefs.access.grant" = "Разрешить…";
+"prefs.automation.note" = "Некоторые приложения (Chrome и другие на базе Chromium) скрывают свои окна от Универсального доступа, поэтому Orbit переключает их окна через разрешение «Автоматизация». macOS спрашивает один раз для каждого приложения — нажмите кнопку, чтобы ответить на все запросы сейчас, а не во время переключения.";
+"prefs.automation.grantAll" = "Разрешить заранее";
+"prefs.automation.running" = "Запрос…";
+"prefs.automation.none" = "Сейчас ни одному запущенному приложению это не нужно.";
+"prefs.automation.result" = "Разрешено: %1$d, отклонено: %2$d.";
 
 /* Settings — language */
 "prefs.group.language" = "Язык";

@@ -16,6 +16,11 @@
 "prefs.access.granted" = "Orbit dispose de l'accès à l'accessibilité";
 "prefs.access.missing" = "Orbit a besoin de l'accès à l'accessibilité";
 "prefs.access.grant" = "Autoriser…";
+"prefs.automation.note" = "Certaines apps (Chrome et autres apps basées sur Chromium) masquent leurs fenêtres à l'accessibilité ; Orbit change alors de fenêtre via l'autorisation Automatisation. macOS ne demande qu'une fois par app — appuyez sur le bouton pour répondre à toutes ces demandes maintenant plutôt qu'en plein changement.";
+"prefs.automation.grantAll" = "Pré-autoriser maintenant";
+"prefs.automation.running" = "Demande en cours…";
+"prefs.automation.none" = "Aucune app en cours d'exécution n'en a besoin pour le moment.";
+"prefs.automation.result" = "%1$d autorisée(s), %2$d refusée(s).";
 
 /* Settings — language */
 "prefs.group.language" = "Langue";

@@ -16,6 +16,11 @@
 "prefs.access.granted" = "Orbit havas alireblecan permeson";
 "prefs.access.missing" = "Orbit bezonas alireblecan permeson";
 "prefs.access.grant" = "Permesi…";
+"prefs.automation.note" = "Kelkaj aplikaĵoj (Chrome kaj aliaj Chromium-bazitaj) kaŝas siajn fenestrojn de Alirebleco, do Orbit ŝanĝas iliajn fenestrojn per la permeso Aŭtomatigo. macOS demandas unufoje por ĉiu aplikaĵo — premu la butonon por respondi ĉiujn petojn nun anstataŭ meze de ŝanĝo.";
+"prefs.automation.grantAll" = "Antaŭpermesi nun";
+"prefs.automation.running" = "Petado…";
+"prefs.automation.none" = "Neniu rulanta aplikaĵo bezonas ĝin nun.";
+"prefs.automation.result" = "%1$d permesitaj, %2$d rifuzitaj.";
 
 /* Settings — language */
 "prefs.group.language" = "Lingvo";
