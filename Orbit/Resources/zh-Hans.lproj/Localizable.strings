@@ -16,11 +16,19 @@
 "prefs.access.granted" = "Orbit 已获得辅助功能权限";
 "prefs.access.missing" = "Orbit 需要辅助功能权限";
 "prefs.access.grant" = "去授权…";
-"prefs.automation.note" = "部分应用（Chrome 等 Chromium 系）的窗口对辅助功能不可见，Orbit 需要通过「自动化」权限来切换它们的窗口。macOS 对每个应用只询问一次——点击按钮现在集中授权，避免以后切换时被弹窗打断。";
-"prefs.automation.grantAll" = "立即预授权";
+"prefs.automation.note" = "「自动化」让 Orbit 切换 Chrome 等 Chromium 应用的窗口。";
+"prefs.automation.grantAll" = "请求权限…";
 "prefs.automation.running" = "正在请求…";
 "prefs.automation.none" = "当前没有运行中的应用需要此权限。";
 "prefs.automation.result" = "已允许 %1$d 个，拒绝 %2$d 个。";
+"prefs.automation.apps" = "应用权限 · %d";
+"prefs.automation.detailsHint" = "显示或隐藏每个应用的自动化权限状态。";
+"prefs.automation.runningOnly" = "这里只显示当前正在运行的兼容应用。";
+"prefs.automation.openSettings" = "打开自动化设置…";
+"prefs.automation.status.allowed" = "已允许";
+"prefs.automation.status.declined" = "已拒绝";
+"prefs.automation.status.notRequested" = "尚未询问";
+"prefs.automation.status.unavailable" = "不可用";
 
 /* Settings — language */
 "prefs.group.language" = "语言";
@@ -32,11 +40,11 @@
 
 /* Settings — ring */
 "prefs.group.ring" = "环形界面";
-"prefs.ring.order" = "卡片顺序";
-"prefs.ring.preselect" = "预先选中上一个应用";
-"prefs.ring.order.note" = "哪些应用能上环，始终由最近使用决定。这里只决定它们怎么排列。";
-"prefs.ring.preselect.note" = "唤出后直接松手即可切回上一个应用，和 ⌘Tab 一样。关闭时，没选就松手只会关掉环。";
-"prefs.ring.showOrbitCard" = "在环上显示 Orbit";
+"prefs.ring.order" = "排列卡片";
+"prefs.ring.openingBehavior" = "打开 Orbit 时";
+"prefs.ring.order.note" = "最近的切换目标固定在最上方，其余最近应用按名称排列。";
+"prefs.ring.openingBehavior.note" = "“从取消开始”不会选中任何目标；“快速切换”会选中 12 点目标，松手立即切换。";
+"prefs.ring.showOrbitCard" = "显示清理卡片";
 "prefs.ring.showOrbitCard.note" = "显示 Orbit 清理卡片，用于关闭没有打开窗口的应用。";
 
 /* Settings — summoning */
@@ -94,8 +102,10 @@
 "triggerKey.disabled" = "关闭";
 
 /* Ring placement */
-"ringOrder.recent" = "最近使用";
+"ringOrder.recent" = "最近使用优先";
 "ringOrder.alphabetical" = "按名称";
+"ringOpeningBehavior.cancel" = "从取消开始";
+"ringOpeningBehavior.quickSwitch" = "快速切换";
 "ringPlacement.screenCenter" = "屏幕中央";
 "ringPlacement.cursor" = "跟随光标";
 

@@ -18,13 +18,16 @@ final class RunningAppCatalog {
 
     /// Builds one snapshot for a summon. The frontmost process is captured by
     /// the window controller before its panel becomes the active application.
-    func collect(frontmostProcess: pid_t? = nil) -> [AppRecord] {
+    func collect(
+        frontmostProcess: pid_t? = nil,
+        currentAppWindowTargetAvailable: Bool = true
+    ) -> [AppRecord] {
         let workspace = NSWorkspace.shared
         let counts = WindowServerInspector.windowCounts()
         let owners = counts.map { Set($0.keys) }
 
-        // 你此刻就在的那个应用从不参与常规排序 —— 它是最近用过的那个，留在里面
-        // 会把「刚才那个应用」从第一张卡挤下去，而切回刚才那个才是最常做的事。
+        // 你此刻就在的那个应用不参与常规应用排序。它如果还有别的窗口，会在下面
+        // 变成一个明确的“切到另一扇窗口”目标；否则把当前应用放进环只会送回原地。
         var candidates = workspace.runningApplications.filter {
             isCandidate($0, excluding: frontmostProcess)
         }
@@ -33,27 +36,27 @@ final class RunningAppCatalog {
             candidates = candidates.filter { owners.contains($0.processIdentifier) }
         }
 
-        // 它仍然可能拿到一张附加卡：见 `currentAppDeservesCard`。名额要先留出来，
-        // 否则这张卡会把环撑过 `maxVisibleApps`。
-        let currentCard = Self.currentAppDeservesCard(frontmostProcess, windowCounts: counts)
+        // 它仍然可能拿到一张窗口目标卡：见 `currentAppDeservesCard`。
+        let currentCard = currentAppWindowTargetAvailable
+            && Self.currentAppDeservesCard(frontmostProcess, windowCounts: counts)
             ? frontmostProcess.flatMap(currentAppRecord)
             : nil
 
         let history = AppActivationHistory.shared
         let ranked = Self.orderedByUse(candidates.map(makeRecord), rank: history.rank(of:))
-        let reserved = (OrbitConfig.showOrbitCard ? 1 : 0) + (currentCard == nil ? 0 : 1)
-        let capacity = max(OrbitConfig.maxVisibleApps - reserved, 0)
-        let selected = Array(ranked.prefix(capacity))
+        let switchTargetLimit = max(
+            OrbitConfig.maxVisibleApps - (OrbitConfig.showOrbitCard ? 1 : 0),
+            0
+        )
+        let displayed = Self.switchTargets(
+            rankedApps: ranked,
+            currentApp: currentCard,
+            limit: switchTargetLimit,
+            order: OrbitConfig.ringOrder
+        )
 
-        let displayed: [AppRecord] = switch OrbitConfig.ringOrder {
-        case .recent:
-            selected
-        case .alphabetical:
-            selected.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        }
-
-        // 两张特殊卡都挂在末尾，位置固定，不随排序方式跑动。
-        return displayed + [currentCard].compactMap { $0 }
+        // Orbit 是清理工具，不是最近目标；它继续固定在序列末尾。
+        return displayed
             + (OrbitConfig.showOrbitCard ? [.orbitCard] : [])
     }
 
@@ -79,24 +82,6 @@ final class RunningAppCatalog {
         return makeRecord(from: app)
     }
 
-    /// Returns the most recently activated switch target in a visible set.
-    ///
-    /// The frontmost app can still have a special card for reaching its other
-    /// windows. That card is a manual destination, not the "previous app": if
-    /// it participates here, its rank is necessarily first and summon/release
-    /// simply lands back in the app the user is already viewing.
-    static func mostRecentlyUsed(
-        in apps: [AppRecord],
-        excluding process: pid_t? = nil,
-        rank: (String) -> Int?
-    ) -> AppRecord? {
-        apps
-            .filter { !$0.isOrbit && (process == nil || $0.processIdentifier != process) }
-            .compactMap { app in rank(app.id).map { (app, $0) } }
-            .min { $0.1 < $1.1 }?
-            .0
-    }
-
     /// Sorts known applications by their activation history, then falls back to
     /// a stable name comparison for records not present in that history.
     static func orderedByUse(_ apps: [AppRecord], rank: (String) -> Int?) -> [AppRecord] {
@@ -110,6 +95,38 @@ final class RunningAppCatalog {
             case (nil, _?): return false
             case (nil, nil):
                 return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+            }
+        }
+    }
+
+    /// Builds the actual keyboard sequence. If the frontmost app owns another
+    /// real window, that window destination is more recent than leaving the app
+    /// entirely, so its card owns the 12-o'clock anchor. Otherwise the previous
+    /// application remains first. The cleanup card is deliberately handled by
+    /// the caller and never enters this sequence.
+    static func switchTargets(
+        rankedApps: [AppRecord],
+        currentApp: AppRecord?,
+        limit: Int,
+        order: RingOrder
+    ) -> [AppRecord] {
+        guard limit > 0 else { return [] }
+        let recentTargets = Array(([currentApp].compactMap { $0 } + rankedApps).prefix(limit))
+        return arranged(recentTargets, by: order)
+    }
+
+    /// Keeps the highest-priority switch destination as the stable first target
+    /// in either mode. Alphabetical ordering begins after that anchor; otherwise
+    /// the display preference would break the 12-o'clock muscle-memory contract.
+    static func arranged(_ apps: [AppRecord], by order: RingOrder) -> [AppRecord] {
+        guard let first = apps.first else { return [] }
+
+        switch order {
+        case .recent:
+            return apps
+        case .alphabetical:
+            return [first] + apps.dropFirst().sorted {
+                $0.name.localizedStandardCompare($1.name) == .orderedAscending
             }
         }
     }

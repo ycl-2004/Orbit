@@ -16,11 +16,19 @@
 "prefs.access.granted" = "Orbit havas alireblecan permeson";
 "prefs.access.missing" = "Orbit bezonas alireblecan permeson";
 "prefs.access.grant" = "Permesi…";
-"prefs.automation.note" = "Kelkaj aplikaĵoj (Chrome kaj aliaj Chromium-bazitaj) kaŝas siajn fenestrojn de Alirebleco, do Orbit ŝanĝas iliajn fenestrojn per la permeso Aŭtomatigo. macOS demandas unufoje por ĉiu aplikaĵo — premu la butonon por respondi ĉiujn petojn nun anstataŭ meze de ŝanĝo.";
-"prefs.automation.grantAll" = "Antaŭpermesi nun";
+"prefs.automation.note" = "Aŭtomatigo ebligas al Orbit ŝanĝi fenestrojn en Chrome kaj aliaj Chromium-aplikaĵoj.";
+"prefs.automation.grantAll" = "Peti aliron…";
 "prefs.automation.running" = "Petado…";
 "prefs.automation.none" = "Neniu rulanta aplikaĵo bezonas ĝin nun.";
 "prefs.automation.result" = "%1$d permesitaj, %2$d rifuzitaj.";
+"prefs.automation.apps" = "Aliro de aplikaĵoj · %d";
+"prefs.automation.detailsHint" = "Montras aŭ kaŝas la staton de Aŭtomatigo por ĉiu aplikaĵo.";
+"prefs.automation.runningOnly" = "Nur kongruaj aplikaĵoj nun rulataj aperas ĉi tie.";
+"prefs.automation.openSettings" = "Malfermi agordojn de Aŭtomatigo…";
+"prefs.automation.status.allowed" = "Permesita";
+"prefs.automation.status.declined" = "Rifuzita";
+"prefs.automation.status.notRequested" = "Ankoraŭ ne petita";
+"prefs.automation.status.unavailable" = "Nedisponebla";
 
 /* Settings — language */
 "prefs.group.language" = "Lingvo";
@@ -32,11 +40,11 @@
 
 /* Settings — ring */
 "prefs.group.ring" = "Ringo";
-"prefs.ring.order" = "Ordo de la kartoj";
-"prefs.ring.preselect" = "Antaŭelekti la lastan aplikaĵon";
-"prefs.ring.order.note" = "Kiuj aplikaĵoj eniras la ringon ĉiam dependas de lastatempa uzo. Ĉi tio elektas nur ilian aranĝon.";
-"prefs.ring.preselect.note" = "Alvoku kaj lasu por reiri rekte, kiel ⌘Tab. Malŝaltite, lasi sen elekti nur fermas la ringon.";
-"prefs.ring.showOrbitCard" = "Montri Orbit en la ringo";
+"prefs.ring.order" = "Aranĝi kartojn";
+"prefs.ring.openingBehavior" = "Kiam Orbit malfermiĝas";
+"prefs.ring.order.note" = "La plej lastatempa ŝanĝcelo restas supre; la ceteraj lastatempaj aplikaĵoj estas aranĝitaj laŭnome.";
+"prefs.ring.openingBehavior.note" = "Nuligi komencas sen elekto. Rapida ŝanĝo elektas la celon je la 12-a; liberigu por tuj ŝanĝi.";
+"prefs.ring.showOrbitCard" = "Montri purigan karton";
 "prefs.ring.showOrbitCard.note" = "Montri Orbit kiel purigan karton por aplikaĵoj sen malfermitaj fenestroj.";
 
 /* Settings — summoning */
@@ -94,8 +102,10 @@
 "triggerKey.disabled" = "Malŝaltita";
 
 /* Ring placement */
-"ringOrder.recent" = "Lastatempe uzitaj";
+"ringOrder.recent" = "Plej lastatempaj unue";
 "ringOrder.alphabetical" = "Laŭ nomo";
+"ringOpeningBehavior.cancel" = "Komenci ĉe Nuligi";
+"ringOpeningBehavior.quickSwitch" = "Rapida ŝanĝo";
 "ringPlacement.screenCenter" = "Centro de la ekrano";
 "ringPlacement.cursor" = "Sekvi la kursoron";
 

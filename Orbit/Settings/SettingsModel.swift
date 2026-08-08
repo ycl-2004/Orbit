@@ -147,8 +147,8 @@ final class SettingsModel: ObservableObject {
         didSet { writeThrough { OrbitConfig.ringOrder = ringOrder } }
     }
 
-    @Published var preselectRecentApp: Bool = OrbitConfig.preselectRecentApp {
-        didSet { writeThrough { OrbitConfig.preselectRecentApp = preselectRecentApp } }
+    @Published var ringOpeningBehavior: RingOpeningBehavior = OrbitConfig.ringOpeningBehavior {
+        didSet { writeThrough { OrbitConfig.ringOpeningBehavior = ringOpeningBehavior } }
     }
 
     // MARK: - 窗口预览
@@ -197,15 +197,29 @@ final class SettingsModel: ObservableObject {
     }
 
     @Published private(set) var automationPreauth: AutomationPreauthState = .idle
+    @Published private(set) var automationApps: [ScriptedWindowFocus.AutomationAuthorization] = []
+    @Published private(set) var isInspectingAutomation = false
+    /// Discards a stale non-prompting scan if the user starts a real permission
+    /// request before that scan returns.
+    private var automationRequestGeneration = 0
+
+    var automationDeniedCount: Int {
+        automationApps.count(where: { $0.consent == .denied })
+    }
 
     /// 把所有会走 Apple Events 兜底的应用的授权弹窗现在集中弹完，
     /// 而不是散落在以后每次切换里。
     func preauthorizeAutomation() {
         guard automationPreauth != .running else { return }
+        automationRequestGeneration += 1
+        let generation = automationRequestGeneration
+        isInspectingAutomation = false
         automationPreauth = .running
 
         ScriptedWindowFocus.preauthorizeRunningApps { [weak self] results in
             guard let self else { return }
+            guard generation == automationRequestGeneration else { return }
+            automationApps = results
             guard !results.isEmpty else {
                 automationPreauth = .nothingToDo
                 return
@@ -214,6 +228,23 @@ final class SettingsModel: ObservableObject {
                 granted: results.count(where: { $0.consent == .granted }),
                 denied: results.count(where: { $0.consent == .denied })
             )
+        }
+    }
+
+    /// Refreshes the per-app list without showing permission prompts. This is
+    /// safe to run whenever Settings appears; prompting remains an explicit
+    /// consequence of pressing the pre-authorization button.
+    func inspectAutomation() {
+        guard automationPreauth != .running else { return }
+        automationRequestGeneration += 1
+        let generation = automationRequestGeneration
+        isInspectingAutomation = true
+
+        ScriptedWindowFocus.inspectAutomationForRunningApps { [weak self] results in
+            guard let self else { return }
+            guard generation == automationRequestGeneration else { return }
+            automationApps = results
+            isInspectingAutomation = false
         }
     }
 
@@ -237,12 +268,13 @@ final class SettingsModel: ObservableObject {
             showOrbitCard = OrbitConfig.showOrbitCard
             ringOrder = OrbitConfig.ringOrder
             previewScale = Double(OrbitConfig.previewScale)
-            preselectRecentApp = OrbitConfig.preselectRecentApp
+            ringOpeningBehavior = OrbitConfig.ringOpeningBehavior
             windowPreviewEnabled = OrbitConfig.windowPreviewEnabled
             launchAtLogin = LoginItemService.reload()
             hasAccessibility = HotKeyService.checkAccessibilityPermission()
             hasScreenRecording = WindowPreviewService.hasScreenRecordingPermission()
         }
+        inspectAutomation()
     }
 
     /// 可以作为"取消选择键"的候选：不能跟触发键是同一个。

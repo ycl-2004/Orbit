@@ -9,6 +9,29 @@
 import AppKit
 import CoreGraphics
 
+/// Small in-memory MRU list for windows inside each app. Window IDs are stable
+/// for the lifetime of a window and are all Orbit needs to put the previously
+/// viewed sibling first; stale IDs simply stop matching the next snapshot.
+struct WindowActivationHistory {
+    private var orderByApp: [String: [CGWindowID]] = [:]
+    private let perAppLimit: Int
+
+    init(perAppLimit: Int = 12) {
+        self.perAppLimit = max(perAppLimit, 2)
+    }
+
+    mutating func record(_ windowID: CGWindowID, for appID: String) {
+        var order = orderByApp[appID] ?? []
+        order.removeAll { $0 == windowID }
+        order.insert(windowID, at: 0)
+        orderByApp[appID] = Array(order.prefix(perAppLimit))
+    }
+
+    func recentWindowIDs(for appID: String) -> [CGWindowID] {
+        orderByApp[appID] ?? []
+    }
+}
+
 /// 谁最近被用过。
 ///
 /// 环上只放得下 `maxVisibleApps` 张卡，而以前那份列表是按名字排好之后直接截断
@@ -30,6 +53,7 @@ final class AppActivationHistory {
 
     /// 最近使用在前。存 bundle id，因为 pid 每次启动都会变。
     private var order: [String] = []
+    private var windows = WindowActivationHistory()
     private var observer: NSObjectProtocol?
     /// 订阅是异步挂上的，所以不能再拿 `observer` 当"启动过了没"的标记。
     private var hasStarted = false
@@ -76,6 +100,17 @@ final class AppActivationHistory {
     /// 越小越近。没有记录的应用返回 `nil`，由调用方决定怎么排它们。
     func rank(of identity: String) -> Int? {
         order.firstIndex(of: identity)
+    }
+
+    /// Record the front window before Orbit's panel enters the window list.
+    /// Repeated summons therefore learn true per-app window recency even when
+    /// the user switched those windows outside Orbit.
+    func record(windowID: CGWindowID, for appID: String) {
+        windows.record(windowID, for: appID)
+    }
+
+    func recentWindowIDs(for appID: String) -> [CGWindowID] {
+        windows.recentWindowIDs(for: appID)
     }
 
     private func record(_ app: NSRunningApplication) {

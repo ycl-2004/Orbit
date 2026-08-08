@@ -143,6 +143,76 @@ enum WindowServerInspector {
         }
     }
 
+    /// The best sibling window to switch to from the frontmost window of an
+    /// app. Orbit's own per-app MRU history wins; the Window Server's existing
+    /// front-to-back list is the stable fallback for windows not seen before.
+    static func mostRecentOtherWindow(
+        ownedBy pid: pid_t,
+        excluding currentWindowID: CGWindowID,
+        preferredIDs: [CGWindowID]
+    ) -> WindowTarget? {
+        let options: CGWindowListOption = [.excludeDesktopElements]
+        guard let windows = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
+            return nil
+        }
+
+        return mostRecentOtherWindow(
+            in: windows,
+            ownedBy: pid,
+            excluding: currentWindowID,
+            preferredIDs: preferredIDs,
+            requiringTitle: CGPreflightScreenCaptureAccess()
+        )
+    }
+
+    /// Pure form used by regression tests. Input order is already Window Server
+    /// front-to-back order, so it remains the tie-breaker after known MRU IDs.
+    static func mostRecentOtherWindow(
+        in windows: [[String: Any]],
+        ownedBy pid: pid_t,
+        excluding currentWindowID: CGWindowID,
+        preferredIDs: [CGWindowID],
+        requiringTitle: Bool
+    ) -> WindowTarget? {
+        let targets = windows.compactMap { window -> WindowTarget? in
+            guard window[kCGWindowOwnerPID as String] as? Int == Int(pid),
+                  let rawID = window[kCGWindowNumber as String] as? Int,
+                  CGWindowID(rawID) != currentWindowID,
+                  qualifiesAsWindow(window, requiringTitle: requiringTitle),
+                  let boundsDict = window[kCGWindowBounds as String] as? [String: Any],
+                  let frame = CGRect(dictionaryRepresentation: boundsDict as CFDictionary) else {
+                return nil
+            }
+
+            // Without Screen Recording permission, cross-Space Chromium
+            // windows have neither a usable title nor an AX window. They are
+            // not actionable, so do not let one become a no-op first target.
+            // An on-screen sibling can still be matched by frame through AX.
+            if !requiringTitle,
+               window[kCGWindowIsOnscreen as String] as? Bool != true {
+                return nil
+            }
+
+            return WindowTarget(
+                id: CGWindowID(rawID),
+                title: window[kCGWindowName as String] as? String ?? "",
+                frame: frame
+            )
+        }
+
+        let preferredRank = Dictionary(
+            uniqueKeysWithValues: preferredIDs.enumerated().map { ($0.element, $0.offset) }
+        )
+        return targets.enumerated().min { lhs, rhs in
+            switch (preferredRank[lhs.element.id], preferredRank[rhs.element.id]) {
+            case let (left?, right?): return left < right
+            case (_?, nil): return true
+            case (nil, _?): return false
+            case (nil, nil): return lhs.offset < rhs.offset
+            }
+        }?.element
+    }
+
     /// 一个窗口条目是不是「用户心里的那种窗口」。
     ///
     /// The window list is full of bookkeeping surfaces: autofill panels, menu

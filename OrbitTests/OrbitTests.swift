@@ -222,48 +222,61 @@ struct OrbitTests {
         #expect(sorted.map(\.name) == ["Alpha", "Mid", "Zed"])
     }
 
-    /// 「按住、松开」要切回去的那个应用，跟卡片摆在哪没有关系 —— 按名字摆时，
-    /// 第一张卡通常不是最近用过的那个。
-    @Test func theMostRecentAppIsFoundRegardlessOfCardOrder() {
-        let recent = ["com.c", "com.a"]
-        let alphabetical = [
-            listed("com.a", "Alpha"),
-            listed("com.c", "Charlie"),
-            listed("com.m", "Mid")
+    @Test func alphabeticalArrangementKeepsThePreviousAppAsItsAnchor() {
+        let recentlyUsed = [
+            listed("com.previous", "Zulu"),
+            listed("com.older-b", "Beta"),
+            listed("com.older-a", "Alpha")
         ]
 
-        let recentApp = RunningAppCatalog.mostRecentlyUsed(in: alphabetical) { recent.firstIndex(of: $0) }
+        let arranged = RunningAppCatalog.arranged(recentlyUsed, by: .alphabetical)
 
-        #expect(recentApp?.id == "com.c")
+        #expect(arranged.map(\.id) == ["com.previous", "com.older-a", "com.older-b"])
     }
 
-    /// Orbit 自己的卡片是清理目标，不是一个可以切过去的应用；即使它排在最前面，
-    /// 预选也绝不能落在它身上。
-    @Test func orbitsOwnCardIsNeverThePreselection() {
-        let apps = [AppRecord.orbitCard, listed("com.a", "Alpha")]
+    @Test @MainActor func openingBehaviorDefaultsToCancelAndKeepsQuickSwitchSelectable() {
+        let defaults = UserDefaults.standard
+        let previous = defaults.object(forKey: "ringOpeningBehavior")
+        defer {
+            if let previous {
+                defaults.set(previous, forKey: "ringOpeningBehavior")
+            } else {
+                defaults.removeObject(forKey: "ringOpeningBehavior")
+            }
+        }
 
-        let recentApp = RunningAppCatalog.mostRecentlyUsed(in: apps) { _ in 0 }
+        defaults.removeObject(forKey: "ringOpeningBehavior")
+        #expect(OrbitConfig.ringOpeningBehavior == .cancel)
 
-        #expect(recentApp?.isOrbit == false)
-        #expect(recentApp?.id == "com.a")
+        OrbitConfig.ringOpeningBehavior = .quickSwitch
+        #expect(OrbitConfig.ringOpeningBehavior == .quickSwitch)
     }
 
-    /// 多窗口的当前应用会保留一张手动卡，用来访问它的其他窗口；但它不能参与
-    /// “上一个应用”的自动预选，否则它永远以 rank 0 胜出，松手只会回到原地。
-    /// 全屏 Chrome 最容易触发：不同 Space 上的窗口都会计入它的窗口总数。
-    @Test func theFrontmostAppsOtherWindowsCardIsNeverThePreselection() {
-        let apps = [
-            listed("com.current", "Current", processIdentifier: 42),
-            listed("com.previous", "Previous", processIdentifier: 99)
+    /// If the current app has another actionable window, that window is the
+    /// newest switch destination. It therefore owns the same first slot in
+    /// both visual arrangement modes; cleanup never participates here.
+    @Test func theCurrentAppsOtherWindowOwnsTheTwelveOClockTarget() {
+        let current = listed("com.current", "Zulu", processIdentifier: 42)
+        let ranked = [
+            listed("com.previous", "Previous", processIdentifier: 99),
+            listed("com.older", "Alpha", processIdentifier: 100)
         ]
-        let recent = ["com.current", "com.previous"]
 
-        let recentApp = RunningAppCatalog.mostRecentlyUsed(
-            in: apps,
-            excluding: 42
-        ) { recent.firstIndex(of: $0) }
+        let recent = RunningAppCatalog.switchTargets(
+            rankedApps: ranked,
+            currentApp: current,
+            limit: 3,
+            order: .recent
+        )
+        let alphabetical = RunningAppCatalog.switchTargets(
+            rankedApps: ranked,
+            currentApp: current,
+            limit: 3,
+            order: .alphabetical
+        )
 
-        #expect(recentApp?.id == "com.previous")
+        #expect(recent.map(\.id) == ["com.current", "com.previous", "com.older"])
+        #expect(alphabetical.map(\.id) == ["com.current", "com.older", "com.previous"])
     }
 
     /// 预选一个不在环上的应用，会让中心显示确认态、松手却什么也切不过去。
@@ -275,6 +288,73 @@ struct OrbitTests {
         )
 
         #expect(model.selectedID == nil)
+        #expect(model.centerMode == .cancel)
+    }
+
+    @Test @MainActor func previousAppAlwaysOccupiesTheTwelveOClockAnchor() {
+        let apps = [listed("com.previous", "Previous"), listed("com.older", "Older")]
+        let withoutPreview = OrbitRingViewModel(apps: apps, showsPreview: false)
+        let withPreview = OrbitRingViewModel(apps: apps, showsPreview: true)
+
+        #expect(abs(withoutPreview.angle(for: 0) + .pi / 2) < 0.000_001)
+        #expect(abs(withPreview.angle(for: 0) + .pi / 2) < 0.000_001)
+        #expect(withoutPreview.angle(for: 1) < withoutPreview.angle(for: 0))
+        #expect(withPreview.angle(for: 1) < withPreview.angle(for: 0))
+    }
+
+    @Test @MainActor func eitherArrowEntersANeutralRingAtThePreviousApp() {
+        let apps = [
+            listed("com.previous", "Previous"),
+            listed("com.older", "Older"),
+            AppRecord.orbitCard
+        ]
+        let movingForward = OrbitRingViewModel(apps: apps, showsPreview: false)
+        let movingBackward = OrbitRingViewModel(apps: apps, showsPreview: false)
+
+        movingForward.moveSelection(step: 1)
+        movingBackward.moveSelection(step: -1)
+
+        #expect(movingForward.selectedID == "com.previous")
+        #expect(movingBackward.selectedID == "com.previous")
+    }
+
+    @Test @MainActor func currentAppWindowTargetCanConfirmBeforePreviewCaptureFinishes() {
+        let current = listed("com.current", "Current", processIdentifier: 42)
+        let target = WindowTarget(
+            id: 200,
+            title: "Previous Chrome window",
+            frame: CGRect(x: 20, y: 20, width: 1200, height: 800)
+        )
+        let model = OrbitRingViewModel(
+            apps: [current],
+            showsPreview: false,
+            currentWindow: CurrentWindow(processIdentifier: 42, id: 100),
+            recentCurrentAppWindowIDs: [100, 200],
+            preferredCurrentAppWindow: target
+        )
+        var activatedWindow: WindowTarget?
+        model.onActivate = { _, window in activatedWindow = window }
+
+        #expect(model.selectedID == nil)
+        #expect(model.centerMode == .cancel)
+        model.moveSelection(step: 1)
+        model.triggerReleased()
+
+        #expect(activatedWindow == target)
+    }
+
+    @Test @MainActor func dismissalExplicitlyRestoresTheCancelState() {
+        let model = OrbitRingViewModel(
+            apps: [listed("com.a", "Alpha")],
+            showsPreview: false,
+            preselecting: "com.a"
+        )
+
+        #expect(model.centerMode == .confirm)
+        model.resetForDismissal()
+
+        #expect(model.selectedID == nil)
+        #expect(model.selectedWindowIndex == 0)
         #expect(model.centerMode == .cancel)
     }
 
@@ -731,6 +811,57 @@ struct OrbitTests {
         #expect(!RunningAppCatalog.currentAppDeservesCard(nil, windowCounts: [42: 3]))
     }
 
+    @Test func windowHistoryMakesThePreviouslyViewedSiblingMostRecent() {
+        var history = WindowActivationHistory(perAppLimit: 3)
+
+        history.record(100, for: "com.browser")
+        history.record(200, for: "com.browser")
+        history.record(300, for: "com.browser")
+        history.record(200, for: "com.browser")
+
+        #expect(history.recentWindowIDs(for: "com.browser") == [200, 300, 100])
+        #expect(history.recentWindowIDs(for: "com.other").isEmpty)
+    }
+
+    @Test func alternateWindowUsesWindowMRUAndNeverReturnsTheCurrentWindow() {
+        func window(_ id: Int, _ title: String, isOnScreen: Bool = true) -> [String: Any] {
+            [
+                kCGWindowOwnerPID as String: 42,
+                kCGWindowNumber as String: id,
+                kCGWindowName as String: title,
+                kCGWindowLayer as String: 0,
+                kCGWindowAlpha as String: 1.0,
+                kCGWindowIsOnscreen as String: isOnScreen,
+                kCGWindowBounds as String: [
+                    "X": 0,
+                    "Y": 0,
+                    "Width": 1200,
+                    "Height": 800
+                ]
+            ]
+        }
+
+        let target = WindowServerInspector.mostRecentOtherWindow(
+            in: [window(100, "Current"), window(300, "Older"), window(200, "Previous")],
+            ownedBy: 42,
+            excluding: 100,
+            preferredIDs: [100, 200, 300],
+            requiringTitle: true
+        )
+
+        #expect(target?.id == 200)
+        #expect(target?.title == "Previous")
+
+        let unavailableWithoutTitles = WindowServerInspector.mostRecentOtherWindow(
+            in: [window(100, "", isOnScreen: true), window(200, "", isOnScreen: false)],
+            ownedBy: 42,
+            excluding: 100,
+            preferredIDs: [100, 200],
+            requiringTitle: false
+        )
+        #expect(unavailableWithoutTitles == nil)
+    }
+
     /// 预览只藏「你正看着的那一扇」，而且只在你正用的那个应用里藏 ——
     /// 别的应用的同号窗口不受影响。
     @Test func onlyTheWindowYouAreLookingAtIsHiddenAndOnlyInItsOwnApp() {
@@ -863,11 +994,11 @@ struct OrbitTests {
 
     /// `AEDeterminePermissionToAutomateTarget` 的返回码翻译。
     /// -600（没在运行）不能算拒绝：下次它运行时首跳还会正常弹框。
-    @Test func automationConsentMapsOSStatusFaithfully() {
+    @Test @MainActor func automationConsentMapsOSStatusFaithfully() {
         #expect(ScriptedWindowFocus.AutomationConsent(status: noErr) == .granted)
         #expect(ScriptedWindowFocus.AutomationConsent(status: -1743) == .denied)
         #expect(ScriptedWindowFocus.AutomationConsent(status: -600) == .notRunning)
-        #expect(ScriptedWindowFocus.AutomationConsent(status: -1744) == .undetermined)
+        #expect(ScriptedWindowFocus.AutomationConsent(status: -1744) == .requiresConsent)
         #expect(ScriptedWindowFocus.AutomationConsent(status: -25211) == .undetermined)
     }
 

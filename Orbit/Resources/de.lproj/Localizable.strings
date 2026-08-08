@@ -16,11 +16,19 @@
 "prefs.access.granted" = "Orbit hat Zugriff auf die Bedienungshilfen";
 "prefs.access.missing" = "Orbit benötigt Zugriff auf die Bedienungshilfen";
 "prefs.access.grant" = "Erlauben …";
-"prefs.automation.note" = "Manche Apps (Chrome und andere Chromium-basierte) verbergen ihre Fenster vor der Bedienungshilfe, daher wechselt Orbit ihre Fenster über die Automation-Berechtigung. macOS fragt pro App nur einmal — mit diesem Knopf beantworten Sie alle Abfragen jetzt statt mitten im Wechsel.";
-"prefs.automation.grantAll" = "Jetzt vorab erlauben";
+"prefs.automation.note" = "Automation lässt Orbit Fenster in Chrome und anderen Chromium-Apps wechseln.";
+"prefs.automation.grantAll" = "Zugriff anfordern …";
 "prefs.automation.running" = "Wird angefragt …";
 "prefs.automation.none" = "Derzeit benötigt keine laufende App diese Berechtigung.";
 "prefs.automation.result" = "%1$d erlaubt, %2$d abgelehnt.";
+"prefs.automation.apps" = "App-Zugriff · %d";
+"prefs.automation.detailsHint" = "Blendet den Automatisierungsstatus jeder App ein oder aus.";
+"prefs.automation.runningOnly" = "Hier erscheinen nur kompatible Apps, die gerade ausgeführt werden.";
+"prefs.automation.openSettings" = "Automationseinstellungen öffnen …";
+"prefs.automation.status.allowed" = "Erlaubt";
+"prefs.automation.status.declined" = "Abgelehnt";
+"prefs.automation.status.notRequested" = "Noch nicht angefragt";
+"prefs.automation.status.unavailable" = "Nicht verfügbar";
 
 /* Settings — language */
 "prefs.group.language" = "Sprache";
@@ -32,11 +40,11 @@
 
 /* Settings — ring */
 "prefs.group.ring" = "Ring";
-"prefs.ring.order" = "Kartenreihenfolge";
-"prefs.ring.preselect" = "Zuletzt genutzte App vorauswählen";
-"prefs.ring.order.note" = "Welche Apps in den Ring kommen, entscheidet immer die zuletzt erfolgte Nutzung. Hier wird nur ihre Anordnung gewählt.";
-"prefs.ring.preselect.note" = "Aufrufen und loslassen wechselt direkt zurück, so wie ⌘Tab. Aus: Loslassen ohne Auswahl schließt nur den Ring.";
-"prefs.ring.showOrbitCard" = "Orbit im Ring anzeigen";
+"prefs.ring.order" = "Karten anordnen";
+"prefs.ring.openingBehavior" = "Beim Öffnen von Orbit";
+"prefs.ring.order.note" = "Das neueste Wechselziel bleibt oben; die übrigen zuletzt verwendeten Apps werden nach Namen sortiert.";
+"prefs.ring.openingBehavior.note" = "Abbrechen startet ohne Auswahl. Schnellwechsel wählt das Ziel auf 12 Uhr; Loslassen wechselt sofort.";
+"prefs.ring.showOrbitCard" = "Aufräumkarte anzeigen";
 "prefs.ring.showOrbitCard.note" = "Orbit als Karte zum Beenden von Apps ohne offene Fenster anzeigen.";
 
 /* Settings — summoning */
@@ -94,8 +102,10 @@
 "triggerKey.disabled" = "Aus";
 
 /* Ring placement */
-"ringOrder.recent" = "Zuletzt benutzt";
+"ringOrder.recent" = "Neueste zuerst";
 "ringOrder.alphabetical" = "Nach Name";
+"ringOpeningBehavior.cancel" = "Mit Abbrechen starten";
+"ringOpeningBehavior.quickSwitch" = "Schnellwechsel";
 "ringPlacement.screenCenter" = "Bildschirmmitte";
 "ringPlacement.cursor" = "Dem Zeiger folgen";
 

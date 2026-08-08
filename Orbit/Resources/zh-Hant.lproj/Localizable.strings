@@ -16,11 +16,19 @@
 "prefs.access.granted" = "Orbit 已取得輔助使用權限";
 "prefs.access.missing" = "Orbit 需要輔助使用權限";
 "prefs.access.grant" = "去授權…";
-"prefs.automation.note" = "部分應用程式（Chrome 等 Chromium 系）的視窗對輔助使用不可見，Orbit 需要透過「自動化」權限來切換它們的視窗。macOS 對每個應用程式只詢問一次——點按按鈕現在集中授權，避免之後切換時被彈窗打斷。";
-"prefs.automation.grantAll" = "立即預先授權";
+"prefs.automation.note" = "「自動化」讓 Orbit 切換 Chrome 等 Chromium 應用程式的視窗。";
+"prefs.automation.grantAll" = "請求權限…";
 "prefs.automation.running" = "正在請求…";
 "prefs.automation.none" = "目前沒有執行中的應用程式需要此權限。";
 "prefs.automation.result" = "已允許 %1$d 個，拒絕 %2$d 個。";
+"prefs.automation.apps" = "應用程式權限 · %d";
+"prefs.automation.detailsHint" = "顯示或隱藏每個應用程式的自動化權限狀態。";
+"prefs.automation.runningOnly" = "這裡只顯示目前正在執行的相容應用程式。";
+"prefs.automation.openSettings" = "開啟自動化設定…";
+"prefs.automation.status.allowed" = "已允許";
+"prefs.automation.status.declined" = "已拒絕";
+"prefs.automation.status.notRequested" = "尚未詢問";
+"prefs.automation.status.unavailable" = "無法使用";
 
 /* Settings — language */
 "prefs.group.language" = "語言";
@@ -32,11 +40,11 @@
 
 /* Settings — ring */
 "prefs.group.ring" = "環形介面";
-"prefs.ring.order" = "卡片順序";
-"prefs.ring.preselect" = "預先選取上一個應用程式";
-"prefs.ring.order.note" = "哪些應用程式能上環，始終由最近使用決定。這裡只決定它們如何排列。";
-"prefs.ring.preselect.note" = "喚出後直接放開即可切回上一個應用程式，和 ⌘Tab 一樣。關閉時，沒選就放開只會關掉環。";
-"prefs.ring.showOrbitCard" = "在環上顯示 Orbit";
+"prefs.ring.order" = "排列卡片";
+"prefs.ring.openingBehavior" = "打開 Orbit 時";
+"prefs.ring.order.note" = "最近的切換目標固定在最上方，其餘最近應用程式依名稱排列。";
+"prefs.ring.openingBehavior.note" = "「從取消開始」不會選取任何目標；「快速切換」會選取 12 點方向的目標，放開即可切換。";
+"prefs.ring.showOrbitCard" = "顯示清理卡片";
 "prefs.ring.showOrbitCard.note" = "顯示 Orbit 清理卡片，用來結束沒有開啟視窗的應用程式。";
 
 /* Settings — summoning */
@@ -94,8 +102,10 @@
 "triggerKey.disabled" = "關閉";
 
 /* Ring placement */
-"ringOrder.recent" = "最近使用";
+"ringOrder.recent" = "最近使用優先";
 "ringOrder.alphabetical" = "依名稱";
+"ringOpeningBehavior.cancel" = "從取消開始";
+"ringOpeningBehavior.quickSwitch" = "快速切換";
 "ringPlacement.screenCenter" = "螢幕中央";
 "ringPlacement.cursor" = "跟隨游標";
 

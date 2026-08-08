@@ -16,11 +16,19 @@
 "prefs.access.granted" = "У Orbit есть доступ к универсальному доступу";
 "prefs.access.missing" = "Orbit нужен доступ к универсальному доступу";
 "prefs.access.grant" = "Разрешить…";
-"prefs.automation.note" = "Некоторые приложения (Chrome и другие на базе Chromium) скрывают свои окна от Универсального доступа, поэтому Orbit переключает их окна через разрешение «Автоматизация». macOS спрашивает один раз для каждого приложения — нажмите кнопку, чтобы ответить на все запросы сейчас, а не во время переключения.";
-"prefs.automation.grantAll" = "Разрешить заранее";
+"prefs.automation.note" = "Автоматизация позволяет Orbit переключать окна Chrome и других Chromium-приложений.";
+"prefs.automation.grantAll" = "Запросить доступ…";
 "prefs.automation.running" = "Запрос…";
 "prefs.automation.none" = "Сейчас ни одному запущенному приложению это не нужно.";
 "prefs.automation.result" = "Разрешено: %1$d, отклонено: %2$d.";
+"prefs.automation.apps" = "Доступ приложений · %d";
+"prefs.automation.detailsHint" = "Показывает или скрывает статус автоматизации для каждого приложения.";
+"prefs.automation.runningOnly" = "Здесь отображаются только совместимые приложения, которые сейчас запущены.";
+"prefs.automation.openSettings" = "Открыть настройки автоматизации…";
+"prefs.automation.status.allowed" = "Разрешено";
+"prefs.automation.status.declined" = "Отклонено";
+"prefs.automation.status.notRequested" = "Ещё не запрошено";
+"prefs.automation.status.unavailable" = "Недоступно";
 
 /* Settings — language */
 "prefs.group.language" = "Язык";
@@ -32,11 +40,11 @@
 
 /* Settings — ring */
 "prefs.group.ring" = "Кольцо";
-"prefs.ring.order" = "Порядок карточек";
-"prefs.ring.preselect" = "Заранее выбирать прошлое приложение";
-"prefs.ring.order.note" = "Какие приложения попадут в кольцо, всегда решает недавнее использование. Здесь выбирается только их расположение.";
-"prefs.ring.preselect.note" = "Вызовите и отпустите, чтобы сразу вернуться назад, как с ⌘Tab. Если выключено, отпускание без выбора просто закрывает кольцо.";
-"prefs.ring.showOrbitCard" = "Показывать Orbit в кольце";
+"prefs.ring.order" = "Расположение карточек";
+"prefs.ring.openingBehavior" = "При открытии Orbit";
+"prefs.ring.order.note" = "Последняя цель переключения остаётся сверху, остальные недавние приложения сортируются по имени.";
+"prefs.ring.openingBehavior.note" = "Отмена запускает без выбора. Быстрое переключение выбирает цель на 12 часах; отпустите клавишу для перехода.";
+"prefs.ring.showOrbitCard" = "Показывать карточку очистки";
 "prefs.ring.showOrbitCard.note" = "Показывать Orbit как карточку для закрытия приложений без открытых окон.";
 
 /* Settings — summoning */
@@ -94,8 +102,10 @@
 "triggerKey.disabled" = "Отключено";
 
 /* Ring placement */
-"ringOrder.recent" = "Недавние";
+"ringOrder.recent" = "Сначала недавние";
 "ringOrder.alphabetical" = "По имени";
+"ringOpeningBehavior.cancel" = "Начать с отмены";
+"ringOpeningBehavior.quickSwitch" = "Быстрое переключение";
 "ringPlacement.screenCenter" = "По центру экрана";
 "ringPlacement.cursor" = "Следовать за курсором";
 

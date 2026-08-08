@@ -136,65 +136,69 @@ private struct GeneralSettingsPane: View {
                 }
                 .pickerStyle(.menu)
 
-                Toggle("prefs.ring.preselect", isOn: $model.preselectRecentApp)
-
                 Toggle("prefs.ring.showOrbitCard", isOn: $model.showOrbitCard)
+                    .help(Text("prefs.ring.showOrbitCard.note"))
             } header: {
                 Text("prefs.group.ring")
             } footer: {
-                VStack(alignment: .leading, spacing: 6) {
+                if model.ringOrder == .alphabetical {
                     Text("prefs.ring.order.note")
-                    Text("prefs.ring.preselect.note")
-                    Text("prefs.ring.showOrbitCard.note")
                 }
-            }
-
-            Section {
-                Toggle("prefs.preview.enabled", isOn: $model.windowPreviewEnabled)
-
-                HStack(spacing: 12) {
-                    Text("prefs.preview.size")
-                    Slider(value: $model.previewScale, in: 0.7 ... 1.5, step: 0.05)
-                    Text(String(
-                        format: NSLocalizedString("prefs.preview.sizeValue", comment: "Percent"),
-                        Int((model.previewScale * 100).rounded())
-                    ))
-                    .frame(width: 58, alignment: .trailing)
-                    .monospacedDigit()
-                }
-                // 预览不显示时，它有多大不是一个还活着的偏好。
-                .disabled(!model.windowPreviewEnabled)
-
-                if model.windowPreviewEnabled && !model.hasScreenRecording {
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("prefs.preview.needsRecording")
-                            Button("prefs.preview.openSystemSettings") {
-                                SystemSettingsLink.screenRecording.open()
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                        }
-                    }
-                    .font(.callout)
-                }
-            } header: {
-                Text("prefs.group.preview")
-            } footer: {
-                Text("prefs.preview.note")
             }
 
             Section {
                 Toggle("prefs.appearance.hideWindowless", isOn: $model.hideWindowlessApps)
+                    .help(Text("prefs.appearance.hideWindowless.note"))
                 Toggle("prefs.startup.launchAtLogin", isOn: $model.launchAtLogin)
-            } footer: {
-                Text("prefs.appearance.hideWindowless.note")
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+/// Window previews are a presentation choice, so they live with Appearance.
+/// The permission explanation only appears when it is actionable instead of
+/// occupying permanent space in General.
+private struct WindowPreviewSettingsSection: View {
+    @ObservedObject var model: SettingsModel
+
+    var body: some View {
+        Section {
+            Toggle("prefs.preview.enabled", isOn: $model.windowPreviewEnabled)
+                .help(Text("prefs.preview.note"))
+
+            HStack(spacing: 12) {
+                Text("prefs.preview.size")
+                Slider(value: $model.previewScale, in: 0.7 ... 1.5, step: 0.05)
+                Text(String(
+                    format: NSLocalizedString("prefs.preview.sizeValue", comment: "Percent"),
+                    Int((model.previewScale * 100).rounded())
+                ))
+                .frame(width: 58, alignment: .trailing)
+                .monospacedDigit()
+            }
+            // 预览不显示时，它有多大不是一个还活着的偏好。
+            .disabled(!model.windowPreviewEnabled)
+
+            if model.windowPreviewEnabled && !model.hasScreenRecording {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("prefs.preview.needsRecording")
+                        Button("prefs.preview.openSystemSettings") {
+                            SystemSettingsLink.screenRecording.open()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                }
+                .font(.callout)
+            }
+        } header: {
+            Text("prefs.group.preview")
+        }
     }
 }
 
@@ -231,6 +235,7 @@ private struct AccessibilityStatusRow: View {
 /// the switch with a dialog. Asking here, all at once, is the whole feature.
 private struct AutomationPreauthRow: View {
     @ObservedObject var model: SettingsModel
+    @State private var showsAppDetails = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -243,6 +248,9 @@ private struct AutomationPreauthRow: View {
 
                 HStack(spacing: 10) {
                     Button("prefs.automation.grantAll") {
+                        // The result should never be hidden immediately after
+                        // the user has answered a sequence of system prompts.
+                        showsAppDetails = true
                         model.preauthorizeAutomation()
                     }
                     .buttonStyle(.bordered)
@@ -258,17 +266,112 @@ private struct AutomationPreauthRow: View {
                     case .nothingToDo:
                         Text("prefs.automation.none")
                             .foregroundStyle(.secondary)
-                    case let .finished(granted, denied):
-                        Text(String(
-                            format: NSLocalizedString("prefs.automation.result", comment: "granted/denied counts"),
-                            granted, denied
-                        ))
-                        .foregroundStyle(.secondary)
+                    case .finished:
+                        EmptyView()
                     }
+                }
+
+                if model.isInspectingAutomation && model.automationApps.isEmpty {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel(Text("prefs.automation.running"))
+                } else if !model.automationApps.isEmpty {
+                    DisclosureGroup(isExpanded: $showsAppDetails) {
+                        VStack(spacing: 0) {
+                            ForEach(Array(model.automationApps.enumerated()), id: \.element.id) { index, app in
+                                AutomationAppStatusRow(app: app)
+
+                                if index < model.automationApps.count - 1 {
+                                    Divider()
+                                        .padding(.leading, 36)
+                                }
+                            }
+                        }
+                        .padding(.top, 4)
+
+                        Text("prefs.automation.runningOnly")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 4)
+
+                        if model.automationDeniedCount > 0 {
+                            Button("prefs.automation.openSettings") {
+                                SystemSettingsLink.automation.open()
+                            }
+                            .buttonStyle(.link)
+                            .padding(.top, 6)
+                        }
+                    } label: {
+                        Text(String(
+                            format: NSLocalizedString("prefs.automation.apps", comment: "Automation app count"),
+                            model.automationApps.count
+                        ))
+                    }
+                    .accessibilityHint(Text("prefs.automation.detailsHint"))
                 }
             }
         }
         .font(.callout)
+    }
+}
+
+private struct AutomationAppStatusRow: View {
+    let app: ScriptedWindowFocus.AutomationAuthorization
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(nsImage: appIcon)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 28, height: 28)
+                .accessibilityHidden(true)
+
+            Text(app.name)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+
+            Spacer(minLength: 12)
+
+            Label(statusTitle, systemImage: statusSymbol)
+                .font(.caption)
+                .foregroundStyle(statusColor)
+        }
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var appIcon: NSImage {
+        if let bundleURL = app.bundleURL {
+            return NSWorkspace.shared.icon(forFile: bundleURL.path)
+        }
+        return NSImage(systemSymbolName: "app.dashed", accessibilityDescription: app.name)
+            ?? NSImage(size: NSSize(width: 28, height: 28))
+    }
+
+    private var statusTitle: LocalizedStringKey {
+        switch app.consent {
+        case .granted: "prefs.automation.status.allowed"
+        case .denied: "prefs.automation.status.declined"
+        case .requiresConsent: "prefs.automation.status.notRequested"
+        case .notRunning, .undetermined: "prefs.automation.status.unavailable"
+        }
+    }
+
+    private var statusSymbol: String {
+        switch app.consent {
+        case .granted: "checkmark.circle.fill"
+        case .denied: "xmark.circle.fill"
+        case .requiresConsent: "questionmark.circle"
+        case .notRunning, .undetermined: "minus.circle"
+        }
+    }
+
+    private var statusColor: Color {
+        switch app.consent {
+        case .granted: .green
+        case .denied: .red
+        case .requiresConsent, .notRunning, .undetermined: .secondary
+        }
     }
 }
 
@@ -309,6 +412,14 @@ private struct ShortcutSettingsPane: View {
 
                 Toggle("prefs.trigger.letterKeys", isOn: $model.letterShortcutsEnabled)
                 Toggle("prefs.trigger.numberKeys", isOn: $model.numericShortcutsEnabled)
+
+                Picker("prefs.ring.openingBehavior", selection: $model.ringOpeningBehavior) {
+                    ForEach(RingOpeningBehavior.allCases) { behavior in
+                        Text(behavior.localizedName).tag(behavior)
+                    }
+                }
+                .pickerStyle(.menu)
+                .help(Text("prefs.ring.openingBehavior.note"))
             } header: {
                 Text("prefs.group.trigger")
             } footer: {
@@ -412,6 +523,8 @@ private struct AppearanceSettingsPane: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+
+            WindowPreviewSettingsSection(model: model)
 
             Section {
                 AppearancePreview(

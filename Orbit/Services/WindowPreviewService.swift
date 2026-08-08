@@ -263,15 +263,21 @@ final class WindowPreviewService {
     /// - Parameter scale: 目标屏的像素密度，由调用方给出 —— 这个服务不该假设
     ///   圆环出现在主屏上。
     /// - Parameter hiding: 要略过的窗口，通常是用户此刻正看着的那一扇。
+    /// - Parameter preferredWindowIDs: 该应用的窗口 MRU；命中的窗口先于面积排序，
+    ///   让转盘默认目标和快速松手目标保持一致。
     func previews(
         forProcessIdentifier pid: pid_t,
         scale: CGFloat,
-        hiding hidden: CGWindowID? = nil
+        hiding hidden: CGWindowID? = nil,
+        preferredWindowIDs: [CGWindowID] = []
     ) async -> [WindowPreview] {
         guard Self.hasScreenRecordingPermission() else { return [] }
 
         let windows: [SCWindow]
         do {
+            let preferredRank = Dictionary(
+                uniqueKeysWithValues: preferredWindowIDs.enumerated().map { ($0.element, $0.offset) }
+            )
             let content = try await SCShareableContent.excludingDesktopWindows(
                 true,
                 onScreenWindowsOnly: false
@@ -286,6 +292,16 @@ final class WindowPreviewService {
                         && $0.frame.height >= OrbitConfig.minimumRealWindowSize.height
                 }
                 .sorted { lhs, rhs in
+                    switch (preferredRank[lhs.windowID], preferredRank[rhs.windowID]) {
+                    case let (left?, right?) where left != right:
+                        return left < right
+                    case (_?, nil):
+                        return true
+                    case (nil, _?):
+                        return false
+                    default:
+                        break
+                    }
                     // Whatever the user is actually looking at goes first.
                     if lhs.isOnScreen != rhs.isOnScreen { return lhs.isOnScreen }
                     return lhs.frame.width * lhs.frame.height > rhs.frame.width * rhs.frame.height

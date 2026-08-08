@@ -16,11 +16,19 @@
 "prefs.access.granted" = "Orbit har tilgang til Tilgjengelighet";
 "prefs.access.missing" = "Orbit trenger tilgang til Tilgjengelighet";
 "prefs.access.grant" = "Tillat …";
-"prefs.automation.note" = "Noen apper (Chrome og andre Chromium-baserte) skjuler vinduene sine for Tilgjengelighet, så Orbit bytter vinduene deres via Automatisering. macOS spør én gang per app — trykk på knappen for å svare på alle forespørslene nå i stedet for midt i et bytte.";
-"prefs.automation.grantAll" = "Forhåndsgodkjenn nå";
+"prefs.automation.note" = "Automatisering lar Orbit bytte vinduer i Chrome og andre Chromium-apper.";
+"prefs.automation.grantAll" = "Be om tilgang…";
 "prefs.automation.running" = "Ber om tillatelse …";
 "prefs.automation.none" = "Ingen kjørende apper trenger det akkurat nå.";
 "prefs.automation.result" = "%1$d tillatt, %2$d avslått.";
+"prefs.automation.apps" = "Apptilgang · %d";
+"prefs.automation.detailsHint" = "Viser eller skjuler automatiseringsstatusen for hver app.";
+"prefs.automation.runningOnly" = "Bare kompatible apper som kjører nå, vises her.";
+"prefs.automation.openSettings" = "Åpne Automatisering-innstillinger…";
+"prefs.automation.status.allowed" = "Tillatt";
+"prefs.automation.status.declined" = "Avslått";
+"prefs.automation.status.notRequested" = "Ikke forespurt";
+"prefs.automation.status.unavailable" = "Utilgjengelig";
 
 /* Settings — language */
 "prefs.group.language" = "Språk";
@@ -32,11 +40,11 @@
 
 /* Settings — ring */
 "prefs.group.ring" = "Ring";
-"prefs.ring.order" = "Kortrekkefølge";
-"prefs.ring.preselect" = "Forhåndsvelg forrige app";
-"prefs.ring.order.note" = "Hvilke apper som kommer med i ringen, avgjøres alltid av nylig bruk. Her velges bare hvordan de plasseres.";
-"prefs.ring.preselect.note" = "Hent frem og slipp for å bytte rett tilbake, slik ⌘Tab gjør. Av: å slippe uten å velge lukker bare ringen.";
-"prefs.ring.showOrbitCard" = "Vis Orbit i ringen";
+"prefs.ring.order" = "Ordne kort";
+"prefs.ring.openingBehavior" = "Når Orbit åpnes";
+"prefs.ring.order.note" = "Det nyeste byttemålet blir øverst; resten av de nylige appene sorteres etter navn.";
+"prefs.ring.openingBehavior.note" = "Avbryt starter uten valg. Hurtigbytte velger målet ved klokken 12; slipp for å bytte straks.";
+"prefs.ring.showOrbitCard" = "Vis ryddekort";
 "prefs.ring.showOrbitCard.note" = "Vis Orbit som et ryddekort for apper uten åpne vinduer.";
 
 /* Settings — summoning */
@@ -94,8 +102,10 @@
 "triggerKey.disabled" = "Av";
 
 /* Ring placement */
-"ringOrder.recent" = "Nylig brukt";
+"ringOrder.recent" = "Nyeste først";
 "ringOrder.alphabetical" = "Etter navn";
+"ringOpeningBehavior.cancel" = "Start ved Avbryt";
+"ringOpeningBehavior.quickSwitch" = "Hurtigbytte";
 "ringPlacement.screenCenter" = "Midt på skjermen";
 "ringPlacement.cursor" = "Følg pekeren";
 

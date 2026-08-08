@@ -56,12 +56,12 @@ enum RingPlacement: String, CaseIterable, Identifiable {
 
 /// 卡片在环上按什么顺序排。
 ///
-/// 两种都有道理，而且互相排斥：`.recent` 让"刚才那个应用"永远是第一张卡，代价是
-/// 每张卡的角度会随使用变化；`.alphabetical` 让 Slack 永远停在同一个方向，可以
-/// 练出肌肉记忆，代价是十二张卡的名额由首字母决定。
+/// 两种模式都把"最近的切换目标"固定为第一张卡和 12 点钟锚点。当前应用有其他
+/// 窗口时，这个目标是最近的另一扇窗口；否则才是刚才那个应用。`.recent` 让其余
+/// 卡片继续按使用历史排列；`.alphabetical` 只把锚点之后的卡片按名称排列。
 ///
-/// 只有 `.recent` 时截断才是按最近使用截的 —— 但即使选了 `.alphabetical`，进环的
-/// 那十二个也仍然按最近使用挑选，只是挑完再按名字摆。名额和摆放是两件事。
+/// 两种模式都先按最近使用挑选并截取最多十二个应用；`.alphabetical` 只在挑选完成
+/// 后保留第一张，再按名字摆其余卡片。名额和摆放是两件事。
 enum RingOrder: String, CaseIterable, Identifiable {
     case recent
     case alphabetical
@@ -70,6 +70,20 @@ enum RingOrder: String, CaseIterable, Identifiable {
 
     var localizedName: String {
         NSLocalizedString("ringOrder.\(rawValue)", comment: "Ring order name")
+    }
+}
+
+/// What the ring selects at the moment it opens. Cancel is intentionally the
+/// default; quick switch is opt-in because releasing the summon shortcut then
+/// performs an action immediately.
+enum RingOpeningBehavior: String, CaseIterable, Identifiable {
+    case cancel
+    case quickSwitch
+
+    var id: String { rawValue }
+
+    var localizedName: String {
+        NSLocalizedString("ringOpeningBehavior.\(rawValue)", comment: "Ring opening behavior")
     }
 }
 
@@ -216,14 +230,20 @@ enum OrbitConfig {
         }
     }
 
-    /// 唤出时就选中最近用过的那个应用，于是「按住、松开」等价于 ⌘Tab。
-    ///
-    /// 默认关闭，而且必须默认关闭：开着的时候，任何一次误召唤只要松手就会把应用
-    /// 切走。Orbit 原本的约定是"唤出即取消态"，松手什么也不会发生 —— 那是一个
-    /// 安全的默认值，不该在一次更新里被悄悄换掉。想要 ⌘Tab 的人打开它就是了。
-    static var preselectRecentApp: Bool {
-        get { defaults.bool(forKey: "preselectRecentApp") }
-        set { defaults.set(newValue, forKey: "preselectRecentApp") }
+    /// Uses a new enum-backed key instead of migrating the old Boolean. That
+    /// deliberately gives existing installs the new safe Cancel default once;
+    /// users can then opt into the broader window-aware quick-switch behavior.
+    static var ringOpeningBehavior: RingOpeningBehavior {
+        get {
+            guard let rawValue = defaults.string(forKey: "ringOpeningBehavior"),
+                  let behavior = RingOpeningBehavior(rawValue: rawValue) else {
+                return .cancel
+            }
+            return behavior
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: "ringOpeningBehavior")
+        }
     }
 
     /// 预览面板的缩放倍率。1.0 就是原本的尺寸。

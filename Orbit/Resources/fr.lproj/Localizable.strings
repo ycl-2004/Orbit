@@ -16,11 +16,19 @@
 "prefs.access.granted" = "Orbit dispose de l'accès à l'accessibilité";
 "prefs.access.missing" = "Orbit a besoin de l'accès à l'accessibilité";
 "prefs.access.grant" = "Autoriser…";
-"prefs.automation.note" = "Certaines apps (Chrome et autres apps basées sur Chromium) masquent leurs fenêtres à l'accessibilité ; Orbit change alors de fenêtre via l'autorisation Automatisation. macOS ne demande qu'une fois par app — appuyez sur le bouton pour répondre à toutes ces demandes maintenant plutôt qu'en plein changement.";
-"prefs.automation.grantAll" = "Pré-autoriser maintenant";
+"prefs.automation.note" = "Automatisation permet à Orbit de changer de fenêtre dans Chrome et les apps Chromium.";
+"prefs.automation.grantAll" = "Demander l’accès…";
 "prefs.automation.running" = "Demande en cours…";
 "prefs.automation.none" = "Aucune app en cours d'exécution n'en a besoin pour le moment.";
 "prefs.automation.result" = "%1$d autorisée(s), %2$d refusée(s).";
+"prefs.automation.apps" = "Accès aux apps · %d";
+"prefs.automation.detailsHint" = "Affiche ou masque l’état Automatisation de chaque app.";
+"prefs.automation.runningOnly" = "Seules les apps compatibles en cours d’exécution apparaissent ici.";
+"prefs.automation.openSettings" = "Ouvrir les réglages Automatisation…";
+"prefs.automation.status.allowed" = "Autorisée";
+"prefs.automation.status.declined" = "Refusée";
+"prefs.automation.status.notRequested" = "Non demandé";
+"prefs.automation.status.unavailable" = "Indisponible";
 
 /* Settings — language */
 "prefs.group.language" = "Langue";
@@ -32,11 +40,11 @@
 
 /* Settings — ring */
 "prefs.group.ring" = "Anneau";
-"prefs.ring.order" = "Ordre des cartes";
-"prefs.ring.preselect" = "Présélectionner la dernière app";
-"prefs.ring.order.note" = "Les apps retenues pour l’anneau sont toujours choisies selon l’usage récent. Ceci ne règle que leur disposition.";
-"prefs.ring.preselect.note" = "Invoquez puis relâchez pour revenir directement, comme ⌘Tab. Désactivé, relâcher sans choisir ferme simplement l’anneau.";
-"prefs.ring.showOrbitCard" = "Afficher Orbit dans l’anneau";
+"prefs.ring.order" = "Disposer les cartes";
+"prefs.ring.openingBehavior" = "À l’ouverture d’Orbit";
+"prefs.ring.order.note" = "La cible de basculement la plus récente reste en haut ; les autres apps récentes sont classées par nom.";
+"prefs.ring.openingBehavior.note" = "Annuler démarre sans sélection. Basculement rapide sélectionne la cible à 12 h ; relâchez pour basculer.";
+"prefs.ring.showOrbitCard" = "Afficher la carte de nettoyage";
 "prefs.ring.showOrbitCard.note" = "Afficher Orbit comme carte pour quitter les apps sans fenêtre ouverte.";
 
 /* Settings — summoning */
@@ -94,8 +102,10 @@
 "triggerKey.disabled" = "Désactivé";
 
 /* Ring placement */
-"ringOrder.recent" = "Utilisées récemment";
+"ringOrder.recent" = "Plus récentes d’abord";
 "ringOrder.alphabetical" = "Par nom";
+"ringOpeningBehavior.cancel" = "Commencer sur Annuler";
+"ringOpeningBehavior.quickSwitch" = "Basculement rapide";
 "ringPlacement.screenCenter" = "Centre de l’écran";
 "ringPlacement.cursor" = "Suivre le curseur";
 

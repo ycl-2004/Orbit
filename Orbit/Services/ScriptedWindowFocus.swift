@@ -243,9 +243,12 @@ enum ScriptedWindowFocus {
 
     /// What one app answered. `notRunning` is not a refusal: macOS can only ask
     /// while the target runs, so that app simply gets its dialog on first use.
-    enum AutomationConsent: Equatable {
+    enum AutomationConsent: Equatable, Sendable {
         case granted
         case denied
+        /// Orbit has not asked yet. A non-prompting status check reports this
+        /// separately from a real refusal so Settings can explain the next step.
+        case requiresConsent
         case notRunning
         case undetermined
 
@@ -253,10 +256,29 @@ enum ScriptedWindowFocus {
             switch status {
             case noErr: self = .granted
             case OSStatus(errAEEventNotPermitted): self = .denied
+            case OSStatus(errAEEventWouldRequireUserConsent): self = .requiresConsent
             case OSStatus(procNotFound): self = .notRunning
             default: self = .undetermined
             }
         }
+    }
+
+    /// One app and its current Automation decision. The bundle URL lets the
+    /// settings list use the real app icon without moving `NSImage` across the
+    /// background permission-check queue.
+    struct AutomationAuthorization: Identifiable, Equatable, Sendable {
+        let name: String
+        let bundleIdentifier: String
+        let bundleURL: URL?
+        let consent: AutomationConsent
+
+        var id: String { bundleIdentifier }
+    }
+
+    private struct AutomationCandidate: Sendable {
+        let name: String
+        let bundleIdentifier: String
+        let bundleURL: URL?
     }
 
     /// Whether an app can only be window-switched over Apple Events: it owns
@@ -277,15 +299,32 @@ enum ScriptedWindowFocus {
     /// - Parameter completion: Called on the main queue with each candidate
     ///   app's name and answer, in the order they were asked.
     static func preauthorizeRunningApps(
-        completion: @escaping ([(name: String, consent: AutomationConsent)]) -> Void
+        completion: @escaping ([AutomationAuthorization]) -> Void
+    ) {
+        automationAuthorizationsForRunningApps(askUserIfNeeded: true, completion: completion)
+    }
+
+    /// Reads the status of every running app that needs the Apple Events
+    /// fallback without showing a consent dialog. Apple documents
+    /// `errAEEventWouldRequireUserConsent` as the answer for an undecided app
+    /// when `askUserIfNeeded` is false.
+    static func inspectAutomationForRunningApps(
+        completion: @escaping ([AutomationAuthorization]) -> Void
+    ) {
+        automationAuthorizationsForRunningApps(askUserIfNeeded: false, completion: completion)
+    }
+
+    private static func automationAuthorizationsForRunningApps(
+        askUserIfNeeded: Bool,
+        completion: @escaping ([AutomationAuthorization]) -> Void
     ) {
         // Candidates are decided up here — NSWorkspace and the window table
         // belong to the main thread's world, and the slow part is not this.
         let owners = WindowServerInspector.windowOwners() ?? []
-        let candidates: [(String, String)] = NSWorkspace.shared.runningApplications
+        let candidates: [AutomationCandidate] = NSWorkspace.shared.runningApplications
             .filter { $0.activationPolicy == .regular }
             .filter { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }
-            .compactMap { app in
+            .compactMap { app -> AutomationCandidate? in
                 guard let bundleID = app.bundleIdentifier else { return nil }
                 let axApp = AXUIElementCreateApplication(app.processIdentifier)
                 AXUIElementSetMessagingTimeout(axApp, 0.4)
@@ -296,8 +335,13 @@ enum ScriptedWindowFocus {
                     hasRealWindows: owners.contains(app.processIdentifier),
                     axWindowCount: axCount
                 ) else { return nil }
-                return (app.localizedName ?? bundleID, bundleID)
+                return AutomationCandidate(
+                    name: app.localizedName ?? bundleID,
+                    bundleIdentifier: bundleID,
+                    bundleURL: app.bundleURL
+                )
             }
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
 
         guard !candidates.isEmpty else {
             DispatchQueue.main.async { completion([]) }
@@ -305,8 +349,16 @@ enum ScriptedWindowFocus {
         }
 
         DispatchQueue.global(qos: .userInitiated).async {
-            let results = candidates.map { name, bundleID in
-                (name: name, consent: requestAutomationConsent(bundleIdentifier: bundleID))
+            let results = candidates.map { candidate in
+                AutomationAuthorization(
+                    name: candidate.name,
+                    bundleIdentifier: candidate.bundleIdentifier,
+                    bundleURL: candidate.bundleURL,
+                    consent: requestAutomationConsent(
+                        bundleIdentifier: candidate.bundleIdentifier,
+                        askUserIfNeeded: askUserIfNeeded
+                    )
+                )
             }
             DispatchQueue.main.async { completion(results) }
         }
@@ -314,7 +366,10 @@ enum ScriptedWindowFocus {
 
     /// One blocking permission request; shows the system dialog when the pair
     /// has never been answered.
-    private static func requestAutomationConsent(bundleIdentifier: String) -> AutomationConsent {
+    private static func requestAutomationConsent(
+        bundleIdentifier: String,
+        askUserIfNeeded: Bool
+    ) -> AutomationConsent {
         guard let data = bundleIdentifier.data(using: .utf8) else { return .undetermined }
 
         var target = AEAddressDesc()
@@ -325,7 +380,12 @@ enum ScriptedWindowFocus {
         defer { AEDisposeDesc(&target) }
 
         return AutomationConsent(
-            status: AEDeterminePermissionToAutomateTarget(&target, typeWildCard, typeWildCard, true)
+            status: AEDeterminePermissionToAutomateTarget(
+                &target,
+                typeWildCard,
+                typeWildCard,
+                askUserIfNeeded
+            )
         )
     }
 }

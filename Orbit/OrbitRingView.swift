@@ -81,6 +81,13 @@ final class OrbitRingViewModel: ObservableObject {
 
     /// 唤出那一刻用户正看着的那扇窗，预览面板会把它藏起来。
     let currentWindow: CurrentWindow?
+    /// Recent windows of the frontmost app, newest first. The current window is
+    /// included in the history but hidden from the carousel, leaving the last
+    /// sibling as its first target.
+    let recentCurrentAppWindowIDs: [CGWindowID]
+    /// Synchronous target used when the trigger is released before thumbnail
+    /// capture finishes (or when previews are disabled).
+    let preferredCurrentAppWindow: WindowTarget?
 
     /// - Parameter preselecting: 唤出时就选中的应用，`nil` 表示以取消态开场。
     ///   由调用方决定，因为"最近用过的是谁"是应用列表那边的知识，而不是环的。
@@ -89,9 +96,13 @@ final class OrbitRingViewModel: ObservableObject {
         showsPreview: Bool? = nil,
         screen: NSScreen? = nil,
         preselecting: String? = nil,
-        currentWindow: CurrentWindow? = nil
+        currentWindow: CurrentWindow? = nil,
+        recentCurrentAppWindowIDs: [CGWindowID] = [],
+        preferredCurrentAppWindow: WindowTarget? = nil
     ) {
         self.currentWindow = currentWindow
+        self.recentCurrentAppWindowIDs = recentCurrentAppWindowIDs
+        self.preferredCurrentAppWindow = preferredCurrentAppWindow
         let target = screen ?? NSScreen.main
         self.visibleFrame = target?.visibleFrame
             ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
@@ -151,26 +162,18 @@ final class OrbitRingViewModel: ObservableObject {
         OrbitConfig.ringCanvasSize(cardCount: apps.count)
     }
 
-    /// The fan opens symmetrically around one direction, leaving its gap on the
-    /// opposite side. Without a preview the gap faces left; with one it faces
-    /// right so the cards curl around the preview panel.
-    private var fanAxis: Double {
-        showsPreview ? .pi : 0
-    }
+    /// The highest-value recent destination is the ring's spatial anchor: index
+    /// zero always sits at 12 o'clock, upright. It is another window of the
+    /// current app when available, otherwise the previous application. Stable
+    /// placement matters more than centring a short fan.
+    private let fanStartAngle = -Double.pi / 2
 
-    /// Few apps make a small fan; many apps keep the same step until the fan
-    /// hits its 270° limit, then tighten it while the radius grows.
+    /// MRU order walks from 12 o'clock down the left side first. The direction
+    /// stays identical with and without Window Preview, so repeated keyboard
+    /// steps build one spatial memory instead of mirroring the sequence.
     func angle(for index: Int) -> Double {
-        guard apps.count > 1 else { return fanAxis }
-
         let step = OrbitConfig.ringStep(cardCount: apps.count)
-        let span = step * Double(apps.count - 1)
-        let offset = step * Double(index)
-        // Cards always read top-to-bottom. Mirroring the axis would also
-        // mirror that order, so the flipped fan is walked backwards.
-        return showsPreview
-            ? fanAxis + span / 2 - offset
-            : fanAxis - span / 2 + offset
+        return fanStartAngle - step * Double(index)
     }
 
     /// 开着预览时，圆环和预览各占窗口的一半，并各自停在那一半的正中间。
@@ -269,15 +272,15 @@ final class OrbitRingViewModel: ObservableObject {
 
     /// 轨道要盖住的那段角度：正好是首尾两张卡片之间，两端各多留一点。
     ///
-    /// The fan is symmetric about `fanAxis` whichever way it is walked, so its
-    /// extent is the axis plus and minus half the span — no need to ask the
-    /// cards for their angles one by one.
+    /// The track follows the fixed top anchor through the final card. Angles
+    /// decrease as MRU order advances, while the backdrop shape expects an
+    /// ascending range, so the last card supplies the lower bound.
     var backdropArc: ClosedRange<Double> {
         let span = apps.count > 1
             ? OrbitConfig.ringStep(cardCount: apps.count) * Double(apps.count - 1)
             : 0
         let padding = OrbitConfig.ringTrackEndPadding(cardCount: apps.count)
-        return (fanAxis - span / 2 - padding)...(fanAxis + span / 2 + padding)
+        return (fanStartAngle - span - padding)...(fanStartAngle + padding)
     }
 
     /// Read once per showing, like `showsPreview`: the disc must not appear or
@@ -346,7 +349,10 @@ final class OrbitRingViewModel: ObservableObject {
             .previews(
                 forProcessIdentifier: app.processIdentifier,
                 scale: backingScaleFactor,
-                hiding: currentWindow?.hiddenWindow(inAppWith: app.processIdentifier)
+                hiding: currentWindow?.hiddenWindow(inAppWith: app.processIdentifier),
+                preferredWindowIDs: app.processIdentifier == currentWindow?.processIdentifier
+                    ? recentCurrentAppWindowIDs
+                    : []
             )
         guard !Task.isCancelled else { return }
 
@@ -373,8 +379,24 @@ final class OrbitRingViewModel: ObservableObject {
     /// The window the arrow keys landed on, if the app had any to choose
     /// between.
     var selectedWindowTarget: WindowTarget? {
-        guard previews.indices.contains(selectedWindowIndex) else { return nil }
-        return previews[selectedWindowIndex].target
+        if previews.indices.contains(selectedWindowIndex) {
+            return previews[selectedWindowIndex].target
+        }
+        guard selectedApp?.processIdentifier == currentWindow?.processIdentifier else {
+            return nil
+        }
+        return preferredCurrentAppWindow
+    }
+
+    /// Dismissal destroys the model, but clearing transient selection first
+    /// makes the invariant explicit and prevents a retained callback or view
+    /// update from observing the old Confirm state after the panel is gone.
+    func resetForDismissal() {
+        selectedID = nil
+        selectedWindowIndex = 0
+        previews = []
+        previewState = .idle
+        resumeIndex = nil
     }
 
     func moveSelection(step: Int) {
@@ -389,7 +411,16 @@ final class OrbitRingViewModel: ObservableObject {
             return
         }
 
-        let currentIndex = selectedID.flatMap { id in apps.firstIndex(where: { $0.id == id }) } ?? (step > 0 ? -1 : 0)
+        // A neutral ring has no meaningful “backward” edge. Apple, Windows,
+        // VS Code and JetBrains switchers enter through their first MRU target;
+        // make both arrow directions share that predictable first step.
+        if selectedID == nil {
+            hoverAnchor = nil
+            selectedID = apps[0].id
+            return
+        }
+
+        let currentIndex = selectedID.flatMap { id in apps.firstIndex(where: { $0.id == id }) } ?? 0
         let nextIndex = (currentIndex + step + apps.count) % apps.count
         selectedID = apps[nextIndex].id
     }

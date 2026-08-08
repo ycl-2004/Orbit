@@ -71,7 +71,7 @@ The current Xcode project reports version `1.5.0 (build 5)`. See the
 
 ## Why Orbit
 
-- **Spatial, not sequential.** Apps sit at fixed angles around the cursor, so you build muscle memory for direction instead of counting Command-Tab presses.
+- **A stable first target.** If the current app has another actionable window, that recent window destination anchors the ring at 12 o'clock; otherwise the previous app does. The first keyboard target never moves when card count or preview settings change.
 - **Switch to a window, not just an app.** With previews on, arrow left/right picks the exact window of the selected app before you release.
 - **Recent when it matters, stable when you want it.** Orbit chooses the visible app set from recent activation history, then lets you arrange those cards by Recently used or By name.
 - **The center is a drop target.** Drag an app card in to quit it; the optional Orbit card safely cleans up ordinary apps with no open windows, while Orbit and Finder stay protected. Drag a file in to AirDrop it, or hold to send it to the Trash.
@@ -84,7 +84,7 @@ The current Xcode project reports version `1.5.0 (build 5)`. See the
 - Radial app switcher summoned by holding a modifier key (default: Option ⌥).
 - Arrow-key navigation enabled by default; optional letter and number shortcuts can be turned on in Settings.
 - Optional window previews beside the ring. Enable **Show window previews** in Settings and grant Screen Recording permission; macOS requires an Orbit restart after granting it.
-- **Preselect the last app** is optional and off by default. When enabled, summon-and-release behaves like Command-Tab; when disabled, releasing without a selection remains a safe no-op.
+- **When Orbit opens** is selectable in Settings. **Start at Cancel** is the safe default; **Quick switch** preselects the 12-o'clock target so releasing immediately switches to the most recent sibling window or, when none exists, the previous app.
 - A pending summon is canceled if another key, mouse button, or scroll gesture arrives before the hold completes, preventing accidental ring openings.
 
 **Center target actions**
@@ -95,7 +95,7 @@ The current Xcode project reports version `1.5.0 (build 5)`. See the
 
 **Configuration**
 
-- Interface language, recent/alphabetical card order, optional recent-app preselection, preview size (70%–150%), trigger and clear-selection keys, optional letter/number shortcuts, long-press threshold, ring placement, card size and material, and launch-at-login.
+- Interface language, recent/alphabetical card order, Cancel/Quick switch opening behavior, preview size (70%–150%), trigger and clear-selection keys, optional letter/number shortcuts, long-press threshold, ring placement, card size and material, and launch-at-login.
 - The language picker includes English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, Russian, Danish, Norwegian Bokmål, and Esperanto. Orbit asks to restart after a language change so the whole interface reloads consistently.
 - Preview capture uses the display where Orbit was summoned, which keeps mixed-resolution and multi-display setups sharp and predictable.
 
@@ -104,7 +104,7 @@ The current Xcode project reports version `1.5.0 (build 5)`. See the
 - Hold the trigger modifier to open Orbit near the cursor.
 - Hover or click a card to select it; release the trigger or press Enter to confirm.
 - Press Escape to cancel. Clicking the center does whatever it currently says it does: Cancel when nothing is selected, Confirm when an app is selected.
-- Use the arrow keys (and Tab) to navigate apps by default. Settings can enable number keys `1`–`9` or first-letter matching as additional shortcuts.
+- Use the arrow keys (and Tab) to navigate by default. From a neutral ring, either arrow enters the 12-o'clock target: the current app's most recent other window when available, otherwise the previous app. Continued presses follow MRU order. Settings can enable number keys `1`–`9` or first-letter matching as additional shortcuts.
 - When previews are enabled and the selected app has multiple windows, use left/right to choose a window; release the trigger or press Enter to activate it.
 - Press the clear-selection key (Shift by default) to remove the highlight; releasing the trigger then closes Orbit without switching.
 - Drag an app card into the center and release to quit it.

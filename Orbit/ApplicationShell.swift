@@ -192,6 +192,7 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
 /// 「系统设置 › 隐私与安全性」里 Orbit 需要引导用户去的几个面板。
 enum SystemSettingsLink: String {
     case accessibility = "Privacy_Accessibility"
+    case automation = "Privacy_Automation"
     case screenRecording = "Privacy_ScreenCapture"
 
     func open() {

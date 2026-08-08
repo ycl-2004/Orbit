@@ -69,8 +69,8 @@ final class OrbitWindowController: NSObject {
         // window list. This prevents Orbit from excluding the wrong app. Whether
         // it actually gets excluded is decided in RunningAppCatalog, which already
         // has the window table in hand.
-        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
-        let apps = RunningAppCatalog.shared.collect(frontmostProcess: frontmostPID)
+        let frontmostApp = NSWorkspace.shared.frontmostApplication
+        let frontmostPID = frontmostApp?.processIdentifier
 
         // 用户此刻正看着的那扇窗，同样要趁 Orbit 的面板还没进窗口表时问 ——
         // 面板一上屏，最靠前的窗口就成了 Orbit 自己。
@@ -80,24 +80,53 @@ final class OrbitWindowController: NSObject {
             }
         }
 
+        // App activation history cannot distinguish two windows owned by the
+        // same process. Record the real front window on every summon so a later
+        // summon can make the previously viewed sibling the first window target.
+        let currentAppID = frontmostApp?.bundleIdentifier
+            ?? frontmostApp?.bundleURL?.path
+            ?? frontmostPID.map { String($0) }
+        if let currentWindow, let currentAppID {
+            AppActivationHistory.shared.record(windowID: currentWindow.id, for: currentAppID)
+        }
+        let recentCurrentAppWindowIDs = currentAppID.map {
+            AppActivationHistory.shared.recentWindowIDs(for: $0)
+        } ?? []
+        let preferredCurrentAppWindow: WindowTarget? = if let currentWindow {
+            WindowServerInspector.mostRecentOtherWindow(
+                ownedBy: currentWindow.processIdentifier,
+                excluding: currentWindow.id,
+                preferredIDs: recentCurrentAppWindowIDs
+            )
+        } else {
+            nil
+        }
+
+        // A current-app card is useful only when release can name a different
+        // window immediately. This prevents a 12-o'clock target that merely
+        // reactivates the window already on screen.
+        let apps = RunningAppCatalog.shared.collect(
+            frontmostProcess: frontmostPID,
+            currentAppWindowTargetAvailable: preferredCurrentAppWindow != nil
+        )
+
         // 一次唤出只挑一次屏幕，尺寸和摆放共用它。以前尺寸问 `NSScreen.main`、
         // 摆放问光标所在屏，双屏时两者根本不是同一块。
         let targetScreen = screen(containing: location)
 
-        // 开着「唤出即选中最近应用」时，按住再松开就等价于 ⌘Tab。
-        let preselecting = OrbitConfig.preselectRecentApp
-            ? RunningAppCatalog.mostRecentlyUsed(
-                in: apps,
-                excluding: frontmostPID,
-                rank: AppActivationHistory.shared.rank(of:)
-            )?.id
+        // Cancel is the safe default. Quick switch is an explicit setting and
+        // always selects the same 12-o'clock target that the first arrow enters.
+        let preselecting = OrbitConfig.ringOpeningBehavior == .quickSwitch
+            ? apps.first(where: { !$0.isOrbit })?.id
             : nil
 
         let ringModel = OrbitRingViewModel(
             apps: apps,
             screen: targetScreen,
             preselecting: preselecting,
-            currentWindow: currentWindow
+            currentWindow: currentWindow,
+            recentCurrentAppWindowIDs: recentCurrentAppWindowIDs,
+            preferredCurrentAppWindow: preferredCurrentAppWindow
         )
 
         ringModel.onCancel = { [weak self] in
@@ -127,6 +156,7 @@ final class OrbitWindowController: NSObject {
     }
 
     private func tearDownPanel() {
+        model?.resetForDismissal()
         panel?.orderOut(nil)
         panel = nil
         model = nil

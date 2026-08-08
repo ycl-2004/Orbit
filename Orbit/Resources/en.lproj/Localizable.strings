@@ -16,11 +16,19 @@
 "prefs.access.granted" = "Orbit has Accessibility access";
 "prefs.access.missing" = "Orbit needs Accessibility access";
 "prefs.access.grant" = "Grant…";
-"prefs.automation.note" = "Some apps (Chrome and other Chromium-based apps) hide their windows from Accessibility, so Orbit switches their windows via Automation instead. macOS asks once per app — press the button to answer all of those prompts now instead of during a switch.";
-"prefs.automation.grantAll" = "Pre-authorize now";
+"prefs.automation.note" = "Automation lets Orbit switch Chrome and other Chromium windows.";
+"prefs.automation.grantAll" = "Request access…";
 "prefs.automation.running" = "Requesting…";
 "prefs.automation.none" = "No running app needs it right now.";
 "prefs.automation.result" = "%1$d allowed, %2$d declined.";
+"prefs.automation.apps" = "App access · %d";
+"prefs.automation.detailsHint" = "Shows or hides each app's Automation status.";
+"prefs.automation.runningOnly" = "Only compatible apps that are currently running appear here.";
+"prefs.automation.openSettings" = "Open Automation Settings…";
+"prefs.automation.status.allowed" = "Allowed";
+"prefs.automation.status.declined" = "Declined";
+"prefs.automation.status.notRequested" = "Not requested";
+"prefs.automation.status.unavailable" = "Unavailable";
 
 /* Settings — language */
 "prefs.group.language" = "Language";
@@ -32,11 +40,11 @@
 
 /* Settings — ring */
 "prefs.group.ring" = "Ring";
-"prefs.ring.order" = "Card order";
-"prefs.ring.preselect" = "Preselect the last app";
-"prefs.ring.order.note" = "Which apps make it onto the ring is always decided by recent use. This only chooses how they are arranged.";
-"prefs.ring.preselect.note" = "Summon and let go to switch straight back, the way ⌘Tab does. Off, releasing without choosing dismisses the ring.";
-"prefs.ring.showOrbitCard" = "Show Orbit in the ring";
+"prefs.ring.order" = "Arrange cards";
+"prefs.ring.openingBehavior" = "When Orbit opens";
+"prefs.ring.order.note" = "The most recent switch target stays at the top; the remaining recent apps are arranged by name.";
+"prefs.ring.openingBehavior.note" = "Cancel starts with nothing selected. Quick switch selects the target at 12 o’clock; release to switch immediately.";
+"prefs.ring.showOrbitCard" = "Show cleanup card";
 "prefs.ring.showOrbitCard.note" = "Show Orbit as a cleanup card for apps without open windows.";
 
 /* Settings — summoning */
@@ -94,8 +102,10 @@
 "triggerKey.disabled" = "Disabled";
 
 /* Ring placement */
-"ringOrder.recent" = "Recently used";
+"ringOrder.recent" = "Most recent first";
 "ringOrder.alphabetical" = "By name";
+"ringOpeningBehavior.cancel" = "Start at Cancel";
+"ringOpeningBehavior.quickSwitch" = "Quick switch";
 "ringPlacement.screenCenter" = "Screen center";
 "ringPlacement.cursor" = "Follow cursor";
 

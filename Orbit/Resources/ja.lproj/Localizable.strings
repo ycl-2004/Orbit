@@ -16,11 +16,19 @@
 "prefs.access.granted" = "Orbit にアクセシビリティ権限があります";
 "prefs.access.missing" = "Orbit にはアクセシビリティ権限が必要です";
 "prefs.access.grant" = "許可する…";
-"prefs.automation.note" = "一部のアプリ（Chrome などの Chromium 系）はウインドウをアクセシビリティに公開しないため、Orbit は「オートメーション」権限でウインドウを切り替えます。macOS の確認はアプリごとに一度だけ——切り替えの途中ではなく、今ここでまとめて許可できます。";
-"prefs.automation.grantAll" = "今すぐ事前許可";
+"prefs.automation.note" = "オートメーションにより、Orbit は Chrome などの Chromium アプリのウインドウを切り替えられます。";
+"prefs.automation.grantAll" = "アクセスを要求…";
 "prefs.automation.running" = "リクエスト中…";
 "prefs.automation.none" = "現在、この権限を必要とする実行中のアプリはありません。";
 "prefs.automation.result" = "%1$d 件を許可、%2$d 件を拒否。";
+"prefs.automation.apps" = "アプリのアクセス · %d";
+"prefs.automation.detailsHint" = "各アプリのオートメーション権限の状態を表示または非表示にします。";
+"prefs.automation.runningOnly" = "現在実行中の対応アプリだけがここに表示されます。";
+"prefs.automation.openSettings" = "オートメーション設定を開く…";
+"prefs.automation.status.allowed" = "許可済み";
+"prefs.automation.status.declined" = "拒否";
+"prefs.automation.status.notRequested" = "未確認";
+"prefs.automation.status.unavailable" = "利用不可";
 
 /* Settings — language */
 "prefs.group.language" = "言語";
@@ -32,11 +40,11 @@
 
 /* Settings — ring */
 "prefs.group.ring" = "リング";
-"prefs.ring.order" = "カードの並び";
-"prefs.ring.preselect" = "直前のアプリを選択した状態で開く";
-"prefs.ring.order.note" = "リングに載るアプリは常に最近の使用状況で決まります。ここで選ぶのは並べ方だけです。";
-"prefs.ring.preselect.note" = "呼び出してそのまま離すと ⌘Tab と同じように直前のアプリへ戻ります。オフのときは、選ばずに離すとリングが閉じるだけです。";
-"prefs.ring.showOrbitCard" = "リングに Orbit を表示";
+"prefs.ring.order" = "カードの並べ方";
+"prefs.ring.openingBehavior" = "Orbit を開いたとき";
+"prefs.ring.order.note" = "直近の切り替え先は最上部に固定し、残りの最近使ったアプリを名前順に並べます。";
+"prefs.ring.openingBehavior.note" = "キャンセル開始では何も選択しません。クイック切り替えでは 12 時のターゲットを選択し、キーを離すとすぐ切り替わります。";
+"prefs.ring.showOrbitCard" = "クリーンアップカードを表示";
 "prefs.ring.showOrbitCard.note" = "開いているウインドウがないアプリを終了するためのカードとして Orbit を表示します。";
 
 /* Settings — summoning */
@@ -96,6 +104,8 @@
 /* Ring placement */
 "ringOrder.recent" = "最近使った順";
 "ringOrder.alphabetical" = "名前順";
+"ringOpeningBehavior.cancel" = "キャンセルから開始";
+"ringOpeningBehavior.quickSwitch" = "クイック切り替え";
 "ringPlacement.screenCenter" = "画面中央";
 "ringPlacement.cursor" = "カーソルに追従";
 

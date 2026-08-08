@@ -41,9 +41,35 @@ is used to choose the visible app set, capped by the existing maximum. The
 `RingOrder` preference then arranges that chosen set either by recent use or by
 localized app name. Alphabetical order changes placement, not membership.
 
-Recent-app preselection is opt-in and defaults to off. When enabled, the most
-recent eligible app starts selected so summon-and-release resembles Command-Tab;
-when disabled, releasing without an explicit selection remains a safe cancel.
+Orbit also records the frontmost window ID on every summon. If the current app
+has another actionable window, its app card represents that sibling-window
+destination and becomes card zero; the preview carousel hides the current window
+and puts the most recently viewed sibling first. If no sibling can be resolved,
+the previous eligible app remains card zero. Window history is in-memory and
+bounded per app; stale window IDs simply stop matching later snapshots.
+
+Card zero always occupies 12 o'clock. Remaining cards continue from that anchor
+in the same direction whether Window Preview is enabled or disabled; Recent keeps
+MRU order, while By name sorts only the cards after the anchor. From a neutral
+ring, either vertical arrow enters at card zero before subsequent presses traverse
+the sequence.
+
+Opening behavior is an explicit setting. **Start at Cancel** is the default and
+leaves the ring unselected, so release is a no-op. **Quick switch** preselects
+card zero, so release switches immediately. A synchronous sibling-window target
+is captured before thumbnail work begins, allowing quick release to switch even
+when preview capture has not completed or previews are disabled.
+
+Reference behavior:
+
+- Apple defines Command-Tab as switching to the next most recently used app:
+  <https://support.apple.com/en-us/102650>
+- Microsoft documents Alt-Tab as moving forward on each press and switching on
+  release: <https://support.microsoft.com/en-US/Windows/Hardware/Input-Devices/windows-keyboard-tips-and-tricks>
+- VS Code exposes the previous editor in its MRU list as the Ctrl-Tab target:
+  <https://code.visualstudio.com/docs/editing/userinterface>
+- JetBrains switchers keep the popup open while Tab and arrow keys move through
+  recent targets: <https://www.jetbrains.com/help/idea/using-code-editor.html>
 
 ### Display-aware preview capture
 
@@ -66,6 +92,19 @@ consistent locale state.
 Rejected because the ordering preference should not make a recently used app
 disappear merely because its name sorts outside the visible limit.
 
+### Keep the current app's other-window card at the end
+
+Rejected because the card is a real switch destination, not a utility action.
+When the current app has another window, that sibling is more recent than leaving
+the app and belongs at the first keyboard position. Orbit's cleanup card remains
+at the end because it is a utility action.
+
+### Always preselect or never preselect
+
+Rejected in favor of an explicit opening-behavior setting. Cancel is the safer
+default, while users who want Command-Tab-style release behavior can choose Quick
+switch without changing the shared 12-o'clock ordering rule.
+
 ### Always use `NSScreen.main` for capture scale
 
 Rejected because Orbit can be summoned on a display with a different density;
@@ -77,6 +116,9 @@ the resulting thumbnail would be either soft or needlessly oversized.
   language changes, with a visible restart step after selection.
 - The ring remains recent-use aware while supporting stable alphabetical card
   placement for users who prefer muscle memory.
+- The highest-value muscle-memory target is stable in both arrangement modes:
+  a recent sibling window takes 12 o'clock when available, otherwise the previous
+  app does, and neutral keyboard entry always starts there.
 - Mixed-resolution and multi-display preview layouts use the intended target
   display scale, within a bounded capture budget.
 - The app maintains a small amount of activation history and preference state;
