@@ -697,6 +697,30 @@ struct OrbitTests {
         #expect(ScriptedWindowFocus.escaped("普通标题") == "普通标题")
     }
 
+    // MARK: - 你此刻就在的那个应用
+
+    /// 当前应用的卡只有一个用途：切到它**别的**窗口。只有一扇窗时那张卡只会
+    /// 把你送回原地，不给；有多扇时必须给，否则那些窗口一个都够不着。
+    @Test func theAppYouAreInGetsACardOnlyWhenItHasOtherWindows() {
+        #expect(RunningAppCatalog.currentAppDeservesCard(42, windowCounts: [42: 3]))
+        #expect(RunningAppCatalog.currentAppDeservesCard(42, windowCounts: [42: 2]))
+        // 只有一扇 = 就是你正看着的那扇
+        #expect(!RunningAppCatalog.currentAppDeservesCard(42, windowCounts: [42: 1]))
+        #expect(!RunningAppCatalog.currentAppDeservesCard(42, windowCounts: [42: 0]))
+        #expect(!RunningAppCatalog.currentAppDeservesCard(42, windowCounts: [:]))
+        // 窗口服务没作答时保持旧行为：不给卡
+        #expect(!RunningAppCatalog.currentAppDeservesCard(42, windowCounts: nil))
+        #expect(!RunningAppCatalog.currentAppDeservesCard(nil, windowCounts: [42: 3]))
+    }
+
+    /// 预览只藏「你正看着的那一扇」，而且只在你正用的那个应用里藏 ——
+    /// 别的应用的同号窗口不受影响。
+    @Test func onlyTheWindowYouAreLookingAtIsHiddenAndOnlyInItsOwnApp() {
+        let current = CurrentWindow(processIdentifier: 42, id: 7)
+        #expect(current.hiddenWindow(inAppWith: 42) == 7)
+        #expect(current.hiddenWindow(inAppWith: 99) == nil)
+    }
+
     /// Window 菜单靠内容认，不靠菜单标题 —— 标题跟着应用自己的界面语言走。
     /// History/Bookmarks 可能回显*一个*窗口标题（当前页面），只有 Window 菜单
     /// 全都列；两个不同命中是判据。

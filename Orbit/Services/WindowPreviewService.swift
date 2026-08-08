@@ -29,6 +29,21 @@ struct WindowTarget: Sendable, Equatable {
     let frame: CGRect
 }
 
+/// 唤出那一刻用户正看着的那扇窗。
+///
+/// 预览面板把它藏起来：它就是此刻占满屏幕的那一扇，列出来只会占掉一个位置，
+/// 而选中它等于什么也没发生。
+struct CurrentWindow: Sendable, Equatable {
+    let processIdentifier: pid_t
+    let id: CGWindowID
+
+    /// 只在它自己的应用里藏 —— 窗口号是全系统唯一的，但这里要的是「你正用的
+    /// 那个应用里的那一扇」，别的应用不该受影响。
+    func hiddenWindow(inAppWith pid: pid_t) -> CGWindowID? {
+        processIdentifier == pid ? id : nil
+    }
+}
+
 struct WindowPreview: Identifiable, Sendable {
     let id: CGWindowID
     let title: String
@@ -224,7 +239,12 @@ final class WindowPreviewService {
     /// untitled or on a higher layer.
     /// - Parameter scale: 目标屏的像素密度，由调用方给出 —— 这个服务不该假设
     ///   圆环出现在主屏上。
-    func previews(forProcessIdentifier pid: pid_t, scale: CGFloat) async -> [WindowPreview] {
+    /// - Parameter hiding: 要略过的窗口，通常是用户此刻正看着的那一扇。
+    func previews(
+        forProcessIdentifier pid: pid_t,
+        scale: CGFloat,
+        hiding hidden: CGWindowID? = nil
+    ) async -> [WindowPreview] {
         guard Self.hasScreenRecordingPermission() else { return [] }
 
         let windows: [SCWindow]
@@ -235,6 +255,7 @@ final class WindowPreviewService {
             )
             windows = content.windows
                 .filter { $0.owningApplication?.processID == pid }
+                .filter { $0.windowID != hidden }
                 .filter { $0.windowLayer == 0 }
                 .filter { !($0.title ?? "").isEmpty }
                 .filter {

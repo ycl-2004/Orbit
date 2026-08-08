@@ -11,6 +11,8 @@
 
 - A fullscreen Chromium window on another Space is now reachable. Chromium implements the scripted window reorder without making the window key, so a switch used to stop on whichever Space the app was last active on. Orbit now presses the matching entry in the app's own Window menu — which Chromium does expose to Accessibility, and which performs a real makeKeyAndOrderFront — then activates the app one beat later so macOS follows the key change to the right Space in a single hop. The Window menu is recognised by its contents (it is the only menu listing all of the app's window titles), never by its localized title.
 
+- The app you are currently in is reachable again when it has more than one window. The ring used to drop the frontmost app's card entirely, so standing in one Chrome window put every other Chrome window out of reach. That card now appears whenever the app owns more than one window — its only purpose being to reach the others — and its preview hides the window you are looking at. An app with a single window still has no card, since selecting it would only return you where you already are.
+
 ### Added
 
 - Apple Events fallback for apps whose windows Accessibility cannot see. Chromium-based apps (Chrome, Edge, Brave …) expose no windows to the Accessibility API at all, so Orbit now asks such an app directly, over Apple Events, to bring the chosen window forward. First use prompts for the Automation permission; declining it degrades gracefully to plain app activation — the behaviour Orbit always had.
@@ -19,7 +21,7 @@
 
 ### Validation
 
-- The unit test target grew to 42 `OrbitTests` tests, including new coverage for cross-framework title matching (with real Chrome title pairs), frame-tolerance boundaries, AppleScript title escaping, Window-menu recognition, pre-authorization candidate selection, and `AEDeterminePermissionToAutomateTarget` status mapping.
+- The test targets now contain 46 `OrbitTests` tests and 2 `OrbitUITests` methods, including new unit coverage for cross-framework title matching (with real Chrome title pairs), frame-tolerance boundaries, AppleScript title escaping, Window-menu recognition, current-app card eligibility, current-window hiding, pre-authorization candidate selection, and `AEDeterminePermissionToAutomateTarget` status mapping.
 - Both activation paths were verified against real window stacks via `CGWindowListCopyWindowInfo` z-order: the Accessibility path raised the bottom of three Finder windows, and the Apple Events path raised the bottom of five Chrome windows.
 
 ## 1.4.1 — 2026-08-07

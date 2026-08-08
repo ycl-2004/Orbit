@@ -48,6 +48,17 @@ enum WindowServerInspector {
     /// - Returns: 有窗口的那些进程；`nil` 表示窗口服务没有作答 —— 调用方必须把它
     ///   和"谁都没有窗口"分开处理，否则一次查询失败会清空整个环。
     static func windowOwners() -> Set<pid_t>? {
+        windowCounts().map { Set($0.keys) }
+    }
+
+    /// 每个进程各有多少扇真实窗口。
+    ///
+    /// 和 `windowOwners` 是同一次遍历的两种读法 —— 「有没有窗口」决定一个应用上
+    /// 不上环，「有几扇」决定你此刻就在的那个应用还值不值得给一张卡。
+    ///
+    /// - Returns: `nil` 表示窗口服务没有作答，跟 `windowOwners` 一样必须和
+    ///   「谁都没有窗口」分开处理。
+    static func windowCounts() -> [pid_t: Int]? {
         let options: CGWindowListOption = [.excludeDesktopElements]
         guard let windows = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
             return nil
@@ -58,12 +69,31 @@ enum WindowServerInspector {
         // 每个窗口问一次，答案可用时才把判据收紧。
         let titlesReadable = CGPreflightScreenCaptureAccess()
 
-        var pids: Set<pid_t> = []
+        var counts: [pid_t: Int] = [:]
         for window in windows where qualifiesAsWindow(window, requiringTitle: titlesReadable) {
             guard let pid = window[kCGWindowOwnerPID as String] as? Int else { continue }
-            pids.insert(pid_t(pid))
+            counts[pid_t(pid), default: 0] += 1
         }
-        return pids
+        return counts
+    }
+
+    /// 该进程在当前 Space 上最靠前的那扇真实窗口 —— 也就是用户此刻正看着的那扇。
+    ///
+    /// `.optionOnScreenOnly` 是按前到后返回的，所以第一个命中的就是最前面的。
+    /// 走窗口服务而不是辅助功能，因为 Chromium 系应用对辅助功能一扇窗都不暴露，
+    /// 而它们恰好是最需要这个答案的一类。
+    static func frontWindow(ownedBy pid: pid_t) -> CGWindowID? {
+        let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+        guard let windows = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
+            return nil
+        }
+
+        for window in windows where window[kCGWindowOwnerPID as String] as? Int == Int(pid) {
+            guard qualifiesAsWindow(window),
+                  let number = window[kCGWindowNumber as String] as? Int else { continue }
+            return CGWindowID(number)
+        }
+        return nil
     }
 
     /// 属于该进程的真实窗口的标题，含别的 Space 上的和最小化的。

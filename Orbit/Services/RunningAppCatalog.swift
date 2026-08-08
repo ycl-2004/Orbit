@@ -20,22 +20,29 @@ final class RunningAppCatalog {
     /// the window controller before its panel becomes the active application.
     func collect(frontmostProcess: pid_t? = nil) -> [AppRecord] {
         let workspace = NSWorkspace.shared
-        let owners = WindowServerInspector.windowOwners()
-        let excludedProcess = frontmostProcessToExclude(frontmostProcess, owners: owners)
+        let counts = WindowServerInspector.windowCounts()
+        let owners = counts.map { Set($0.keys) }
 
+        // 你此刻就在的那个应用从不参与常规排序 —— 它是最近用过的那个，留在里面
+        // 会把「刚才那个应用」从第一张卡挤下去，而切回刚才那个才是最常做的事。
         var candidates = workspace.runningApplications.filter {
-            isCandidate($0, excluding: excludedProcess)
+            isCandidate($0, excluding: frontmostProcess)
         }
 
         if OrbitConfig.hideWindowlessApps, let owners {
             candidates = candidates.filter { owners.contains($0.processIdentifier) }
         }
 
+        // 它仍然可能拿到一张附加卡：见 `currentAppDeservesCard`。名额要先留出来，
+        // 否则这张卡会把环撑过 `maxVisibleApps`。
+        let currentCard = Self.currentAppDeservesCard(frontmostProcess, windowCounts: counts)
+            ? frontmostProcess.flatMap(currentAppRecord)
+            : nil
+
         let history = AppActivationHistory.shared
         let ranked = Self.orderedByUse(candidates.map(makeRecord), rank: history.rank(of:))
-        let capacity = OrbitConfig.showOrbitCard
-            ? max(OrbitConfig.maxVisibleApps - 1, 0)
-            : OrbitConfig.maxVisibleApps
+        let reserved = (OrbitConfig.showOrbitCard ? 1 : 0) + (currentCard == nil ? 0 : 1)
+        let capacity = max(OrbitConfig.maxVisibleApps - reserved, 0)
         let selected = Array(ranked.prefix(capacity))
 
         let displayed: [AppRecord] = switch OrbitConfig.ringOrder {
@@ -45,7 +52,31 @@ final class RunningAppCatalog {
             selected.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         }
 
-        return OrbitConfig.showOrbitCard ? displayed + [.orbitCard] : displayed
+        // 两张特殊卡都挂在末尾，位置固定，不随排序方式跑动。
+        return displayed + [currentCard].compactMap { $0 }
+            + (OrbitConfig.showOrbitCard ? [.orbitCard] : [])
+    }
+
+    /// 你此刻就在的那个应用要不要给一张卡。
+    ///
+    /// 这张卡只有一个用途：切到这个应用的**别的**窗口。所以只有窗口不止一扇时
+    /// 才给 —— 只有一扇的话，那扇就是你正看着的，卡片只会把你送回原地。
+    ///
+    /// 以前这里是「一律不给」，于是在 Chrome 上唤出 Orbit 时，Chrome 的其余窗口
+    /// 一扇都够不着，哪怕预览面板明明能把它们全列出来。
+    ///
+    /// - Parameter windowCounts: `nil` 表示窗口服务没作答；答不上来就不给卡，
+    ///   跟以前一样保守。
+    static func currentAppDeservesCard(_ process: pid_t?, windowCounts: [pid_t: Int]?) -> Bool {
+        guard let process, let windowCounts else { return false }
+        return (windowCounts[process] ?? 0) > 1
+    }
+
+    private func currentAppRecord(_ process: pid_t) -> AppRecord? {
+        guard let app = NSRunningApplication(processIdentifier: process),
+              app.activationPolicy == .regular,
+              app.bundleIdentifier != Bundle.main.bundleIdentifier else { return nil }
+        return makeRecord(from: app)
     }
 
     /// Returns the most recently activated non-Orbit card in a visible set.
@@ -72,12 +103,6 @@ final class RunningAppCatalog {
                 return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
             }
         }
-    }
-
-    private func frontmostProcessToExclude(_ process: pid_t?, owners: Set<pid_t>?) -> pid_t? {
-        guard let process else { return nil }
-        guard let owners else { return process }
-        return owners.contains(process) ? process : nil
     }
 
     private func isCandidate(_ app: NSRunningApplication, excluding process: pid_t?) -> Bool {

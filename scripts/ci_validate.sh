@@ -34,9 +34,9 @@ grep -Eq "^## ${MARKETING_VERSION//./\\.} —" CHANGELOG.md || {
 
 UNIT_TEST_COUNT="$(grep -Ec '^[[:space:]]*@Test' OrbitTests/OrbitTests.swift)"
 UI_TEST_COUNT="$(find OrbitUITests -type f -name '*.swift' -exec grep -Ehc '^[[:space:]]*func test' {} + | awk '{ total += $1 } END { print total + 0 }')"
-[[ "$UNIT_TEST_COUNT" == "36" ]] || { echo "Expected 36 OrbitTests tests; found $UNIT_TEST_COUNT" >&2; exit 1; }
+[[ "$UNIT_TEST_COUNT" == "46" ]] || { echo "Expected 46 OrbitTests tests; found $UNIT_TEST_COUNT" >&2; exit 1; }
 [[ "$UI_TEST_COUNT" == "2" ]] || { echo "Expected 2 OrbitUITests methods; found $UI_TEST_COUNT" >&2; exit 1; }
-grep -Eq "36.*OrbitTests.*2.*OrbitUITests|2.*OrbitUITests.*36.*OrbitTests" CHANGELOG.md || {
+grep -Eq "46.*OrbitTests.*2.*OrbitUITests|2.*OrbitUITests.*46.*OrbitTests" CHANGELOG.md || {
     echo "CHANGELOG.md test-count declaration is stale" >&2
     exit 1
 }

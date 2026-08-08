@@ -79,14 +79,19 @@ final class OrbitRingViewModel: ObservableObject {
     /// 在 2x 屏上按 1x 截是糊。
     let backingScaleFactor: CGFloat
 
+    /// 唤出那一刻用户正看着的那扇窗，预览面板会把它藏起来。
+    let currentWindow: CurrentWindow?
+
     /// - Parameter preselecting: 唤出时就选中的应用，`nil` 表示以取消态开场。
     ///   由调用方决定，因为"最近用过的是谁"是应用列表那边的知识，而不是环的。
     init(
         apps: [AppRecord],
         showsPreview: Bool? = nil,
         screen: NSScreen? = nil,
-        preselecting: String? = nil
+        preselecting: String? = nil,
+        currentWindow: CurrentWindow? = nil
     ) {
+        self.currentWindow = currentWindow
         let target = screen ?? NSScreen.main
         self.visibleFrame = target?.visibleFrame
             ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
@@ -338,7 +343,11 @@ final class OrbitRingViewModel: ObservableObject {
         isLoadingPreviews = true
         previewState = .loading
         let captured = await WindowPreviewService.shared
-            .previews(forProcessIdentifier: app.processIdentifier, scale: backingScaleFactor)
+            .previews(
+                forProcessIdentifier: app.processIdentifier,
+                scale: backingScaleFactor,
+                hiding: currentWindow?.hiddenWindow(inAppWith: app.processIdentifier)
+            )
         guard !Task.isCancelled else { return }
 
         previews = Array(captured.prefix(OrbitConfig.maxVisiblePreviews))

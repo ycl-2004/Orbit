@@ -66,8 +66,8 @@ open /Applications/Orbit.app
 
 Screen Recording permission is requested only if you turn on window previews.
 
-The current Xcode project reports version `1.4.1 (build 4)`. See the
-[1.4.1 release notes](CHANGELOG.md) for the changes since `v1.4.0`.
+The current Xcode project reports version `1.5.0 (build 5)`. See the
+[1.5.0 release notes](CHANGELOG.md) for the changes since `v1.4.1`.
 
 ## Why Orbit
 
@@ -271,7 +271,7 @@ public documentation remain tracked.
 Release verification, including Universal 2 checks and the clean-machine
 installation/permission regression checklist, is documented in
 [docs/release-checklist.md](docs/release-checklist.md). GitHub Actions runs the
-metadata check, Debug build, and 36 `OrbitTests` tests on every push and pull request.
+metadata check, Debug build, and 46 `OrbitTests` tests on every push and pull request.
 
 </details>
 
@@ -296,7 +296,7 @@ gesture-first workflow. This repository provides:
 - Portable placeholder bundle identifiers under `app.orbit.local`.
 - No developer Team ID, signing certificate, or machine-specific Xcode state.
 - English-first documentation with a separate Simplified Chinese version.
-- Current source build: `1.4.1 (build 4)`.
+- Current source build: `1.5.0 (build 5)`.
 - English is the default app localization; the in-app picker ships English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, Russian, Danish, Norwegian Bokmål, and Esperanto.
 
 ## License and commercial use

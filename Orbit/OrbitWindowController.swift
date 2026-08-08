@@ -66,6 +66,14 @@ final class OrbitWindowController: NSObject {
         let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let apps = RunningAppCatalog.shared.collect(frontmostProcess: frontmostPID)
 
+        // 用户此刻正看着的那扇窗，同样要趁 Orbit 的面板还没进窗口表时问 ——
+        // 面板一上屏，最靠前的窗口就成了 Orbit 自己。
+        let currentWindow = frontmostPID.flatMap { pid in
+            WindowServerInspector.frontWindow(ownedBy: pid).map {
+                CurrentWindow(processIdentifier: pid, id: $0)
+            }
+        }
+
         // 一次唤出只挑一次屏幕，尺寸和摆放共用它。以前尺寸问 `NSScreen.main`、
         // 摆放问光标所在屏，双屏时两者根本不是同一块。
         let targetScreen = screen(containing: location)
@@ -78,7 +86,8 @@ final class OrbitWindowController: NSObject {
         let ringModel = OrbitRingViewModel(
             apps: apps,
             screen: targetScreen,
-            preselecting: preselecting
+            preselecting: preselecting,
+            currentWindow: currentWindow
         )
 
         ringModel.onCancel = { [weak self] in
