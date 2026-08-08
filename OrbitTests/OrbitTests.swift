@@ -982,26 +982,6 @@ struct OrbitTests {
         ))
     }
 
-    /// 预授权只该找「有真实窗口但 AX 一个都看不见」的应用 —— 这正是运行时会走
-    /// Apple Events 兜底的那批（Chromium 系）。别的应用弹授权框纯属骚扰。
-    @Test func onlyAXBlindAppsWithRealWindowsNeedPreauthorization() {
-        #expect(ScriptedWindowFocus.needsAppleEventsFallback(hasRealWindows: true, axWindowCount: 0))
-        // AX 看得见窗口的应用走原生路径，不需要 Apple Events
-        #expect(!ScriptedWindowFocus.needsAppleEventsFallback(hasRealWindows: true, axWindowCount: 2))
-        // 没有真实窗口的应用没什么可切换的
-        #expect(!ScriptedWindowFocus.needsAppleEventsFallback(hasRealWindows: false, axWindowCount: 0))
-    }
-
-    /// `AEDeterminePermissionToAutomateTarget` 的返回码翻译。
-    /// -600（没在运行）不能算拒绝：下次它运行时首跳还会正常弹框。
-    @Test @MainActor func automationConsentMapsOSStatusFaithfully() {
-        #expect(ScriptedWindowFocus.AutomationConsent(status: noErr) == .granted)
-        #expect(ScriptedWindowFocus.AutomationConsent(status: -1743) == .denied)
-        #expect(ScriptedWindowFocus.AutomationConsent(status: -600) == .notRunning)
-        #expect(ScriptedWindowFocus.AutomationConsent(status: -1744) == .requiresConsent)
-        #expect(ScriptedWindowFocus.AutomationConsent(status: -25211) == .undetermined)
-    }
-
     /// 生成的脚本必须把标题作为字面量嵌入，且带超时保护 ——
     /// Apple Events 默认超时两分钟，卡住的应用不能拖住 Orbit。
     @Test func appleScriptCarriesEscapedTitleAndTimeout() {

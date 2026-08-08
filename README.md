@@ -181,6 +181,12 @@ because live window thumbnails are screen content. macOS requires an Orbit
 restart after you grant it. Nothing captured is stored or transmitted — see the
 [privacy policy](PRIVACY.md) for exactly what Orbit reads and keeps.
 
+**Automation is not required for normal switching.** Orbit normally uses
+Accessibility, including an app's Window menu, to reach the chosen window. Only
+if those paths cannot complete an exact switch does Orbit try an Apple Events
+fallback; macOS asks at that moment, and declining simply falls back to opening
+the app normally.
+
 </details>
 
 <details>
@@ -203,7 +209,7 @@ defaults delete app.orbit.local
 ```
 
 You can revoke the permissions under **System Settings → Privacy & Security →
-Accessibility / Screen Recording**.
+Accessibility / Screen Recording / Automation**.
 
 </details>
 

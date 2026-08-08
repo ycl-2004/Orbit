@@ -16,19 +16,6 @@
 "prefs.access.granted" = "Orbit havas alireblecan permeson";
 "prefs.access.missing" = "Orbit bezonas alireblecan permeson";
 "prefs.access.grant" = "Permesi…";
-"prefs.automation.note" = "Aŭtomatigo ebligas al Orbit ŝanĝi fenestrojn en Chrome kaj aliaj Chromium-aplikaĵoj.";
-"prefs.automation.grantAll" = "Peti aliron…";
-"prefs.automation.running" = "Petado…";
-"prefs.automation.none" = "Neniu rulanta aplikaĵo bezonas ĝin nun.";
-"prefs.automation.result" = "%1$d permesitaj, %2$d rifuzitaj.";
-"prefs.automation.apps" = "Aliro de aplikaĵoj · %d";
-"prefs.automation.detailsHint" = "Montras aŭ kaŝas la staton de Aŭtomatigo por ĉiu aplikaĵo.";
-"prefs.automation.runningOnly" = "Nur kongruaj aplikaĵoj nun rulataj aperas ĉi tie.";
-"prefs.automation.openSettings" = "Malfermi agordojn de Aŭtomatigo…";
-"prefs.automation.status.allowed" = "Permesita";
-"prefs.automation.status.declined" = "Rifuzita";
-"prefs.automation.status.notRequested" = "Ankoraŭ ne petita";
-"prefs.automation.status.unavailable" = "Nedisponebla";
 
 /* Settings — language */
 "prefs.group.language" = "Lingvo";

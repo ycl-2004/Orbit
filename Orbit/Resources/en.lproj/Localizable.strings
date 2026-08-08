@@ -16,19 +16,6 @@
 "prefs.access.granted" = "Orbit has Accessibility access";
 "prefs.access.missing" = "Orbit needs Accessibility access";
 "prefs.access.grant" = "Grant…";
-"prefs.automation.note" = "Automation lets Orbit switch Chrome and other Chromium windows.";
-"prefs.automation.grantAll" = "Request access…";
-"prefs.automation.running" = "Requesting…";
-"prefs.automation.none" = "No running app needs it right now.";
-"prefs.automation.result" = "%1$d allowed, %2$d declined.";
-"prefs.automation.apps" = "App access · %d";
-"prefs.automation.detailsHint" = "Shows or hides each app's Automation status.";
-"prefs.automation.runningOnly" = "Only compatible apps that are currently running appear here.";
-"prefs.automation.openSettings" = "Open Automation Settings…";
-"prefs.automation.status.allowed" = "Allowed";
-"prefs.automation.status.declined" = "Declined";
-"prefs.automation.status.notRequested" = "Not requested";
-"prefs.automation.status.unavailable" = "Unavailable";
 
 /* Settings — language */
 "prefs.group.language" = "Language";

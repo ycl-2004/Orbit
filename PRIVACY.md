@@ -1,6 +1,6 @@
 # Orbit Privacy Policy
 
-Last updated: 2026-08-07 — applies to Orbit 1.4.1 and later.
+Last updated: 2026-08-08 — applies to Orbit 1.5.0 and later.
 
 ## The short version
 
@@ -51,7 +51,13 @@ screen content, so this permission is what makes per-window selection possible.
 Turn the setting off and Orbit never requests or uses it. macOS requires an
 Orbit restart after you grant it.
 
-Both permissions are managed by macOS, not by Orbit. You can revoke either at
+**Automation** (conditional fallback). Ordinary switching uses Accessibility.
+If direct window focus and the target app's Window menu both fail, Orbit can ask
+that app through Apple Events to bring the selected window forward. macOS asks
+for this per target app only when that fallback is reached. Declining it leaves
+ordinary app switching available; Orbit does not require Automation during setup.
+
+All permissions are managed by macOS, not by Orbit. You can revoke them at
 any time in **System Settings → Privacy & Security**, and Orbit will degrade to
 its reduced behavior rather than work around the revocation.
 

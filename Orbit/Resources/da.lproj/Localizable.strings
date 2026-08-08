@@ -16,19 +16,6 @@
 "prefs.access.granted" = "Orbit har adgang til Tilgængelighed";
 "prefs.access.missing" = "Orbit mangler adgang til Tilgængelighed";
 "prefs.access.grant" = "Tillad …";
-"prefs.automation.note" = "Automatisering lader Orbit skifte vinduer i Chrome og andre Chromium-apps.";
-"prefs.automation.grantAll" = "Anmod om adgang…";
-"prefs.automation.running" = "Anmoder …";
-"prefs.automation.none" = "Ingen kørende app har brug for det lige nu.";
-"prefs.automation.result" = "%1$d tilladt, %2$d afvist.";
-"prefs.automation.apps" = "Appadgang · %d";
-"prefs.automation.detailsHint" = "Viser eller skjuler hver apps automatiseringsstatus.";
-"prefs.automation.runningOnly" = "Kun kompatible apps, der kører lige nu, vises her.";
-"prefs.automation.openSettings" = "Åbn indstillinger for automatisering…";
-"prefs.automation.status.allowed" = "Tilladt";
-"prefs.automation.status.declined" = "Afvist";
-"prefs.automation.status.notRequested" = "Ikke anmodet";
-"prefs.automation.status.unavailable" = "Ikke tilgængelig";
 
 /* Settings — language */
 "prefs.group.language" = "Sprog";

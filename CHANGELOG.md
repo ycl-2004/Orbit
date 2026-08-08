@@ -18,19 +18,18 @@
 
 ### Added
 
-- Automation pre-authorization now includes a native expandable app list. Settings checks running Chromium apps without prompting, then shows each app's icon and exact Allowed, Declined, Not requested, or Unavailable state; declined apps link directly to macOS Automation settings, and requesting access automatically reveals the resulting details.
 - Apple Events fallback for apps whose windows Accessibility cannot see. Chromium-based apps (Chrome, Edge, Brave …) expose no windows to the Accessibility API at all, so Orbit now asks such an app directly, over Apple Events, to bring the chosen window forward. First use prompts for the Automation permission; declining it degrades gracefully to plain app activation — the behaviour Orbit always had.
 - The bundle now declares `NSAppleEventsUsageDescription` for the Automation prompt.
-- Settings › General gains a one-shot Automation pre-authorization button. The permission is per target app and macOS only asks on first contact, which used to interrupt the first switch into each Chromium-based app with a dialog; the button walks the running apps that will need the fallback (real windows, none visible to Accessibility) and fronts all of those prompts now. Localized in all 11 bundled languages.
 
 ### Changed
 
 - The highest-value recent destination now has a stable 12-o'clock anchor. If the current app has another actionable window, that window-aware card comes first and its carousel defaults to the previously viewed sibling; otherwise the previous app remains first. Cards continue in one direction with or without Window Preview, and either vertical arrow enters a neutral ring at that same target.
 - Opening behavior is now an explicit Settings choice: **Start at Cancel** is the safe default, while **Quick switch** preselects the 12-o'clock target and switches on release. General settings remains shorter and task-oriented; Window Preview controls live in Appearance, advanced explanations use native hover help, and persistent footer text appears only when alphabetical arrangement needs clarification.
+- Automation is no longer presented as a required setup step. Orbit's Accessibility-based window paths handle normal switching; macOS requests Automation only if Orbit reaches its rare Apple Events fallback for an exact window switch.
 
 ### Validation
 
-- The test targets now contain 57 `OrbitTests` tests and 2 `OrbitUITests` methods, including new unit coverage for window-level MRU, actionable current-app anchoring, immediate sibling-window confirmation, selectable Cancel/Quick switch opening behavior, dismissal reset, neutral keyboard entry, alphabetical ordering after the anchor, cross-framework title matching, Window-menu recognition, cross-Space direct-focus and activation policy, and Automation consent mapping.
+- The 55-test focused unit suite covers window-level MRU, actionable current-app anchoring, immediate sibling-window confirmation, selectable Cancel/Quick switch opening behavior, dismissal reset, neutral keyboard entry, alphabetical ordering after the anchor, cross-framework title matching, Window-menu recognition, and cross-Space direct-focus and activation policy.
 - Both activation paths were verified against real window stacks via `CGWindowListCopyWindowInfo` z-order: the Accessibility path raised the bottom of three Finder windows, and the Apple Events path raised the bottom of five Chrome windows.
 - The installed `/Applications/Orbit.app` was manually verified across fullscreen Chrome Spaces and into a normal Chrome window. Public switch diagnostics confirmed each selected window became on-screen, including the formerly failing fullscreen target that reports a misleading successful `AXRaise` before the Window-menu fallback completes the Space switch.
 

@@ -16,19 +16,6 @@
 "prefs.access.granted" = "Orbit hat Zugriff auf die Bedienungshilfen";
 "prefs.access.missing" = "Orbit benötigt Zugriff auf die Bedienungshilfen";
 "prefs.access.grant" = "Erlauben …";
-"prefs.automation.note" = "Automation lässt Orbit Fenster in Chrome und anderen Chromium-Apps wechseln.";
-"prefs.automation.grantAll" = "Zugriff anfordern …";
-"prefs.automation.running" = "Wird angefragt …";
-"prefs.automation.none" = "Derzeit benötigt keine laufende App diese Berechtigung.";
-"prefs.automation.result" = "%1$d erlaubt, %2$d abgelehnt.";
-"prefs.automation.apps" = "App-Zugriff · %d";
-"prefs.automation.detailsHint" = "Blendet den Automatisierungsstatus jeder App ein oder aus.";
-"prefs.automation.runningOnly" = "Hier erscheinen nur kompatible Apps, die gerade ausgeführt werden.";
-"prefs.automation.openSettings" = "Automationseinstellungen öffnen …";
-"prefs.automation.status.allowed" = "Erlaubt";
-"prefs.automation.status.declined" = "Abgelehnt";
-"prefs.automation.status.notRequested" = "Noch nicht angefragt";
-"prefs.automation.status.unavailable" = "Nicht verfügbar";
 
 /* Settings — language */
 "prefs.group.language" = "Sprache";

@@ -16,19 +16,6 @@
 "prefs.access.granted" = "Orbit にアクセシビリティ権限があります";
 "prefs.access.missing" = "Orbit にはアクセシビリティ権限が必要です";
 "prefs.access.grant" = "許可する…";
-"prefs.automation.note" = "オートメーションにより、Orbit は Chrome などの Chromium アプリのウインドウを切り替えられます。";
-"prefs.automation.grantAll" = "アクセスを要求…";
-"prefs.automation.running" = "リクエスト中…";
-"prefs.automation.none" = "現在、この権限を必要とする実行中のアプリはありません。";
-"prefs.automation.result" = "%1$d 件を許可、%2$d 件を拒否。";
-"prefs.automation.apps" = "アプリのアクセス · %d";
-"prefs.automation.detailsHint" = "各アプリのオートメーション権限の状態を表示または非表示にします。";
-"prefs.automation.runningOnly" = "現在実行中の対応アプリだけがここに表示されます。";
-"prefs.automation.openSettings" = "オートメーション設定を開く…";
-"prefs.automation.status.allowed" = "許可済み";
-"prefs.automation.status.declined" = "拒否";
-"prefs.automation.status.notRequested" = "未確認";
-"prefs.automation.status.unavailable" = "利用不可";
 
 /* Settings — language */
 "prefs.group.language" = "言語";

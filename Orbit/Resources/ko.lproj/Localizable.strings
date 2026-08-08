@@ -16,19 +16,6 @@
 "prefs.access.granted" = "Orbit에 손쉬운 사용 권한이 있습니다";
 "prefs.access.missing" = "Orbit에 손쉬운 사용 권한이 필요합니다";
 "prefs.access.grant" = "허용…";
-"prefs.automation.note" = "자동화를 사용하면 Orbit이 Chrome과 기타 Chromium 앱의 창을 전환할 수 있습니다.";
-"prefs.automation.grantAll" = "접근 권한 요청…";
-"prefs.automation.running" = "요청 중…";
-"prefs.automation.none" = "지금 이 권한이 필요한 실행 중인 앱이 없습니다.";
-"prefs.automation.result" = "%1$d개 허용, %2$d개 거부.";
-"prefs.automation.apps" = "앱 접근 권한 · %d";
-"prefs.automation.detailsHint" = "각 앱의 자동화 권한 상태를 표시하거나 가립니다.";
-"prefs.automation.runningOnly" = "현재 실행 중인 호환 앱만 여기에 표시됩니다.";
-"prefs.automation.openSettings" = "자동화 설정 열기…";
-"prefs.automation.status.allowed" = "허용됨";
-"prefs.automation.status.declined" = "거부됨";
-"prefs.automation.status.notRequested" = "아직 요청하지 않음";
-"prefs.automation.status.unavailable" = "사용할 수 없음";
 
 /* Settings — language */
 "prefs.group.language" = "언어";

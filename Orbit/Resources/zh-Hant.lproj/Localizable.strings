@@ -16,19 +16,6 @@
 "prefs.access.granted" = "Orbit 已取得輔助使用權限";
 "prefs.access.missing" = "Orbit 需要輔助使用權限";
 "prefs.access.grant" = "去授權…";
-"prefs.automation.note" = "「自動化」讓 Orbit 切換 Chrome 等 Chromium 應用程式的視窗。";
-"prefs.automation.grantAll" = "請求權限…";
-"prefs.automation.running" = "正在請求…";
-"prefs.automation.none" = "目前沒有執行中的應用程式需要此權限。";
-"prefs.automation.result" = "已允許 %1$d 個，拒絕 %2$d 個。";
-"prefs.automation.apps" = "應用程式權限 · %d";
-"prefs.automation.detailsHint" = "顯示或隱藏每個應用程式的自動化權限狀態。";
-"prefs.automation.runningOnly" = "這裡只顯示目前正在執行的相容應用程式。";
-"prefs.automation.openSettings" = "開啟自動化設定…";
-"prefs.automation.status.allowed" = "已允許";
-"prefs.automation.status.declined" = "已拒絕";
-"prefs.automation.status.notRequested" = "尚未詢問";
-"prefs.automation.status.unavailable" = "無法使用";
 
 /* Settings — language */
 "prefs.group.language" = "語言";
