@@ -5,6 +5,8 @@
 "statusMenu.permission.missing" = "Kurzbefehl benötigt Zugriff";
 "statusMenu.hint.hold" = "%@ gedrückt halten, um Orbit einzublenden";
 "statusMenu.grantAccess" = "Bedienungshilfen öffnen …";
+"statusMenu.preview.missing" = "Fenstervorschauen brauchen erneut Zugriff";
+"statusMenu.grantScreenRecording" = "Bildschirmaufnahme öffnen …";
 "statusMenu.preferences" = "Einstellungen…";
 "statusMenu.quit" = "Orbit beenden";
 
@@ -47,7 +49,7 @@
 /* Settings — appearance */
 "prefs.group.appearance" = "Erscheinungsbild";
 "prefs.appearance.placement" = "Anzeigeposition";
-"prefs.appearance.cardSize" = "Kartengröße";
+"prefs.appearance.cardScale" = "Kartengröße";
 "prefs.appearance.cardFinish" = "Kartenmaterial";
 "prefs.appearance.preview" = "Kartenvorschau";
 "prefs.appearance.accentColor" = "Akzentfarbe";
@@ -70,6 +72,8 @@
 
 /* Settings — login */
 "prefs.startup.launchAtLogin" = "Beim Login starten";
+"prefs.startup.showWelcome" = "Willkommensseite beim Start zeigen";
+"prefs.startup.showWelcome.note" = "Erinnert daran, wie Orbit aufgerufen wird. Abschalten, sobald du sie nicht mehr brauchst.";
 
 /* Settings — shortcut reference */
 "prefs.group.cheatSheet" = "Kurzbefehl-Übersicht";
@@ -96,10 +100,10 @@
 "ringPlacement.cursor" = "Dem Zeiger folgen";
 
 /* Card size and finish */
-"cardSize.small" = "Klein";
-"cardSize.medium" = "Mittel";
-"cardSize.large" = "Groß";
-"cardSize.extraLarge" = "Sehr groß";
+"cardScale.small" = "Klein";
+"cardScale.medium" = "Mittel";
+"cardScale.large" = "Groß";
+"cardScale.extraLarge" = "Sehr groß";
 "cardFinish.white" = "Weiß";
 "cardFinish.black" = "Schwarz";
 "cardFinish.system" = "System";
@@ -137,6 +141,7 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "Alle laufenden Apps in einem Ring.\nTaste halten, auswählen, loslassen.";
 "onboarding.start" = "Loslegen";
+"onboarding.showOnLaunch" = "Diese Seite beim Start zeigen";
 "onboarding.kicker" = "Ruhiger durch deinen Mac navigieren.";
 "onboarding.step.hold" = "Option halten";
 "onboarding.step.choose" = "App auswählen";

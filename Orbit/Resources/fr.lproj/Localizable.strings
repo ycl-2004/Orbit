@@ -5,6 +5,8 @@
 "statusMenu.permission.missing" = "Le raccourci requiert un accès";
 "statusMenu.hint.hold" = "Maintenez %@ pour afficher Orbit";
 "statusMenu.grantAccess" = "Ouvrir les réglages d'accessibilité…";
+"statusMenu.preview.missing" = "Les aperçus de fenêtres nécessitent une nouvelle autorisation";
+"statusMenu.grantScreenRecording" = "Ouvrir les réglages d'enregistrement de l'écran…";
 "statusMenu.preferences" = "Réglages…";
 "statusMenu.quit" = "Quitter Orbit";
 
@@ -47,7 +49,7 @@
 /* Settings — appearance */
 "prefs.group.appearance" = "Apparence";
 "prefs.appearance.placement" = "Position d’affichage";
-"prefs.appearance.cardSize" = "Taille des cartes";
+"prefs.appearance.cardScale" = "Taille des cartes";
 "prefs.appearance.cardFinish" = "Matériau des cartes";
 "prefs.appearance.preview" = "Aperçu de carte";
 "prefs.appearance.accentColor" = "Couleur d’accentuation";
@@ -70,6 +72,8 @@
 
 /* Settings — login */
 "prefs.startup.launchAtLogin" = "Lancer à l'ouverture de session";
+"prefs.startup.showWelcome" = "Afficher la page d'accueil au démarrage";
+"prefs.startup.showWelcome.note" = "Rappelle comment appeler Orbit. Désactivez-la quand vous n'en avez plus besoin.";
 
 /* Settings — shortcut reference */
 "prefs.group.cheatSheet" = "Aide-mémoire des raccourcis";
@@ -96,10 +100,10 @@
 "ringPlacement.cursor" = "Suivre le curseur";
 
 /* Card size and finish */
-"cardSize.small" = "Petite";
-"cardSize.medium" = "Moyenne";
-"cardSize.large" = "Grande";
-"cardSize.extraLarge" = "Très grande";
+"cardScale.small" = "Petite";
+"cardScale.medium" = "Moyenne";
+"cardScale.large" = "Grande";
+"cardScale.extraLarge" = "Très grande";
 "cardFinish.white" = "Blanc";
 "cardFinish.black" = "Noir";
 "cardFinish.system" = "Système";
@@ -137,6 +141,7 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "Vos apps ouvertes, à un anneau près.\nMaintenez, choisissez, relâchez.";
 "onboarding.start" = "C'est parti";
+"onboarding.showOnLaunch" = "Afficher cette page au démarrage";
 "onboarding.kicker" = "Une façon plus sereine de parcourir votre Mac.";
 "onboarding.step.hold" = "Maintenir Option";
 "onboarding.step.choose" = "Choisir une app";

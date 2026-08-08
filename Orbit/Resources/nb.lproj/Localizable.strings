@@ -5,6 +5,8 @@
 "statusMenu.permission.missing" = "Snarveien krever tilgang";
 "statusMenu.hint.hold" = "Hold %@ for å vise Orbit";
 "statusMenu.grantAccess" = "Åpne Tilgjengelighet …";
+"statusMenu.preview.missing" = "Vindusforhåndsvisninger trenger tilgang igjen";
+"statusMenu.grantScreenRecording" = "Åpne Skjermopptak …";
 "statusMenu.preferences" = "Innstillinger…";
 "statusMenu.quit" = "Avslutt Orbit";
 
@@ -47,7 +49,7 @@
 /* Settings — appearance */
 "prefs.group.appearance" = "Utseende";
 "prefs.appearance.placement" = "Plassering";
-"prefs.appearance.cardSize" = "Kortstørrelse";
+"prefs.appearance.cardScale" = "Kortstørrelse";
 "prefs.appearance.cardFinish" = "Kortmateriale";
 "prefs.appearance.preview" = "Kortforhåndsvisning";
 "prefs.appearance.accentColor" = "Aksentfarge";
@@ -70,6 +72,8 @@
 
 /* Settings — login */
 "prefs.startup.launchAtLogin" = "Start ved innlogging";
+"prefs.startup.showWelcome" = "Vis velkomstsiden ved oppstart";
+"prefs.startup.showWelcome.note" = "Minner om hvordan Orbit hentes frem. Slå den av når du ikke trenger den.";
 
 /* Settings — shortcut reference */
 "prefs.group.cheatSheet" = "Snarveisoversikt";
@@ -96,10 +100,10 @@
 "ringPlacement.cursor" = "Følg pekeren";
 
 /* Card size and finish */
-"cardSize.small" = "Liten";
-"cardSize.medium" = "Mellom";
-"cardSize.large" = "Stor";
-"cardSize.extraLarge" = "Ekstra stor";
+"cardScale.small" = "Liten";
+"cardScale.medium" = "Mellom";
+"cardScale.large" = "Stor";
+"cardScale.extraLarge" = "Ekstra stor";
 "cardFinish.white" = "Hvit";
 "cardFinish.black" = "Svart";
 "cardFinish.system" = "System";
@@ -137,6 +141,7 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "De åpne appene dine i én ring.\nHold, velg, slipp.";
 "onboarding.start" = "Kom i gang";
+"onboarding.showOnLaunch" = "Vis denne siden ved oppstart";
 "onboarding.kicker" = "En roligere måte å bevege seg gjennom Mac-en på.";
 "onboarding.step.hold" = "Hold Option";
 "onboarding.step.choose" = "Velg en app";

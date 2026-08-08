@@ -97,7 +97,7 @@ Ordinary bug fixes and refactors do not need one.
 ## Code style
 
 Match the file you are editing. In general: SwiftUI for views, AppKit where the
-system API requires it, tunable constants in `OrbitConfig` rather than inline
+system API requires it, tunable constants in `OrbitPreferences` rather than inline
 literals, and comments that explain *why* a non-obvious constraint exists —
 system quirks, permission behavior, timing — rather than restating the code.
 

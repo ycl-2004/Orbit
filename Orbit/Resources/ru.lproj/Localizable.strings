@@ -5,6 +5,8 @@
 "statusMenu.permission.missing" = "Сочетанию нужен доступ";
 "statusMenu.hint.hold" = "Удерживайте %@, чтобы показать Orbit";
 "statusMenu.grantAccess" = "Открыть настройки универсального доступа…";
+"statusMenu.preview.missing" = "Просмотрам окон снова нужен доступ";
+"statusMenu.grantScreenRecording" = "Открыть настройки записи экрана…";
 "statusMenu.preferences" = "Настройки…";
 "statusMenu.quit" = "Выйти из Orbit";
 
@@ -47,7 +49,7 @@
 /* Settings — appearance */
 "prefs.group.appearance" = "Внешний вид";
 "prefs.appearance.placement" = "Положение";
-"prefs.appearance.cardSize" = "Размер карточек";
+"prefs.appearance.cardScale" = "Размер карточек";
 "prefs.appearance.cardFinish" = "Материал карточек";
 "prefs.appearance.preview" = "Предпросмотр карточки";
 "prefs.appearance.accentColor" = "Цвет акцента";
@@ -70,6 +72,8 @@
 
 /* Settings — login */
 "prefs.startup.launchAtLogin" = "Запуск при входе";
+"prefs.startup.showWelcome" = "Показывать страницу приветствия при запуске";
+"prefs.startup.showWelcome.note" = "Напоминает, как вызвать Orbit. Выключите, когда она больше не нужна.";
 
 /* Settings — shortcut reference */
 "prefs.group.cheatSheet" = "Памятка по сочетаниям";
@@ -96,10 +100,10 @@
 "ringPlacement.cursor" = "Следовать за курсором";
 
 /* Card size and finish */
-"cardSize.small" = "Маленький";
-"cardSize.medium" = "Средний";
-"cardSize.large" = "Большой";
-"cardSize.extraLarge" = "Очень большой";
+"cardScale.small" = "Маленький";
+"cardScale.medium" = "Средний";
+"cardScale.large" = "Большой";
+"cardScale.extraLarge" = "Очень большой";
 "cardFinish.white" = "Белый";
 "cardFinish.black" = "Черный";
 "cardFinish.system" = "Системный";
@@ -137,6 +141,7 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "Все запущенные приложения — в одном кольце.\nЗажмите, выберите, отпустите.";
 "onboarding.start" = "Начать";
+"onboarding.showOnLaunch" = "Показывать эту страницу при запуске";
 "onboarding.kicker" = "Более спокойный способ работать с Mac.";
 "onboarding.step.hold" = "Зажмите Option";
 "onboarding.step.choose" = "Выберите приложение";

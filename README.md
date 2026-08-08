@@ -311,6 +311,20 @@ gesture-first workflow. This repository provides:
 - Current source build: `1.5.1 (build 6)`.
 - English is the default app localization; the in-app picker ships English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, Russian, Danish, Norwegian Bokmål, and Esperanto.
 
+## Credits
+
+Orbit's core idea — hold a modifier and your running apps appear in a ring
+around the cursor — was inspired by
+[yuzeguitarist/Orbit](https://github.com/yuzeguitarist/Orbit) by Yuze Pan
+(潘禹泽). I came across that project in 2026 and liked the concept enough to
+want a version shaped around my own habits.
+
+I asked the author before starting. They were clear that their code is not open
+for reuse, and equally clear that they welcomed an independent take on the idea.
+This project was built on exactly those terms: a separate implementation written
+from scratch, sharing the concept and not the source. Thanks to Yuze Pan for the
+idea and for the generous answer.
+
 ## License and commercial use
 
 Orbit uses a source-available license rather than an OSI-approved open-source

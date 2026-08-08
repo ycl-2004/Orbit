@@ -5,6 +5,8 @@
 "statusMenu.permission.missing" = "단축키에 손쉬운 사용 권한 필요";
 "statusMenu.hint.hold" = "%@ 를 길게 눌러 Orbit 열기";
 "statusMenu.grantAccess" = "손쉬운 사용 설정 열기…";
+"statusMenu.preview.missing" = "윈도우 미리보기 권한을 다시 허용해야 합니다";
+"statusMenu.grantScreenRecording" = "화면 기록 설정 열기…";
 "statusMenu.preferences" = "설정…";
 "statusMenu.quit" = "Orbit 종료";
 
@@ -47,7 +49,7 @@
 /* Settings — appearance */
 "prefs.group.appearance" = "모양";
 "prefs.appearance.placement" = "표시 위치";
-"prefs.appearance.cardSize" = "카드 크기";
+"prefs.appearance.cardScale" = "카드 크기";
 "prefs.appearance.cardFinish" = "카드 재질";
 "prefs.appearance.preview" = "카드 미리보기";
 "prefs.appearance.accentColor" = "강조 색상";
@@ -70,6 +72,8 @@
 
 /* Settings — login */
 "prefs.startup.launchAtLogin" = "로그인 시 시작";
+"prefs.startup.showWelcome" = "실행 시 시작 페이지 표시";
+"prefs.startup.showWelcome.note" = "Orbit을 부르는 방법을 알려줍니다. 필요 없으면 끄세요.";
 
 /* Settings — shortcut reference */
 "prefs.group.cheatSheet" = "단축키 요약";
@@ -96,10 +100,10 @@
 "ringPlacement.cursor" = "커서 따라가기";
 
 /* Card size and finish */
-"cardSize.small" = "작게";
-"cardSize.medium" = "중간";
-"cardSize.large" = "크게";
-"cardSize.extraLarge" = "아주 크게";
+"cardScale.small" = "작게";
+"cardScale.medium" = "중간";
+"cardScale.large" = "크게";
+"cardScale.extraLarge" = "아주 크게";
 "cardFinish.white" = "흰색";
 "cardFinish.black" = "검은색";
 "cardFinish.system" = "시스템";
@@ -137,6 +141,7 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "실행 중인 앱을 하나의 링에.\n누르고, 고르고, 놓으세요.";
 "onboarding.start" = "시작하기";
+"onboarding.showOnLaunch" = "실행 시 이 페이지 표시";
 "onboarding.kicker" = "Mac을 더 차분하게 오가는 방법.";
 "onboarding.step.hold" = "Option 누르기";
 "onboarding.step.choose" = "앱 선택하기";

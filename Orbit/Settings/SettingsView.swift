@@ -149,6 +149,8 @@ private struct GeneralSettingsPane: View {
                 Toggle("prefs.appearance.hideWindowless", isOn: $model.hideWindowlessApps)
                     .help(Text("prefs.appearance.hideWindowless.note"))
                 Toggle("prefs.startup.launchAtLogin", isOn: $model.launchAtLogin)
+                Toggle("prefs.startup.showWelcome", isOn: $model.showWelcomeOnLaunch)
+                    .help(Text("prefs.startup.showWelcome.note"))
             }
         }
         .formStyle(.grouped)
@@ -254,10 +256,10 @@ private struct ShortcutSettingsPane: View {
 
                 HStack(spacing: 12) {
                     Text("prefs.trigger.holdTime")
-                    Slider(value: $model.longPressThreshold, in: 100 ... 300, step: 10)
+                    Slider(value: $model.summonHoldDuration, in: 100 ... 300, step: 10)
                     Text(String(
                         format: NSLocalizedString("prefs.trigger.holdTimeValue", comment: "Milliseconds"),
-                        Int(model.longPressThreshold)
+                        Int(model.summonHoldDuration)
                     ))
                     .frame(width: 58, alignment: .trailing)
                     .monospacedDigit()
@@ -335,15 +337,15 @@ private struct AppearanceSettingsPane: View {
                 }
                 .pickerStyle(.segmented)
 
-                Picker("prefs.appearance.cardSize", selection: $model.cardSize) {
-                    ForEach(CardSize.allCases) { size in
+                Picker("prefs.appearance.cardScale", selection: $model.cardScale) {
+                    ForEach(CardScale.allCases) { size in
                         Text(size.localizedName).tag(size)
                     }
                 }
                 .pickerStyle(.menu)
 
-                Picker("prefs.appearance.cardFinish", selection: $model.cardMaterial) {
-                    ForEach(OrbitConfig.CardMaterial.allCases) { material in
+                Picker("prefs.appearance.cardFinish", selection: $model.cardFinish) {
+                    ForEach(OrbitPreferences.CardFinish.allCases) { material in
                         Text(material.localizedName).tag(material)
                     }
                 }
@@ -381,8 +383,8 @@ private struct AppearanceSettingsPane: View {
 
             Section {
                 AppearancePreview(
-                    cardSize: model.cardSize,
-                    cardMaterial: model.cardMaterial,
+                    cardScale: model.cardScale,
+                    cardFinish: model.cardFinish,
                     accentColor: model.accentColor,
                     backdropColor: model.ringBackdropEnabled ? model.ringBackdropColor : nil
                 )
@@ -395,8 +397,8 @@ private struct AppearanceSettingsPane: View {
 }
 
 private struct AppearancePreview: View {
-    let cardSize: CardSize
-    let cardMaterial: OrbitConfig.CardMaterial
+    let cardScale: CardScale
+    let cardFinish: OrbitPreferences.CardFinish
     let accentColor: Color
     /// `nil` when the ring is set to show no backdrop at all.
     let backdropColor: Color?
@@ -414,7 +416,7 @@ private struct AppearancePreview: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Orbit")
                     .font(.headline)
-                Text("\(cardSize.localizedName) · \(cardMaterial.localizedName)")
+                Text("\(cardScale.localizedName) · \(cardFinish.localizedName)")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -515,11 +517,11 @@ private struct AppearancePreview: View {
     /// Keep the preview proportional to a real ring card while making the
     /// four size choices visibly different in a compact settings row.
     private var previewDimension: CGFloat {
-        cardSize.dimension * 0.55
+        cardScale.dimension * 0.55
     }
 
     private var cardFill: AnyShapeStyle {
-        switch cardMaterial {
+        switch cardFinish {
         case .white:
             AnyShapeStyle(Color.white)
         case .black:
@@ -530,7 +532,7 @@ private struct AppearancePreview: View {
     }
 
     private var cardBorder: Color {
-        switch cardMaterial {
+        switch cardFinish {
         case .white:
             .black.opacity(0.06)
         case .black:
@@ -541,7 +543,7 @@ private struct AppearancePreview: View {
     }
 
     private var cardForeground: Color {
-        switch cardMaterial {
+        switch cardFinish {
         case .black:
             .white
         case .white:

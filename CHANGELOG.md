@@ -16,6 +16,8 @@
 
 ### Changed
 
+- The Welcome page now appears on launch by default, with a clear opt-out both on the page itself and in Settings. This keeps Orbit's hold-to-switch interaction discoverable after the first run without forcing it on people who have already learned it.
+- When Window Preview is enabled but Screen Recording access is unavailable, the menu bar icon and status menu now identify the missing access and provide a direct route to the relevant System Settings pane.
 - The highest-value recent destination now has a stable 12-o'clock anchor. If the current app has another actionable window, that window-aware card comes first and its carousel defaults to the previously viewed sibling; otherwise the previous app remains first. Cards continue in one direction with or without Window Preview, and either vertical arrow enters a neutral ring at that same target.
 - Opening behavior is now an explicit Settings choice: **Start at Cancel** is the safe default, while **Quick switch** preselects the 12-o'clock target and switches on release. General settings remains shorter and task-oriented; Window Preview controls live in Appearance, advanced explanations use native hover help, and persistent footer text appears only when alphabetical arrangement needs clarification.
 - Automation is no longer presented as a required setup step. Orbit's Accessibility-based window paths handle normal switching; macOS requests Automation only if Orbit reaches its rare Apple Events fallback for an exact window switch. See `docs/decisions/ADR-007-contextual-automation-permission.md`.

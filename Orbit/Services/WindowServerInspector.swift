@@ -252,8 +252,8 @@ enum WindowServerInspector {
               let bounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary) else {
             return false
         }
-        return bounds.width >= OrbitConfig.minimumRealWindowSize.width
-            && bounds.height >= OrbitConfig.minimumRealWindowSize.height
+        return bounds.width >= OrbitPreferences.minimumRealWindowSize.width
+            && bounds.height >= OrbitPreferences.minimumRealWindowSize.height
     }
 
     /// 刻意跟 `qualifiesAsWindow` 用不同的尺寸下限，不是漏改。

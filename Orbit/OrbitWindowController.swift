@@ -117,7 +117,7 @@ final class OrbitWindowController: NSObject {
         // Cancel is the safe default. Quick switch is an explicit setting and
         // always selects the same 12-o'clock target that the first arrow enters
         // — the skip-the-Orbit-card rule here is the one `entryCardID` applies.
-        let preselecting = OrbitConfig.ringOpeningBehavior == .quickSwitch
+        let preselecting = OrbitPreferences.ringOpeningBehavior == .quickSwitch
             ? (apps.first(where: { !$0.isOrbit }) ?? apps.first)?.id
             : nil
 
@@ -152,7 +152,7 @@ final class OrbitWindowController: NSObject {
 
         // Stop swallowing keys the moment the ring is gone, and drop the
         // captured window contents with it.
-        HotKeyService.shared.orbitDidClose()
+        TriggerMonitor.shared.orbitDidClose()
         WindowPreviewService.shared.flushCache()
     }
 
@@ -327,7 +327,7 @@ final class OrbitWindowController: NSObject {
     /// ring then follows the cursor or snaps to that screen's center is a
     /// user preference.
     private func anchor(for cursorLocation: CGPoint, on screen: NSScreen?) -> CGPoint {
-        switch OrbitConfig.ringPlacement {
+        switch OrbitPreferences.ringPlacement {
         case .cursor:
             return cursorLocation
         case .screenCenter:

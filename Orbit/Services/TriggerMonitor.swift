@@ -1,5 +1,5 @@
 //
-//  HotKeyService.swift
+//  TriggerMonitor.swift
 //  Orbit
 //
 //  Watches modifier and keyboard events so Orbit can be summoned without
@@ -20,7 +20,7 @@ private func orbitEventTapCallback(
         return Unmanaged.passUnretained(event)
     }
 
-    let service = Unmanaged<HotKeyService>.fromOpaque(refcon).takeUnretainedValue()
+    let service = Unmanaged<TriggerMonitor>.fromOpaque(refcon).takeUnretainedValue()
     let flags = event.flags
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
     let shouldConsumeKeyDown = type == .keyDown && service.orbitIsOpen
@@ -50,8 +50,8 @@ private func orbitEventTapCallback(
     return shouldConsumeKeyDown ? nil : Unmanaged.passUnretained(event)
 }
 
-final class HotKeyService {
-    static let shared = HotKeyService()
+final class TriggerMonitor {
+    static let shared = TriggerMonitor()
 
     fileprivate var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -69,7 +69,7 @@ final class HotKeyService {
     fileprivate var orbitIsOpen: Bool {
         guard orbitHasOpened else { return false }
 
-        let key = OrbitConfig.summonKey
+        let key = OrbitPreferences.summonKey
         guard key != .none else { return false }
         return key.isDown(in: CGEventSource.flagsState(.combinedSessionState))
     }
@@ -85,20 +85,20 @@ final class HotKeyService {
     /// Tapped while the ring is open, this clears the current selection.
     /// `nil` when the user has turned the shortcut off.
     private var clearSelectionFlag: CGEventFlags? {
-        let key = OrbitConfig.clearSelectionKey
+        let key = OrbitPreferences.clearSelectionKey
         guard key != .none else { return nil }
         return key.eventFlags
     }
 
     private init() {}
 
-    static func checkAccessibilityPermission() -> Bool {
+    static func accessibilityIsTrusted() -> Bool {
         AXIsProcessTrusted()
     }
 
-    func startListening() {
+    func beginMonitoring() {
         guard !listening else { return }
-        guard Self.checkAccessibilityPermission() else { return }
+        guard Self.accessibilityIsTrusted() else { return }
 
         // 鼠标和滚轮只用来"撤销一次待发的召唤"，从不被吞掉。刻意不订阅
         // mouseMoved/mouseDragged：按住 ⌥ 光是移动鼠标仍然是一次合法的召唤，
@@ -130,7 +130,7 @@ final class HotKeyService {
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
     }
 
-    func stopListening() {
+    func endMonitoring() {
         cancelPendingPress()
         triggerPressed = false
         orbitHasOpened = false
@@ -149,7 +149,7 @@ final class HotKeyService {
     }
 
     fileprivate func handleFlagsChanged(_ flags: CGEventFlags) {
-        let key = OrbitConfig.summonKey
+        let key = OrbitPreferences.summonKey
         guard key != .none else { return }
 
         // Track the clear key on its own edge, so holding it down does not
@@ -177,7 +177,7 @@ final class HotKeyService {
             let token = UUID()
             pressToken = token
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + OrbitConfig.longPressThreshold / 1_000) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + OrbitPreferences.summonHoldDuration / 1_000) { [weak self] in
                 guard let self,
                       self.triggerPressed,
                       self.pressToken == token,
@@ -237,10 +237,10 @@ final class HotKeyService {
         case 123:
             post(.previousWindow)
         case 18, 19, 20, 21, 23, 22, 26, 28, 25:
-            guard OrbitConfig.numericShortcutsEnabled else { return }
+            guard OrbitPreferences.numericShortcutsEnabled else { return }
             post(.number, value: number(for: keyCode))
         default:
-            guard OrbitConfig.letterShortcutsEnabled,
+            guard OrbitPreferences.letterShortcutsEnabled,
                   let letter = letter(for: keyCode) else { return }
             post(.letter, value: letter)
         }

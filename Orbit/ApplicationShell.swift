@@ -28,11 +28,14 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
 
     /// 首次运行后写入的标记；改成 `true` 可以在调试时强制重看欢迎页。
     private static let alwaysShowWelcome = false
-    private static let welcomeSeenKey = "hasSeenWelcome"
+    private static let welcomeSeenKey = "onboardingCompleted"
 
     // MARK: - 生命周期
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 必须排在最前：后面每一步都会读设置，而升级上来的机器此刻还只有旧键。
+        OrbitPreferences.migrateStoredPreferences()
+
         // 不占 Dock 图标，只在菜单栏出现。
         NSApp.setActivationPolicy(.accessory)
 
@@ -49,13 +52,15 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
         // 用户可能刚在"系统设置"里授予了辅助功能权限。回到前台时重试一次，
         // 这样不用重启 Orbit 快捷键就能生效。
         resumeEventTapIfPermitted()
+        // 屏幕录制也可能是刚给的 —— 给完角标就该自己消失。
+        refreshStatusItemAppearance()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         if let summonObserver {
             NotificationCenter.default.removeObserver(summonObserver)
         }
-        HotKeyService.shared.stopListening()
+        TriggerMonitor.shared.endMonitoring()
     }
 
     /// 给这个进程发出的每一次辅助功能往返设一个统一的上限。
@@ -79,19 +84,18 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
 
     /// 只有拿到辅助功能权限时才装事件监听；没权限时反复调用也无副作用。
     private func resumeEventTapIfPermitted() {
-        guard HotKeyService.checkAccessibilityPermission() else { return }
-        HotKeyService.shared.startListening()
+        guard TriggerMonitor.accessibilityIsTrusted() else { return }
+        TriggerMonitor.shared.beginMonitoring()
     }
 
     private func presentWelcomeIfNeeded() {
-        let defaults = UserDefaults.standard
-        guard Self.alwaysShowWelcome || !defaults.bool(forKey: Self.welcomeSeenKey) else { return }
+        guard Self.alwaysShowWelcome || OrbitPreferences.showWelcomeOnLaunch else { return }
 
         // 稍等一拍再弹，让菜单栏图标和事件监听先就位，
         // 否则欢迎窗口可能抢在应用真正激活之前出现。
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            WelcomeWindowController.shared.show()
-            defaults.set(true, forKey: Self.welcomeSeenKey)
+            OnboardingWindowController.shared.show()
+            UserDefaults.standard.set(true, forKey: Self.welcomeSeenKey)
         }
     }
 
@@ -114,11 +118,20 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
 
     private func installStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.button?.image = Self.statusItemImage()
         item.button?.target = self
         item.button?.action = #selector(statusItemPressed)
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         statusItem = item
+        refreshStatusItemAppearance()
+    }
+
+    /// 权限齐全时这里什么也不画，菜单栏和以前一模一样；只有预览真的用不了时才
+    /// 补上角标。图标是菜单栏上唯一持续可见的表面，而预览失效恰恰是安静的，
+    /// 不在这里说一声就没有别的地方能说了。
+    private func refreshStatusItemAppearance() {
+        statusItem?.button?.image = Self.statusItemImage(
+            needsAttention: WindowPreviewService.windowPreviewNeedsAuthorization
+        )
     }
 
     /// 菜单栏图标：环 + 中心球，取自 app 图标的骨架。
@@ -128,13 +141,41 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     /// menu bar and tints while the menu is open. The system symbol behind it is
     /// insurance — a status item with no image is an invisible button, which
     /// would leave the menu unreachable.
-    private static func statusItemImage() -> NSImage? {
+    private static func statusItemImage(needsAttention: Bool = false) -> NSImage? {
         let image = NSImage(named: "MenuBarIcon")
             ?? NSImage(systemSymbolName: "circle.dotted.circle", accessibilityDescription: nil)
         image?.isTemplate = true
         image?.size = NSSize(width: 18, height: 18)
         image?.accessibilityDescription = "Orbit"
-        return image
+
+        guard needsAttention, let image else { return image }
+        return badged(image)
+    }
+
+    /// 在图标右上角点一个角标。
+    ///
+    /// 先用 `destinationOut` 挖掉一个大一圈的洞再填实心点：模板图像里所有像素都是
+    /// 同一个颜色，不挖这个洞，角标就和环糊成一块，看着只是图标变形了。
+    private static func badged(_ base: NSImage) -> NSImage {
+        let badge = NSImage(size: base.size, flipped: false) { rect in
+            base.draw(in: rect)
+            guard let context = NSGraphicsContext.current else { return true }
+
+            let clearing = NSRect(x: rect.maxX - 8, y: rect.maxY - 8, width: 8, height: 8)
+            context.compositingOperation = .destinationOut
+            NSBezierPath(ovalIn: clearing).fill()
+
+            context.compositingOperation = .sourceOver
+            NSColor.black.setFill()
+            NSBezierPath(ovalIn: clearing.insetBy(dx: 1.6, dy: 1.6)).fill()
+            return true
+        }
+        badge.isTemplate = true
+        badge.accessibilityDescription = NSLocalizedString(
+            "statusMenu.preview.missing",
+            comment: "Menu bar icon state when window previews lost access"
+        )
+        return badge
     }
 
     /// 左键和右键都弹同一个菜单 —— Orbit 没有"点一下就执行"的主操作，
@@ -142,24 +183,36 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     @objc private func statusItemPressed() {
         // 顺手重试一次授权：用户往往是刚授完权就来点菜单栏图标的。
         resumeEventTapIfPermitted()
+        refreshStatusItemAppearance()
         popUpMenu(buildMenu())
     }
 
     private func buildMenu() -> NSMenu {
-        let isAuthorized = HotKeyService.checkAccessibilityPermission()
+        let isAuthorized = TriggerMonitor.accessibilityIsTrusted()
+        let previewNeedsAccess = WindowPreviewService.windowPreviewNeedsAuthorization
         let menu = NSMenu()
 
         menu.addItem(infoItem(
             isAuthorized ? "statusMenu.permission.granted" : "statusMenu.permission.missing"
         ))
+        // 只在预览真的用不了时才多这一行。权限齐全的人看到的菜单和以前一模一样。
+        if previewNeedsAccess {
+            menu.addItem(infoItem("statusMenu.preview.missing"))
+        }
         menu.addItem(infoItem(String(
             format: NSLocalizedString("statusMenu.hint.hold", comment: "How to summon Orbit"),
-            OrbitConfig.summonKey.glyph
+            OrbitPreferences.summonKey.glyph
         )))
         menu.addItem(.separator())
 
         if !isAuthorized {
             menu.addItem(actionItem("statusMenu.grantAccess", #selector(revealAccessibilitySettings)))
+        }
+        if previewNeedsAccess {
+            menu.addItem(actionItem(
+                "statusMenu.grantScreenRecording",
+                #selector(revealScreenRecordingSettings)
+            ))
         }
         menu.addItem(actionItem("statusMenu.preferences", #selector(revealSettings), key: ","))
         menu.addItem(.separator())
@@ -199,6 +252,10 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func revealAccessibilitySettings() {
         SystemSettingsLink.accessibility.open()
+    }
+
+    @objc private func revealScreenRecordingSettings() {
+        SystemSettingsLink.screenRecording.open()
     }
 
     @objc private func revealSettings() {

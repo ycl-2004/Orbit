@@ -1,5 +1,5 @@
 //
-//  OrbitConfig.swift
+//  OrbitPreferences.swift
 //  Orbit
 //
 //  Runtime configuration shared by the menu bar app and the ring UI.
@@ -9,7 +9,7 @@ import AppKit
 import Foundation
 import SwiftUI
 
-enum CardSize: String, CaseIterable, Identifiable {
+enum CardScale: String, CaseIterable, Identifiable {
     case small
     case medium
     case large
@@ -18,7 +18,7 @@ enum CardSize: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var localizedName: String {
-        NSLocalizedString("cardSize.\(rawValue)", comment: "Card size name")
+        NSLocalizedString("cardScale.\(rawValue)", comment: "Card size name")
     }
 
     var dimension: CGFloat {
@@ -87,8 +87,8 @@ enum RingOpeningBehavior: String, CaseIterable, Identifiable {
     }
 }
 
-enum OrbitConfig {
-    enum CardMaterial: String, CaseIterable, Identifiable {
+enum OrbitPreferences {
+    enum CardFinish: String, CaseIterable, Identifiable {
         case white
         case black
         case system
@@ -102,21 +102,76 @@ enum OrbitConfig {
 
     private static let defaults = UserDefaults.standard
 
-    static var longPressThreshold: Double {
-        get {
-            let value = defaults.object(forKey: "longPressThreshold") as? Double ?? 150
-            return min(max(value, 100), 300)
+    // MARK: - 旧版本设置迁移
+
+    /// 1.5.1 及更早的版本用另一套键名存设置。升级上来的用户在磁盘上只有旧键，
+    /// 直接读新键会让他们的触发键、卡片尺寸、欢迎页状态统统回到出厂值。
+    ///
+    /// 迁移一次就够，所以每个键都先看新键在不在：在，说明这台机器已经迁过（或者
+    /// 本来就是新装），旧值不该再覆盖回去。搬完就把旧键删掉，下次启动这里什么也
+    /// 不会做。
+    ///
+    /// 必须在任何一个属性被读到之前调用 —— `ApplicationDelegate` 在
+    /// `applicationDidFinishLaunching` 的第一行调它。
+    static func migrateStoredPreferences() {
+        for (legacyKey, currentKey) in [
+            ("longPressThreshold", "summonHoldDuration"),
+            ("cardSize", "cardScale"),
+            ("cardMaterial", "cardFinish"),
+            ("hasSeenWelcome", "onboardingCompleted"),
+            ("triggerModifier", "summonKey"),
+        ] {
+            defer { defaults.removeObject(forKey: legacyKey) }
+
+            guard defaults.object(forKey: currentKey) == nil,
+                  let legacyValue = defaults.object(forKey: legacyKey) else { continue }
+
+            defaults.set(migratedValue(legacyValue), forKey: currentKey)
         }
-        set {
-            defaults.set(min(max(newValue, 100), 300), forKey: "longPressThreshold")
+
+        // 这个键名没变，但它存的是 `ShortcutKey.rawValue`，而那套拼写变了。
+        if let stored = defaults.string(forKey: "clearSelectionModifier"),
+           let renamed = renamedShortcutSpelling(stored) {
+            defaults.set(renamed, forKey: "clearSelectionModifier")
         }
     }
 
-    /// The modifier that summons the ring. The stored key name remains stable so
-    /// existing installations keep their preference after the source refactor.
+    /// 修饰键的存储拼写在同一次改名里换过，所以搬键的时候顺带把值也翻译一遍。
+    private static func migratedValue(_ legacyValue: Any) -> Any {
+        guard let spelling = legacyValue as? String,
+              let renamed = renamedShortcutSpelling(spelling) else {
+            return legacyValue
+        }
+        return renamed
+    }
+
+    /// 旧拼写 → 新拼写；`nil` 表示这个值不是需要翻译的修饰键。
+    private static func renamedShortcutSpelling(_ stored: String) -> String? {
+        switch stored {
+        case "option": "alternate"
+        case "disabled": "none"
+        default: nil
+        }
+    }
+
+    static var summonHoldDuration: Double {
+        get {
+            let value = defaults.object(forKey: "summonHoldDuration") as? Double ?? 150
+            return min(max(value, 100), 300)
+        }
+        set {
+            defaults.set(min(max(newValue, 100), 300), forKey: "summonHoldDuration")
+        }
+    }
+
+    /// The modifier that summons the ring.
+    ///
+    /// `.none` is rejected on both sides: it exists for the optional
+    /// clear-selection shortcut, and storing it here would leave Orbit with no
+    /// way to be summoned at all.
     static var summonKey: ShortcutKey {
         get {
-            guard let rawValue = defaults.string(forKey: "triggerModifier"),
+            guard let rawValue = defaults.string(forKey: "summonKey"),
                   let key = ShortcutKey(rawValue: rawValue),
                   key != .none else {
                 return .alternate
@@ -125,20 +180,20 @@ enum OrbitConfig {
         }
         set {
             let safeValue = newValue == .none ? .alternate : newValue
-            defaults.set(safeValue.rawValue, forKey: "triggerModifier")
+            defaults.set(safeValue.rawValue, forKey: "summonKey")
         }
     }
 
-    static var cardSize: CardSize {
+    static var cardScale: CardScale {
         get {
-            guard let rawValue = defaults.string(forKey: "cardSize"),
-                  let size = CardSize(rawValue: rawValue) else {
+            guard let rawValue = defaults.string(forKey: "cardScale"),
+                  let size = CardScale(rawValue: rawValue) else {
                 return .large
             }
             return size
         }
         set {
-            defaults.set(newValue.rawValue, forKey: "cardSize")
+            defaults.set(newValue.rawValue, forKey: "cardScale")
         }
     }
 
@@ -187,6 +242,18 @@ enum OrbitConfig {
     static var showOrbitCard: Bool {
         get { defaults.object(forKey: "showOrbitCard") as? Bool ?? true }
         set { defaults.set(newValue, forKey: "showOrbitCard") }
+    }
+
+    /// 每次启动都先过一遍欢迎页。
+    ///
+    /// 默认开着，因为 Orbit 的整个交互就是「按住一个键不放」—— 屏幕上没有任何东西
+    /// 能提示这件事，菜单栏图标也提示不了。只在第一次讲一遍的话，那一次没看清、
+    /// 或者换了台机器，这个应用就等于没有入口了。
+    ///
+    /// 看够了的人在欢迎页上直接关掉它，之后再也不会出现；想找回来就在设置里。
+    static var showWelcomeOnLaunch: Bool {
+        get { defaults.object(forKey: "showWelcomeOnLaunch") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "showWelcomeOnLaunch") }
     }
 
     /// 界面语言，`nil` 表示跟随系统。
@@ -281,16 +348,16 @@ enum OrbitConfig {
         }
     }
 
-    static var cardMaterial: CardMaterial {
+    static var cardFinish: CardFinish {
         get {
-            guard let rawValue = defaults.string(forKey: "cardMaterial"),
-                  let material = CardMaterial(rawValue: rawValue) else {
+            guard let rawValue = defaults.string(forKey: "cardFinish"),
+                  let material = CardFinish(rawValue: rawValue) else {
                 return .white
             }
             return material
         }
         set {
-            defaults.set(newValue.rawValue, forKey: "cardMaterial")
+            defaults.set(newValue.rawValue, forKey: "cardFinish")
         }
     }
 
@@ -379,12 +446,12 @@ enum OrbitConfig {
     /// Distance from the ring center to the center of a card. Sized so the arc
     /// between two cards stays shorter than a card is wide.
     static func ringRadius(cardCount: Int) -> CGFloat {
-        let spacing = cardSize.dimension * 0.86
+        let spacing = cardScale.dimension * 0.86
         let byOverlap = spacing / CGFloat(ringStep(cardCount: cardCount))
         let compactScale: CGFloat = cardCount <= 4 ? 0.78 : 1
         // Keep the center clear even in compact mode: the card's inner edge
         // gets real breathing room beyond the hub rather than crowding it.
-        let minimum = centerFootprintRadius + cardSize.height * 0.5 + centerClearance
+        let minimum = centerFootprintRadius + cardScale.height * 0.5 + centerClearance
         return max(minimum, byOverlap * compactScale)
     }
 
@@ -394,7 +461,7 @@ enum OrbitConfig {
     /// not the loudest thing on the ring, and `centerDropRadius` keeps a file
     /// drag just as forgiving as it was.
     static var centerRadius: CGFloat {
-        (cardSize.dimension * 0.39).rounded()
+        (cardScale.dimension * 0.39).rounded()
     }
 
     /// 中心控件真正占掉的半径：圆盘本身，加上它下面那颗状态标签。
@@ -428,7 +495,7 @@ enum OrbitConfig {
     /// Canvas has to hold the outermost card corner plus its shadow and the
     /// scale-up applied to the selected card.
     static func ringCanvasSize(cardCount: Int) -> CGFloat {
-        (ringRadius(cardCount: cardCount) + cardSize.height * 0.5 + 72) * 2
+        (ringRadius(cardCount: cardCount) + cardScale.height * 0.5 + 72) * 2
     }
 
     /// 磨砂轨道的径向厚度：一张卡片那么宽，不是一张卡片那么高。
@@ -442,7 +509,7 @@ enum OrbitConfig {
     /// top and bottom of each card standing slightly proud of it, which is what
     /// gives the ring its depth and keeps the hollow in the middle wide open.
     static var ringTrackThickness: CGFloat {
-        cardSize.dimension * 0.88
+        cardScale.dimension * 0.88
     }
 
     /// 轨道在扇面两端各多走出去的角度。
@@ -455,7 +522,7 @@ enum OrbitConfig {
     /// enough that no empty glass trails behind the last app. This is also what
     /// gives a single-app ring a band at all, since its fan spans no angle.
     static func ringTrackEndPadding(cardCount: Int) -> Double {
-        let overhang = cardSize.dimension * 0.55 - ringTrackThickness / 2 + 8
+        let overhang = cardScale.dimension * 0.55 - ringTrackThickness / 2 + 8
         return Double(max(overhang, 8) / ringRadius(cardCount: cardCount))
     }
 
@@ -551,7 +618,7 @@ enum OrbitConfig {
     static let maxVisibleApps = 12
     static let dispersionParticleCount = 72
     static let dispersionDuration: TimeInterval = 0.55
-    static let terminateGracePeriod: TimeInterval = 0.45
+    static let quitGracePeriod: TimeInterval = 0.45
     static let fileTrashHoldDuration: TimeInterval = 0.9
 
     /// 拖拽离开中心之后，等这么久再把拖放状态复位。

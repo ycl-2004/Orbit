@@ -113,7 +113,7 @@ enum ScriptedWindowFocus {
     /// falling back to plain activation at *that* moment pulls the screen out
     /// from under whatever they are doing instead of finishing their switch.
     static func fallbackActivationIsStillRelevant(elapsed: TimeInterval) -> Bool {
-        elapsed <= OrbitConfig.maximumSwitchFallbackDelay
+        elapsed <= OrbitPreferences.maximumSwitchFallbackDelay
     }
 
     // MARK: - Window-menu fallback (Accessibility)

@@ -5,6 +5,8 @@
 "statusMenu.permission.missing" = "需要辅助功能权限";
 "statusMenu.hint.hold" = "按住 %@ 显示 Orbit";
 "statusMenu.grantAccess" = "打开辅助功能设置…";
+"statusMenu.preview.missing" = "窗口预览需要重新授权";
+"statusMenu.grantScreenRecording" = "打开屏幕录制设置…";
 "statusMenu.preferences" = "设置…";
 "statusMenu.quit" = "退出 Orbit";
 
@@ -47,7 +49,7 @@
 /* Settings — appearance */
 "prefs.group.appearance" = "外观";
 "prefs.appearance.placement" = "唤出位置";
-"prefs.appearance.cardSize" = "卡片大小";
+"prefs.appearance.cardScale" = "卡片大小";
 "prefs.appearance.cardFinish" = "卡片材质";
 "prefs.appearance.preview" = "卡片预览";
 "prefs.appearance.accentColor" = "强调颜色";
@@ -70,6 +72,8 @@
 
 /* Settings — login */
 "prefs.startup.launchAtLogin" = "开机自动启动";
+"prefs.startup.showWelcome" = "启动时显示欢迎页";
+"prefs.startup.showWelcome.note" = "提醒你 Orbit 怎么唤出。不需要了就关掉。";
 
 /* Settings — shortcut reference */
 "prefs.group.cheatSheet" = "快捷键速查";
@@ -96,10 +100,10 @@
 "ringPlacement.cursor" = "跟随光标";
 
 /* Card size and finish */
-"cardSize.small" = "小";
-"cardSize.medium" = "中";
-"cardSize.large" = "大";
-"cardSize.extraLarge" = "超大";
+"cardScale.small" = "小";
+"cardScale.medium" = "中";
+"cardScale.large" = "大";
+"cardScale.extraLarge" = "超大";
 "cardFinish.white" = "纯白";
 "cardFinish.black" = "纯黑";
 "cardFinish.system" = "跟随系统";
@@ -137,6 +141,7 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "正在运行的应用，一环即达。\n按住、选中、松手。";
 "onboarding.start" = "上手试试";
+"onboarding.showOnLaunch" = "启动时显示这一页";
 "onboarding.kicker" = "更从容地穿梭于 Mac 之间。";
 "onboarding.step.hold" = "按住 Option";
 "onboarding.step.choose" = "选择应用";

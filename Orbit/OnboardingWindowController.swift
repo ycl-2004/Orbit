@@ -1,13 +1,13 @@
 //
-//  WelcomeWindowController.swift
+//  OnboardingWindowController.swift
 //  Orbit
 //
 
 import AppKit
 import SwiftUI
 
-final class WelcomeWindowController: NSWindowController {
-    static let shared = WelcomeWindowController()
+final class OnboardingWindowController: NSWindowController {
+    static let shared = OnboardingWindowController()
 
     private init() {
         let window = NSWindow(
@@ -43,6 +43,9 @@ final class WelcomeWindowController: NSWindowController {
 
 private struct WelcomeView: View {
     let onStart: () -> Void
+
+    /// 镜像 `OrbitPreferences.showWelcomeOnLaunch`，让复选框自己有状态可画。
+    @State private var showOnLaunch = OrbitPreferences.showWelcomeOnLaunch
 
     var body: some View {
         ZStack {
@@ -90,7 +93,7 @@ private struct WelcomeView: View {
                 .padding(.top, 20)
 
                 Button("onboarding.start") {
-                    UserDefaults.standard.set(true, forKey: "hasSeenWelcome")
+                    UserDefaults.standard.set(true, forKey: "onboardingCompleted")
                     onStart()
                 }
                 .buttonStyle(.borderedProminent)
@@ -98,7 +101,20 @@ private struct WelcomeView: View {
                 .controlSize(.large)
                 .keyboardShortcut(.defaultAction)
                 .padding(.top, 20)
-                .padding(.bottom, 30)
+
+                // 关掉这一页的开关就放在这一页上 —— 被它烦到的人正好在这里，
+                // 让他为此翻一趟设置是说不过去的。
+                Toggle(isOn: $showOnLaunch) {
+                    Text("onboarding.showOnLaunch")
+                        .font(.system(size: 12, design: .rounded))
+                        .foregroundStyle(.secondary)
+                }
+                .toggleStyle(.checkbox)
+                .onChange(of: showOnLaunch) { _, newValue in
+                    OrbitPreferences.showWelcomeOnLaunch = newValue
+                }
+                .padding(.top, 14)
+                .padding(.bottom, 24)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

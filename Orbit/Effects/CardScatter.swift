@@ -20,18 +20,22 @@ struct CardScatterModifier: ViewModifier {
     private struct Shard {
         let start: CGPoint
         let angle: Double
-        let distance: CGFloat
-        let delay: Double
+        /// 射程倍率，决定这一片最终飞多远。
+        let reach: CGFloat
+        /// 加速度指数的增量：越大起步越慢、末段越急，碎片之间的错落全部来自它。
+        let drag: Double
         let size: CGFloat
-        let green: Double
+        /// 在 `OrbitPalette.ember` 上的取色位置。
+        let tint: Double
     }
 
     private enum Timing {
         static let particlesAppearAt = 0.08
-        static let travelDistance: CGFloat = 92
-        static let fadeRate = 1.35
-        static let shrinkRate: CGFloat = 0.42
+        static let travelDistance: CGFloat = 96
+        static let shrinkRate: CGFloat = 0.45
         static let blurRadius: CGFloat = 1.8
+        /// 碎片整体淡出的陡度；大于 1 表示先慢后快。
+        static let fadeCurve: Double = 1.6
     }
 
     func body(content: Content) -> some View {
@@ -59,18 +63,23 @@ struct CardScatterModifier: ViewModifier {
         }
     }
 
+    /// 所有碎片共用一条时间轴 —— 没有哪一片有自己的起跑时刻。
+    ///
+    /// 错落来自各自的加速曲线：`drag` 把指数抬高，那一片就起步更慢、末段更急，
+    /// 像是离中心更远、被拉扯得更晚。这样做的好处是动画在任何一帧被打断（用户
+    /// 中途松手、卡片被回收）都还是连续的 —— 而按起跑时刻错开的话，被打断时
+    /// 总有一批碎片还停在原地没动过。
     private func paint(_ shard: Shard, in context: inout GraphicsContext) {
-        let localProgress = (progress - shard.delay) / (1 - shard.delay)
-        guard localProgress > 0 else { return }
-
-        let distance = shard.distance * Timing.travelDistance * CGFloat(localProgress)
+        let pull = pow(progress, 1 + shard.drag)
+        let distance = shard.reach * Timing.travelDistance * CGFloat(pull)
         let center = CGPoint(
             x: shard.start.x + cos(shard.angle) * distance,
             y: shard.start.y + sin(shard.angle) * distance
         )
-        let edge = shard.size * (1 - Timing.shrinkRate * CGFloat(localProgress))
-        let opacity = max(0, 1 - localProgress * Timing.fadeRate)
-        guard opacity > 0, edge > 0 else { return }
+
+        let edge = shard.size * (1 - Timing.shrinkRate * CGFloat(pull))
+        let opacity = pow(max(0, 1 - progress), Timing.fadeCurve)
+        guard opacity > 0.01, edge > 0 else { return }
 
         let rect = CGRect(
             x: center.x - edge / 2,
@@ -81,7 +90,7 @@ struct CardScatterModifier: ViewModifier {
         context.opacity = opacity
         context.fill(
             Path(roundedRect: rect, cornerRadius: edge * 0.25),
-            with: .color(Color(red: 1, green: shard.green, blue: 0.3).opacity(0.9))
+            with: .color(OrbitPalette.ember(shard.tint))
         )
     }
 
@@ -89,7 +98,7 @@ struct CardScatterModifier: ViewModifier {
         guard size.width > 0, size.height > 0, size != measuredSize else { return }
         measuredSize = size
 
-        shards = (0 ..< OrbitConfig.dispersionParticleCount).map { index in
+        shards = (0 ..< OrbitPreferences.dispersionParticleCount).map { index in
             let sample = ScatterSequence(index: index)
             return Shard(
                 start: CGPoint(
@@ -97,10 +106,10 @@ struct CardScatterModifier: ViewModifier {
                     y: sample.value(for: size.height, axis: 3)
                 ),
                 angle: targetAngle + sample.inRange(-0.42 ... 0.42, axis: 5),
-                distance: sample.inRange(0.65 ... 1.25, axis: 7),
-                delay: sample.inRange(0.02 ... 0.24, axis: 11),
+                reach: sample.inRange(0.65 ... 1.25, axis: 7),
+                drag: sample.inRange(0 ... 0.9, axis: 11),
                 size: CGFloat(sample.inRange(1.5 ... 5.5, axis: 13)),
-                green: sample.inRange(0.73 ... 0.91, axis: 17)
+                tint: sample.inRange(0 ... 1, axis: 17)
             )
         }
     }

@@ -5,6 +5,8 @@
 "statusMenu.permission.missing" = "Accessibility access required";
 "statusMenu.hint.hold" = "Hold %@ to show Orbit";
 "statusMenu.grantAccess" = "Open Accessibility Settings…";
+"statusMenu.preview.missing" = "Window previews need access again";
+"statusMenu.grantScreenRecording" = "Open Screen Recording Settings…";
 "statusMenu.preferences" = "Settings…";
 "statusMenu.quit" = "Quit Orbit";
 
@@ -47,7 +49,7 @@
 /* Settings — appearance */
 "prefs.group.appearance" = "Appearance";
 "prefs.appearance.placement" = "Appears at";
-"prefs.appearance.cardSize" = "Card size";
+"prefs.appearance.cardScale" = "Card size";
 "prefs.appearance.cardFinish" = "Card material";
 "prefs.appearance.preview" = "Card preview";
 "prefs.appearance.accentColor" = "Accent color";
@@ -70,6 +72,8 @@
 
 /* Settings — login */
 "prefs.startup.launchAtLogin" = "Launch at login";
+"prefs.startup.showWelcome" = "Show the welcome page at launch";
+"prefs.startup.showWelcome.note" = "A reminder of how to summon Orbit. Turn it off once you no longer need it.";
 
 /* Settings — shortcut reference */
 "prefs.group.cheatSheet" = "Shortcut reference";
@@ -96,10 +100,10 @@
 "ringPlacement.cursor" = "Follow cursor";
 
 /* Card size and finish */
-"cardSize.small" = "Small";
-"cardSize.medium" = "Medium";
-"cardSize.large" = "Large";
-"cardSize.extraLarge" = "Extra Large";
+"cardScale.small" = "Small";
+"cardScale.medium" = "Medium";
+"cardScale.large" = "Large";
+"cardScale.extraLarge" = "Extra Large";
 "cardFinish.white" = "White";
 "cardFinish.black" = "Black";
 "cardFinish.system" = "System";
@@ -137,6 +141,7 @@
 "onboarding.title" = "Orbit";
 "onboarding.description" = "Your running apps, one ring away.\nHold a key, pick, let go.";
 "onboarding.start" = "Get Started";
+"onboarding.showOnLaunch" = "Show this page at launch";
 "onboarding.kicker" = "A calmer way to move through your Mac.";
 "onboarding.step.hold" = "Hold Option";
 "onboarding.step.choose" = "Choose an app";

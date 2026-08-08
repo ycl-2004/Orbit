@@ -27,7 +27,7 @@ An app must own at least one real window to appear on the ring, controlled by
 `hideWindowlessApps` in Settings → Appearance and **on by default**.
 
 "Real window" is decided by `WindowVisibilityChecker.isRealWindow`: normal
-window layer, non-transparent, and at least `OrbitConfig.minimumRealWindowSize`
+window layer, non-transparent, and at least `OrbitPreferences.minimumRealWindowSize`
 (200×120). Both the ring's app list and `WindowPreviewService`'s window list
 measure against that one constant, so a card never promises a thumbnail the
 preview then refuses to show.

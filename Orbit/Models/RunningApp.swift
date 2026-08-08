@@ -62,21 +62,53 @@ extension AppRecord {
 extension AppRecord {
     /// The first Latin letter used by the optional name shortcut.
     ///
-    /// The name is folded to Latin first, so 「微信」 answers to W (via *Wēixìn*)
-    /// and *Éditeur* answers to E. Anything that still has no letter after
-    /// folding — an app named only with digits or symbols — simply has no letter
-    /// shortcut rather than claiming a wrong one.
+    /// 「微信」答 W（经由拼音 *Wēixìn*），*Éditeur* 答 E，*1Password* 答 P。
+    ///
+    /// 逐个字符地问、问到就停，而不是把整个名字转写完再从结果里挑。名字里只要有
+    /// 一个字符能折出拉丁字母，后面的字符就再也不影响答案，转写它们纯属浪费；而
+    /// 中英混排的名字整串转写后，字符和原位置也不再一一对应。
+    ///
+    /// 一个字母都折不出来的名字（纯数字、纯符号、纯空白）没有字母快捷键 —— 宁可
+    /// 没有，也好过认领一个错的。
     var letterShortcut: Character? {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
+        for character in name where !character.isWhitespace {
+            if let letter = Self.latinInitial(of: character) {
+                return letter
+            }
+        }
+        return nil
+    }
 
-        let latin = trimmed.applyingTransform(.toLatin, reverse: false) ?? trimmed
-        let folded = latin.applyingTransform(.stripDiacritics, reverse: false) ?? latin
+    /// 把单个字符折成一个大写 ASCII 字母；折不出来返回 `nil`。
+    ///
+    /// 两级：`folding` 先处理带变音符号和全角的拉丁字母（É → E，Ｓ → S），这一步
+    /// 对汉字无能为力，所以剩下的交给 `.toLatin` 转写。转写只作用在这一个字符上，
+    /// 代价是固定的。
+    ///
+    /// `isASCII` 这道关卡不能省：汉字本身的 `isLetter` 就是 `true`，光看
+    /// `isLetter` 会让「微」原样过关，成为一个敲不出来的快捷键。
+    private static func latinInitial(of character: Character) -> Character? {
+        let source = String(character)
 
-        guard let scalar = folded.unicodeScalars.first(where: { CharacterSet.letters.contains($0) }) else {
+        if let direct = asciiLetter(in: source) {
+            return direct
+        }
+
+        guard let transliterated = source.applyingTransform(.toLatin, reverse: false) else {
             return nil
         }
-        return String(scalar).uppercased().first
+        return asciiLetter(in: transliterated)
+    }
+
+    private static func asciiLetter(in text: String) -> Character? {
+        let folded = text.folding(
+            options: [.diacriticInsensitive, .widthInsensitive],
+            locale: .current
+        )
+        guard let initial = folded.uppercased().first, initial.isLetter, initial.isASCII else {
+            return nil
+        }
+        return initial
     }
 }
 
@@ -143,7 +175,7 @@ extension AppRecord {
     ///   - gracePeriod: 等待应用自行退出的秒数。
     ///   - completion: 回调参数为宽限期结束时该应用是否真的已经退出。
     func requestQuit(
-        gracePeriod: TimeInterval = OrbitConfig.terminateGracePeriod,
+        gracePeriod: TimeInterval = OrbitPreferences.quitGracePeriod,
         completion: @escaping (Bool) -> Void
     ) {
         guard let running = NSRunningApplication(processIdentifier: processIdentifier),

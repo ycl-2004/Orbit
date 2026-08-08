@@ -7,9 +7,9 @@ import AppKit
 
 /// User-selectable modifier keys used by the summon and clear-selection gestures.
 ///
-/// The enum deliberately has its own vocabulary. Its persisted spellings stay
-/// compatible with existing installs through `rawValue`, while the source-level
-/// names describe the input model instead of mirroring an upstream type.
+/// `rawValue` is written straight to `UserDefaults`, so the spellings here are a
+/// storage format rather than display text — `localizedTitle` is what the
+/// settings window shows.
 enum ShortcutKey: CaseIterable, Identifiable, Equatable {
     case alternate
     case command
@@ -23,21 +23,21 @@ enum ShortcutKey: CaseIterable, Identifiable, Equatable {
 
     var rawValue: String {
         switch self {
-        case .alternate: "option"
+        case .alternate: "alternate"
         case .command: "command"
         case .control: "control"
         case .shift: "shift"
-        case .none: "disabled"
+        case .none: "none"
         }
     }
 
     nonisolated init?(rawValue: String) {
         switch rawValue {
-        case "option": self = .alternate
+        case "alternate": self = .alternate
         case "command": self = .command
         case "control": self = .control
         case "shift": self = .shift
-        case "disabled": self = .none
+        case "none": self = .none
         default: return nil
         }
     }

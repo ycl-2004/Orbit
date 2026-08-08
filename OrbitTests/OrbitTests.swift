@@ -17,13 +17,13 @@ struct OrbitTests {
         numbers: Bool = false,
         _ body: () -> T
     ) -> T {
-        let previousLetters = OrbitConfig.letterShortcutsEnabled
-        let previousNumbers = OrbitConfig.numericShortcutsEnabled
-        OrbitConfig.letterShortcutsEnabled = letters
-        OrbitConfig.numericShortcutsEnabled = numbers
+        let previousLetters = OrbitPreferences.letterShortcutsEnabled
+        let previousNumbers = OrbitPreferences.numericShortcutsEnabled
+        OrbitPreferences.letterShortcutsEnabled = letters
+        OrbitPreferences.numericShortcutsEnabled = numbers
         defer {
-            OrbitConfig.letterShortcutsEnabled = previousLetters
-            OrbitConfig.numericShortcutsEnabled = previousNumbers
+            OrbitPreferences.letterShortcutsEnabled = previousLetters
+            OrbitPreferences.numericShortcutsEnabled = previousNumbers
         }
         return body()
     }
@@ -98,7 +98,7 @@ struct OrbitTests {
 
     /// 尺寸门槛必须和预览侧共用一个来源，否则会出现「环上有卡片、预览说没窗口」。
     @Test func windowSizeThresholdIsSharedWithThePreview() {
-        let size = OrbitConfig.minimumRealWindowSize
+        let size = OrbitPreferences.minimumRealWindowSize
         #expect(WindowServerInspector.qualifiesAsWindow([
             kCGWindowLayer as String: 0,
             kCGWindowBounds as String: [
@@ -153,7 +153,7 @@ struct OrbitTests {
         UserDefaults.standard.removeObject(forKey: "hideWindowlessApps")
         defer { UserDefaults.standard.set(previous, forKey: "hideWindowlessApps") }
 
-        #expect(OrbitConfig.hideWindowlessApps)
+        #expect(OrbitPreferences.hideWindowlessApps)
     }
 
     /// 下拉里列出的每一种语言，CFBundle 都必须真的能解析到 bundle 里的
@@ -246,10 +246,10 @@ struct OrbitTests {
         }
 
         defaults.removeObject(forKey: "ringOpeningBehavior")
-        #expect(OrbitConfig.ringOpeningBehavior == .cancel)
+        #expect(OrbitPreferences.ringOpeningBehavior == .cancel)
 
-        OrbitConfig.ringOpeningBehavior = .quickSwitch
-        #expect(OrbitConfig.ringOpeningBehavior == .quickSwitch)
+        OrbitPreferences.ringOpeningBehavior = .quickSwitch
+        #expect(OrbitPreferences.ringOpeningBehavior == .quickSwitch)
     }
 
     /// If the current app has another actionable window, that window is the
@@ -385,11 +385,11 @@ struct OrbitTests {
             }
         }
 
-        OrbitConfig.showOrbitCard = true
+        OrbitPreferences.showOrbitCard = true
         let shown = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
         #expect(shown.apps.contains(where: { $0.isOrbit }))
 
-        OrbitConfig.showOrbitCard = false
+        OrbitPreferences.showOrbitCard = false
         let hidden = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
         #expect(!hidden.apps.contains(where: { $0.isOrbit }))
     }
@@ -462,7 +462,7 @@ struct OrbitTests {
         #expect(!didCancel)
 
         model.setFileDragTargeted(false)
-        try await Task.sleep(for: .seconds(OrbitConfig.fileDragExitGrace + 0.2))
+        try await Task.sleep(for: .seconds(OrbitPreferences.fileDragExitGrace + 0.2))
         #expect(didCancel)
     }
 
@@ -478,12 +478,12 @@ struct OrbitTests {
         model.onCancel = { didCancel = true }
 
         model.setFileDragTargeted(true)
-        try await Task.sleep(for: .seconds(OrbitConfig.fileTrashHoldDuration + 0.2))
+        try await Task.sleep(for: .seconds(OrbitPreferences.fileTrashHoldDuration + 0.2))
         #expect(model.centerMode == .trash)
 
         // 文件离开了窗口，但用户并没有放手 —— 不会有 drop 回调来收拾状态。
         model.setFileDragTargeted(false)
-        try await Task.sleep(for: .seconds(OrbitConfig.fileDragExitGrace + 0.2))
+        try await Task.sleep(for: .seconds(OrbitPreferences.fileDragExitGrace + 0.2))
         #expect(model.fileDropPhase == .resting)
         #expect(model.centerMode == .cancel)
 
@@ -557,17 +557,17 @@ struct OrbitTests {
 
     /// 触发键设成 `.none` 会让环再也唤不出来，所以它连存都不该存得住。
     @Test @MainActor func summonKeyAlwaysHasAValue() {
-        let previous = UserDefaults.standard.object(forKey: "triggerModifier")
-        defer { UserDefaults.standard.set(previous, forKey: "triggerModifier") }
+        let previous = UserDefaults.standard.object(forKey: "summonKey")
+        defer { UserDefaults.standard.set(previous, forKey: "summonKey") }
 
-        UserDefaults.standard.set(ShortcutKey.none.rawValue, forKey: "triggerModifier")
+        UserDefaults.standard.set(ShortcutKey.none.rawValue, forKey: "summonKey")
 
-        #expect(OrbitConfig.summonKey != .none)
+        #expect(OrbitPreferences.summonKey != .none)
         #expect(!ShortcutKey.usableForSummon.contains(.none))
 
-        OrbitConfig.summonKey = .none
+        OrbitPreferences.summonKey = .none
         #expect(
-            UserDefaults.standard.string(forKey: "triggerModifier") == ShortcutKey.alternate.rawValue
+            UserDefaults.standard.string(forKey: "summonKey") == ShortcutKey.alternate.rawValue
         )
     }
 
@@ -891,7 +891,7 @@ struct OrbitTests {
     /// ahead of the titled page in the on-screen window list. The page ID is
     /// what ScreenCaptureKit previews and therefore the one Orbit must hide.
     @Test func currentWindowSkipsChromesUntitledFullscreenSurfaces() {
-        let size = OrbitConfig.minimumRealWindowSize
+        let size = OrbitPreferences.minimumRealWindowSize
         func window(id: Int, title: String?) -> [String: Any] {
             var value: [String: Any] = [
                 kCGWindowOwnerPID as String: 42,
@@ -927,7 +927,7 @@ struct OrbitTests {
     /// 「你正看着哪一扇窗」——而那是「当前应用要不要给一张卡」的起点，整条
     /// 「切到同一应用的另一扇窗」会跟着一起消失。要求标题必须跟着权限走。
     @Test func theFrontWindowStaysResolvableWithoutScreenRecording() {
-        let size = OrbitConfig.minimumRealWindowSize
+        let size = OrbitPreferences.minimumRealWindowSize
         func window(id: Int) -> [String: Any] {
             [
                 kCGWindowOwnerPID as String: 42,
@@ -968,10 +968,10 @@ struct OrbitTests {
     @Test func aLateAppleEventsAnswerNoLongerActivatesTheApp() {
         #expect(ScriptedWindowFocus.fallbackActivationIsStillRelevant(elapsed: 0))
         #expect(ScriptedWindowFocus.fallbackActivationIsStillRelevant(
-            elapsed: OrbitConfig.maximumSwitchFallbackDelay
+            elapsed: OrbitPreferences.maximumSwitchFallbackDelay
         ))
         #expect(!ScriptedWindowFocus.fallbackActivationIsStillRelevant(
-            elapsed: OrbitConfig.maximumSwitchFallbackDelay + 0.01
+            elapsed: OrbitPreferences.maximumSwitchFallbackDelay + 0.01
         ))
         #expect(!ScriptedWindowFocus.fallbackActivationIsStillRelevant(elapsed: 60))
     }

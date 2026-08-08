@@ -13,7 +13,10 @@ final class RunningAppCatalog {
     private let imageStore = NSCache<NSString, NSImage>()
 
     private init() {
-        imageStore.countLimit = 128
+        // 环一次最多摆十二张卡，但缓存要跨多次唤出活着 —— 一台机器上同时开著
+        // 几十个应用是常态，图标又只有指针大小。留出一轮完整的应用清单还绰绰
+        // 有余，超出的部分由 NSCache 自己按内存压力回收。
+        imageStore.countLimit = 64
     }
 
     /// Builds one snapshot for a summon. The frontmost process is captured by
@@ -32,7 +35,7 @@ final class RunningAppCatalog {
             isCandidate($0, excluding: frontmostProcess)
         }
 
-        if OrbitConfig.hideWindowlessApps, let owners {
+        if OrbitPreferences.hideWindowlessApps, let owners {
             candidates = candidates.filter { owners.contains($0.processIdentifier) }
         }
 
@@ -45,19 +48,19 @@ final class RunningAppCatalog {
         let history = AppActivationHistory.shared
         let ranked = Self.orderedByUse(candidates.map(makeRecord), rank: history.rank(of:))
         let switchTargetLimit = max(
-            OrbitConfig.maxVisibleApps - (OrbitConfig.showOrbitCard ? 1 : 0),
+            OrbitPreferences.maxVisibleApps - (OrbitPreferences.showOrbitCard ? 1 : 0),
             0
         )
         let displayed = Self.switchTargets(
             rankedApps: ranked,
             currentApp: currentCard,
             limit: switchTargetLimit,
-            order: OrbitConfig.ringOrder
+            order: OrbitPreferences.ringOrder
         )
 
         // Orbit 是清理工具，不是最近目标；它继续固定在序列末尾。
         return displayed
-            + (OrbitConfig.showOrbitCard ? [.orbitCard] : [])
+            + (OrbitPreferences.showOrbitCard ? [.orbitCard] : [])
     }
 
     /// 你此刻就在的那个应用要不要给一张卡。

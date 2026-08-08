@@ -108,6 +108,21 @@ final class WindowPreviewService {
         CGPreflightScreenCaptureAccess()
     }
 
+    /// 窗口预览开着，屏幕录制权限却读不到。
+    ///
+    /// 这个组合只有一种解释：预览是这个人明确要的功能，而它此刻用不了。最常见的
+    /// 起因是升级 —— Orbit 是 ad-hoc 签名的，每次构建 code hash 都会变，而 macOS
+    /// 是按 hash 记授权的，于是「系统设置」里 Orbit 的条目还亮着、实际早已失效。
+    ///
+    /// 失效的后果偏偏是安静的：环照开，应用之间照切，只有窗口级切换悄悄退回到
+    /// 普通激活 —— Chromium 系应用尤其明显，它们的窗口只能靠标题认，而标题在
+    /// macOS 上算屏幕内容。所以这里必须主动说出来，等人自己发现是等不到的。
+    ///
+    /// 关掉预览的人不会看到任何提示：他没要这个功能，缺权限也就不是问题。
+    static var windowPreviewNeedsAuthorization: Bool {
+        OrbitPreferences.windowPreviewEnabled && !hasScreenRecordingPermission()
+    }
+
     /// Prompts once. macOS only applies a freshly granted permission after the
     /// app restarts, so callers should say so rather than silently failing.
     @discardableResult
@@ -288,8 +303,8 @@ final class WindowPreviewService {
                 .filter { $0.windowLayer == 0 }
                 .filter { !($0.title ?? "").isEmpty }
                 .filter {
-                    $0.frame.width >= OrbitConfig.minimumRealWindowSize.width
-                        && $0.frame.height >= OrbitConfig.minimumRealWindowSize.height
+                    $0.frame.width >= OrbitPreferences.minimumRealWindowSize.width
+                        && $0.frame.height >= OrbitPreferences.minimumRealWindowSize.height
                 }
                 .sorted { lhs, rhs in
                     switch (preferredRank[lhs.windowID], preferredRank[rhs.windowID]) {
@@ -312,7 +327,7 @@ final class WindowPreviewService {
 
         // Any window that gets captured can be brought to the front of the
         // carousel, so each is captured at the size of that front slot.
-        let captureWidth = OrbitConfig.previewCaptureWidth(scale: scale)
+        let captureWidth = OrbitPreferences.previewCaptureWidth(scale: scale)
 
         // 只截转盘放得下的那几个窗口。
         //
@@ -328,8 +343,8 @@ final class WindowPreviewService {
 
         for window in windows {
             if Task.isCancelled { return previews }
-            guard windowsWithContent < OrbitConfig.maxVisiblePreviews,
-                  previews.count < OrbitConfig.maxPreviewCaptures else { break }
+            guard windowsWithContent < OrbitPreferences.maxVisiblePreviews,
+                  previews.count < OrbitPreferences.maxPreviewCaptures else { break }
 
             let fresh = await Self.capture(window, width: captureWidth, scale: scale)
             if let fresh {

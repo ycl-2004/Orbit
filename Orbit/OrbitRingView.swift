@@ -108,15 +108,15 @@ final class OrbitRingViewModel: ObservableObject {
             ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
         self.backingScaleFactor = target?.backingScaleFactor ?? 2
 
-        let sourceApps = OrbitConfig.showOrbitCard ? apps : apps.filter { !$0.isOrbit }
-        let limited = Array(sourceApps.prefix(OrbitConfig.maxVisibleApps))
+        let sourceApps = OrbitPreferences.showOrbitCard ? apps : apps.filter { !$0.isOrbit }
+        let limited = Array(sourceApps.prefix(OrbitPreferences.maxVisibleApps))
         if let orbit = sourceApps.first(where: { $0.isOrbit }), !limited.contains(where: { $0.isOrbit }), !limited.isEmpty {
             self.apps = Array(limited.dropLast()) + [orbit]
         } else {
             self.apps = limited
         }
         self.showsPreview = showsPreview
-            ?? OrbitConfig.windowPreviewEnabled
+            ?? OrbitPreferences.windowPreviewEnabled
         // The ring is positioned around the current pointer. SwiftUI can emit
         // an initial `onHover` as soon as the panel appears, even though the
         // user has not moved the pointer. Treat that first location as an
@@ -167,11 +167,11 @@ final class OrbitRingViewModel: ObservableObject {
     }
 
     var ringRadius: CGFloat {
-        OrbitConfig.ringRadius(cardCount: apps.count)
+        OrbitPreferences.ringRadius(cardCount: apps.count)
     }
 
     var canvasSize: CGFloat {
-        OrbitConfig.ringCanvasSize(cardCount: apps.count)
+        OrbitPreferences.ringCanvasSize(cardCount: apps.count)
     }
 
     /// The highest-value recent destination is the ring's spatial anchor: index
@@ -184,7 +184,7 @@ final class OrbitRingViewModel: ObservableObject {
     /// stays identical with and without Window Preview, so repeated keyboard
     /// steps build one spatial memory instead of mirroring the sequence.
     func angle(for index: Int) -> Double {
-        let step = OrbitConfig.ringStep(cardCount: apps.count)
+        let step = OrbitPreferences.ringStep(cardCount: apps.count)
         return fanStartAngle - step * Double(index)
     }
 
@@ -211,17 +211,17 @@ final class OrbitRingViewModel: ObservableObject {
     /// reference only; nothing is ever drawn on it.
     private var layoutWidth: CGFloat {
         let visibleWidth = visibleFrame.width
-        let maximum = canvasSize + OrbitConfig.previewPanelMaximumWidth + OrbitConfig.previewGap * 2
+        let maximum = canvasSize + OrbitPreferences.previewPanelMaximumWidth + OrbitPreferences.previewGap * 2
         // A full twelve-card fan makes a disc wider than the ratio leaves room
         // for, and a disc that overruns its half would sit on the carousel.
         // Widen for it rather than crop it — the ratio is there to keep the
         // ring out of the corner, not to decide how big the fan may get.
-        let discDemand = (backdropDiameter + OrbitConfig.previewGap * 2) * 2
+        let discDemand = (backdropDiameter + OrbitPreferences.previewGap * 2) * 2
         return max(
             canvasSize,
             min(
-                max(visibleWidth * OrbitConfig.layoutWidthRatio, discDemand, previewDemand),
-                visibleWidth - OrbitConfig.screenMargin * 2,
+                max(visibleWidth * OrbitPreferences.layoutWidthRatio, discDemand, previewDemand),
+                visibleWidth - OrbitPreferences.screenMargin * 2,
                 maximum
             )
         )
@@ -233,10 +233,10 @@ final class OrbitRingViewModel: ObservableObject {
     /// 环。这里量的是"在默认版式下这一半有多宽"，于是倍率 1.0 复现的正好是今天
     /// 的尺寸，一个像素不差。
     private var desiredPreviewCardWidth: CGFloat {
-        let half = visibleFrame.width * OrbitConfig.layoutWidthRatio / 2
-        let usable = half - OrbitConfig.previewGap * 2
-        let base = min(OrbitConfig.previewCardMaximumWidth, usable / OrbitConfig.previewCarouselSpan)
-        return max(120, base * OrbitConfig.previewScale)
+        let half = visibleFrame.width * OrbitPreferences.layoutWidthRatio / 2
+        let usable = half - OrbitPreferences.previewGap * 2
+        let base = min(OrbitPreferences.previewCardMaximumWidth, usable / OrbitPreferences.previewCarouselSpan)
+        return max(120, base * OrbitPreferences.previewScale)
     }
 
     /// 放大预览要靠窗口变宽，不然那一半装不下。
@@ -246,7 +246,7 @@ final class OrbitRingViewModel: ObservableObject {
     /// 而改预览大小不该动到环。
     private var previewDemand: CGFloat {
         guard showsPreview else { return 0 }
-        let half = desiredPreviewCardWidth * OrbitConfig.previewCarouselSpan + OrbitConfig.previewGap * 2
+        let half = desiredPreviewCardWidth * OrbitPreferences.previewCarouselSpan + OrbitPreferences.previewGap * 2
         return half * 2
     }
 
@@ -260,7 +260,7 @@ final class OrbitRingViewModel: ObservableObject {
         // canvas when the ring alone would not give the stage room. The ring
         // stays centered in whatever height that comes to.
         let screenHeight = visibleFrame.height
-        let stageHeight = previewCardWidth / OrbitConfig.previewStageAspectRatio + 120
+        let stageHeight = previewCardWidth / OrbitPreferences.previewStageAspectRatio + 120
         return CGSize(
             width: layoutWidth,
             height: min(max(canvasSize, stageHeight), screenHeight - 60)
@@ -271,15 +271,15 @@ final class OrbitRingViewModel: ObservableObject {
     /// the preview owns — never by the selected window — so that the stage, and
     /// with it the page control, holds still while arrowing through.
     var previewCardWidth: CGFloat {
-        let usable = columnWidth - OrbitConfig.previewGap * 2
+        let usable = columnWidth - OrbitPreferences.previewGap * 2
         // 想要多大是一回事，那一半真的装得下多少是另一回事：屏幕不够宽时，
         // 窗口涨不到 `previewDemand`，卡片就得让步。
-        return max(120, min(desiredPreviewCardWidth, usable / OrbitConfig.previewCarouselSpan))
+        return max(120, min(desiredPreviewCardWidth, usable / OrbitPreferences.previewCarouselSpan))
     }
 
     /// Outer diameter of the band the fan sits on, measured from the cards.
     var backdropDiameter: CGFloat {
-        OrbitConfig.ringBackdropRadius(cardCount: apps.count) * 2
+        OrbitPreferences.ringBackdropRadius(cardCount: apps.count) * 2
     }
 
     /// 轨道要盖住的那段角度：正好是首尾两张卡片之间，两端各多留一点。
@@ -289,15 +289,15 @@ final class OrbitRingViewModel: ObservableObject {
     /// ascending range, so the last card supplies the lower bound.
     var backdropArc: ClosedRange<Double> {
         let span = apps.count > 1
-            ? OrbitConfig.ringStep(cardCount: apps.count) * Double(apps.count - 1)
+            ? OrbitPreferences.ringStep(cardCount: apps.count) * Double(apps.count - 1)
             : 0
-        let padding = OrbitConfig.ringTrackEndPadding(cardCount: apps.count)
+        let padding = OrbitPreferences.ringTrackEndPadding(cardCount: apps.count)
         return (fanStartAngle - span - padding)...(fanStartAngle + padding)
     }
 
     /// Read once per showing, like `showsPreview`: the disc must not appear or
     /// vanish underneath a fan that is already on screen.
-    let showsBackdrop = OrbitConfig.ringBackdropEnabled
+    let showsBackdrop = OrbitPreferences.ringBackdropEnabled
 
     func position(for index: Int) -> CGPoint {
         let center = canvasSize / 2
@@ -368,7 +368,7 @@ final class OrbitRingViewModel: ObservableObject {
             )
         guard !Task.isCancelled else { return }
 
-        previews = Array(captured.prefix(OrbitConfig.maxVisiblePreviews))
+        previews = Array(captured.prefix(OrbitPreferences.maxVisiblePreviews))
         isLoadingPreviews = false
         if previews.isEmpty {
             if let owners = WindowServerInspector.windowOwners() {
@@ -560,7 +560,7 @@ final class OrbitRingViewModel: ObservableObject {
 
                 // 宽限期比消散动画短，所以退出成功之后还要把动画剩下的那一截等完
                 // 再抽走卡片 —— 否则碎片飞到一半，卡片就凭空不见了。
-                let remaining = max(0, OrbitConfig.dispersionDuration - OrbitConfig.terminateGracePeriod)
+                let remaining = max(0, OrbitPreferences.dispersionDuration - OrbitPreferences.quitGracePeriod)
                 DispatchQueue.main.asyncAfter(deadline: .now() + remaining) {
                     self.apps.removeAll { $0.id == app.id }
                     self.vanishingAppID = nil
@@ -615,7 +615,7 @@ final class OrbitRingViewModel: ObservableObject {
         guard bulkCleanupPendingIDs.isEmpty else { return }
 
         let succeededIDs = bulkCleanupSucceededIDs
-        let remaining = max(0, OrbitConfig.dispersionDuration - OrbitConfig.terminateGracePeriod)
+        let remaining = max(0, OrbitPreferences.dispersionDuration - OrbitPreferences.quitGracePeriod)
         DispatchQueue.main.asyncAfter(deadline: .now() + remaining) { [weak self] in
             guard let self else { return }
             self.apps.removeAll { succeededIDs.contains($0.id) }
@@ -646,7 +646,7 @@ final class OrbitRingViewModel: ObservableObject {
                 self.fileDropPhase = .trashReady
             }
             fileTrashTask = task
-            DispatchQueue.main.asyncAfter(deadline: .now() + OrbitConfig.fileTrashHoldDuration, execute: task)
+            DispatchQueue.main.asyncAfter(deadline: .now() + OrbitPreferences.fileTrashHoldDuration, execute: task)
         } else {
             fileTrashTask?.cancel()
             fileTrashTask = nil
@@ -680,7 +680,7 @@ final class OrbitRingViewModel: ObservableObject {
             }
         }
         dragExitTask = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + OrbitConfig.fileDragExitGrace, execute: task)
+        DispatchQueue.main.asyncAfter(deadline: .now() + OrbitPreferences.fileDragExitGrace, execute: task)
     }
 
     /// 把「没成」挂在中心上，等它被看见了再谈关不关。
@@ -702,7 +702,7 @@ final class OrbitRingViewModel: ObservableObject {
         }
         fileFailureTask = task
         DispatchQueue.main.asyncAfter(
-            deadline: .now() + OrbitConfig.fileDropFailureNoticeDuration,
+            deadline: .now() + OrbitPreferences.fileDropFailureNoticeDuration,
             execute: task
         )
     }
@@ -812,10 +812,10 @@ final class OrbitRingViewModel: ObservableObject {
         case .previousWindow:
             moveWindowSelection(step: -1)
         case .number:
-            guard OrbitConfig.numericShortcutsEnabled, let value else { return }
+            guard OrbitPreferences.numericShortcutsEnabled, let value else { return }
             select(number: value)
         case .letter:
-            guard OrbitConfig.letterShortcutsEnabled, let value else { return }
+            guard OrbitPreferences.letterShortcutsEnabled, let value else { return }
             select(letter: value)
         }
     }
@@ -918,7 +918,7 @@ struct OrbitRingView: View {
             if model.showsBackdrop {
                 OrbitRingBackdrop(
                     radius: model.ringRadius,
-                    thickness: OrbitConfig.ringTrackThickness,
+                    thickness: OrbitPreferences.ringTrackThickness,
                     arc: model.backdropArc,
                     tint: OrbitPalette.backdrop
                 )
@@ -957,7 +957,7 @@ struct OrbitRingView: View {
                         model.updateAppDrag(
                             app,
                             offset: offset,
-                            overCenter: distance <= OrbitConfig.centerRadius + 28
+                            overCenter: distance <= OrbitPreferences.centerRadius + 28
                         )
                     },
                     onDragEnded: { model.finishAppDrag(app) }
@@ -1001,11 +1001,11 @@ private struct OrbitPreviewPanel: View {
         return model.selectedWindowIndex
     }
 
-    private var cardSize: CGSize {
+    private var cardScale: CGSize {
         let width = model.previewCardWidth
         return CGSize(
             width: width,
-            height: (width / OrbitConfig.previewStageAspectRatio).rounded()
+            height: (width / OrbitPreferences.previewStageAspectRatio).rounded()
         )
     }
 
@@ -1075,7 +1075,7 @@ private struct OrbitPreviewPanel: View {
                             preview: preview,
                             isSelected: index == selectedIndex
                         )
-                        .frame(width: cardSize.width, height: cardSize.height)
+                        .frame(width: cardScale.width, height: cardScale.height)
                         .scaleEffect(position.scale)
                         .offset(position.offset)
                         .opacity(position.opacity)
@@ -1084,7 +1084,7 @@ private struct OrbitPreviewPanel: View {
                     }
                 }
             }
-            .frame(height: cardSize.height + 24)
+            .frame(height: cardScale.height + 24)
 
             if model.previews.count > 1 {
                 windowControls
@@ -1124,8 +1124,8 @@ private struct OrbitPreviewPanel: View {
     /// Only the immediate neighbours are drawn. A deeper stack turns into
     /// clutter well before it helps anyone tell two windows apart.
     private func deckPosition(for index: Int) -> (offset: CGSize, scale: CGFloat, opacity: Double, zIndex: Double)? {
-        let sideOffset = cardSize.width * OrbitConfig.previewSideOffsetRatio
-        let sideScale = OrbitConfig.previewSideScale
+        let sideOffset = cardScale.width * OrbitPreferences.previewSideOffsetRatio
+        let sideScale = OrbitPreferences.previewSideScale
 
         switch relativeIndex(for: index) {
         case 0:
@@ -1320,17 +1320,17 @@ private struct OrbitAppCard: View {
 
     private var shortcutHint: String {
         var hints: [String] = []
-        if OrbitConfig.numericShortcutsEnabled, cardNumber <= 9 {
+        if OrbitPreferences.numericShortcutsEnabled, cardNumber <= 9 {
             hints.append(String(cardNumber))
         }
-        if OrbitConfig.letterShortcutsEnabled, let letter = app.letterShortcut {
+        if OrbitPreferences.letterShortcutsEnabled, let letter = app.letterShortcut {
             hints.append(String(letter).lowercased())
         }
         return hints.joined(separator: " · ")
     }
 
     var body: some View {
-        let size = OrbitConfig.cardSize
+        let size = OrbitPreferences.cardScale
         let dimension = size.dimension
         let cornerRadius = dimension * 0.17
 
@@ -1387,7 +1387,7 @@ private struct OrbitAppCard: View {
         }
         .onChange(of: isVanishing) { _, newValue in
             if newValue {
-                withAnimation(.easeIn(duration: OrbitConfig.dispersionDuration)) {
+                withAnimation(.easeIn(duration: OrbitPreferences.dispersionDuration)) {
                     scatterProgress = 1
                 }
             } else {
@@ -1402,7 +1402,7 @@ private struct OrbitAppCard: View {
 
     private func cardBackground(cornerRadius: CGFloat) -> some View {
         let material: AnyShapeStyle
-        switch OrbitConfig.cardMaterial {
+        switch OrbitPreferences.cardFinish {
         case .white:
             material = AnyShapeStyle(isDragging ? OrbitPalette.ivory : Color.white)
         case .black:
@@ -1414,7 +1414,7 @@ private struct OrbitAppCard: View {
     }
 
     private var hintColor: Color {
-        switch OrbitConfig.cardMaterial {
+        switch OrbitPreferences.cardFinish {
         case .white: .black.opacity(0.42)
         case .black: .white.opacity(0.55)
         case .system: .secondary
@@ -1422,7 +1422,7 @@ private struct OrbitAppCard: View {
     }
 
     private var borderColor: Color {
-        switch OrbitConfig.cardMaterial {
+        switch OrbitPreferences.cardFinish {
         case .white: .black.opacity(0.06)
         case .black: .white.opacity(0.12)
         case .system: .white.opacity(0.2)
@@ -1450,8 +1450,8 @@ private struct OrbitCenterControl: View {
             // Finder drag does not require pixel-perfect aim.
             Color.clear
                 .frame(
-                    width: OrbitConfig.centerDropRadius * 2,
-                    height: OrbitConfig.centerDropRadius * 2
+                    width: OrbitPreferences.centerDropRadius * 2,
+                    height: OrbitPreferences.centerDropRadius * 2
                 )
                 .contentShape(Circle())
 
@@ -1461,8 +1461,8 @@ private struct OrbitCenterControl: View {
                     ZStack {
                         hub
                             .frame(
-                                width: OrbitConfig.centerRadius * 2,
-                                height: OrbitConfig.centerRadius * 2
+                                width: OrbitPreferences.centerRadius * 2,
+                                height: OrbitPreferences.centerRadius * 2
                             )
 
                         Image(systemName: centerIcon)
