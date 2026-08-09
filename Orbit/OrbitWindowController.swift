@@ -121,7 +121,8 @@ final class OrbitWindowController: NSObject {
             WindowServerInspector.mostRecentOtherWindow(
                 ownedBy: currentWindow.processIdentifier,
                 excluding: currentWindow.id,
-                preferredIDs: recentCurrentAppWindowIDs
+                preferredIDs: recentCurrentAppWindowIDs,
+                knownBlank: WindowPreviewService.shared.knownBlankWindows
             )
         } else {
             nil

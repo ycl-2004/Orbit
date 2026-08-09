@@ -84,7 +84,51 @@ final class WindowPreviewService {
     private var cacheOrder: [CGWindowID] = []
     private static let cacheLimit = 12
 
+    /// 测出来画不出东西的窗口号。
+    ///
+    /// 只有像素分辨得了的事，得记下来给分辨不了像素的那一头用。
+    /// `WindowServerInspector` picks the synchronous release target — the one
+    /// used when the trigger is let go before capture finishes — from layer,
+    /// title and size alone, and WeChat's 280x380 shell has all three. The only
+    /// thing separating it from a real window is what it draws, so the capture
+    /// path, the one place that ever looks at pixels, writes down what it
+    /// learned for the structural path to consult.
+    ///
+    /// 不跟着 `flushCache` 一起清。That cache holds real screenshots and has no
+    /// business outliving the ring; this holds window numbers and no screen
+    /// content at all, and its whole value is that it survives from one summon
+    /// to the next — a shell window keeps its number for as long as the app is
+    /// running, so the second summon is already right.
+    private var blankWindows: Set<CGWindowID> = []
+    private var blankOrder: [CGWindowID] = []
+    /// Bounded like the image cache: Orbit sits in the menu bar for days, and a
+    /// set that only ever grows is a leak however small each entry is.
+    private static let blankWindowLimit = 64
+
     private init() {}
+
+    /// 已知画不出东西的窗口，交给只看得见结构的那一头去排除。
+    var knownBlankWindows: Set<CGWindowID> { blankWindows }
+
+    /// 只在真的看过这扇窗的像素之后才调用 —— 截图失败不是"它是空的"的证据。
+    ///
+    /// 也负责改回来：a window that was blank while it was still loading starts
+    /// drawing later, and a stale verdict would then hide a real window from the
+    /// release target for as long as the app stayed open.
+    private func recordBlankness(_ isBlank: Bool, for id: CGWindowID) {
+        guard isBlank else {
+            if blankWindows.remove(id) != nil {
+                blankOrder.removeAll { $0 == id }
+            }
+            return
+        }
+        if blankWindows.insert(id).inserted {
+            blankOrder.append(id)
+        }
+        while blankOrder.count > Self.blankWindowLimit {
+            blankWindows.remove(blankOrder.removeFirst())
+        }
+    }
 
     private func remember(_ image: CGImage, for id: CGWindowID) {
         if cache.updateValue(image, forKey: id) == nil {
@@ -445,26 +489,56 @@ final class WindowPreviewService {
                 windowsWithContent += 1
             }
 
+            // 只有真拿到图才谈得上"它画了什么"。截图失败时 variance 是
+            // `greatestFiniteMagnitude`，那是"不知道"，不是"有内容"。
+            if image != nil {
+                recordBlankness(variance < Self.blankVarianceThreshold, for: window.windowID)
+            }
+
             // 交出的每一份中间结果都过同一道空白过滤，面板和松手目标才不会先看到
             // 一扇随后就会被丢掉的辅助窗。
-            onPartial?(Self.droppingBlankWindows(previews))
+            onPartial?(Self.droppingBlankWindows(previews, hidCurrentWindow: hidden != nil))
         }
 
-        return Self.droppingBlankWindows(previews)
+        return Self.droppingBlankWindows(previews, hidCurrentWindow: hidden != nil)
     }
 
     /// Apps keep windows that are titled and normal-layered but render as a
     /// flat rectangle — WeChat's 280x380 helper is one. They are only
     /// distinguishable by their contents, so drop them when the app has a real
-    /// window to show instead. An app whose only window looks flat still gets
-    /// shown; better a dull preview than none.
-    private static func droppingBlankWindows(_ previews: [WindowPreview]) -> [WindowPreview] {
-        guard previews.count > 1 else { return previews }
+    /// window to show instead.
+    ///
+    /// 剩下的全是空白时，还给不给看，取决于当前窗是不是被藏掉了。
+    ///
+    /// Showing the flat one is the right concession for an app you are not in:
+    /// it may genuinely have nothing but a dull window, and a dull preview beats
+    /// no preview. 可是当前窗被藏起来的时候，这个让步就成了谎话 —— 那扇真窗口
+    /// 就是你正看着的这一扇，剩下的这块板一定不是它。微信正是这个组合：主窗
+    /// 一藏，只剩那扇 280x380 的空壳，于是面板给出一张纯白卡，而松手时的目标
+    /// 也跟着落到那扇壳上，切过去等于什么都没发生。宁可空着。
+    ///
+    /// Internal for the unit tests; pure, so `nonisolated` is safe.
+    nonisolated static func droppingBlankWindows(
+        _ previews: [WindowPreview],
+        hidCurrentWindow: Bool
+    ) -> [WindowPreview] {
         let withContent = previews.filter { $0.contentVariance >= blankVarianceThreshold }
-        return withContent.isEmpty ? previews : withContent
+        guard withContent.isEmpty else { return withContent }
+        return hidCurrentWindow ? [] : previews
     }
 
-    private static let blankVarianceThreshold: Double = 12
+    /// 亮度标准差低于这个数，就当这扇窗没画东西。
+    ///
+    /// Measured rather than guessed: across a normal desktop every real window
+    /// — browser, terminal, Finder, settings, WeChat's own main window — lands
+    /// between 25 and 39, while WeChat's 280x380 shell measures 8.5. It is not
+    /// a flat block (it carries a faint gradient and a border), so a threshold
+    /// chosen for "near zero" would miss it. 12 sits in the empty middle of
+    /// that gap, far enough from 8.5 to catch it and far enough from 25 to
+    /// never touch a real window.
+    ///
+    /// Internal for the unit tests.
+    nonisolated static let blankVarianceThreshold: Double = 12
 
     /// A window's reported frame can be wider than what it actually draws — a
     /// fullscreen Chrome window reports 1512x827 but only fills 1.595 of that

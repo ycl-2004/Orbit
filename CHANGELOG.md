@@ -1,5 +1,18 @@
 # Orbit release notes
 
+## Unreleased
+
+### Fixed
+
+- An app whose only remaining window draws nothing no longer produces a blank preview card. Some apps keep a titled, normal-layered, full-size window that renders as a flat rectangle — WeChat's 280x380 shell measures a luminance spread of 8.5 where every real window on a normal desktop lands between 25 and 39. The blank filter already recognised it, but stepped aside whenever a single window was left, which is exactly what summoning the ring from inside that app produces: the real window is hidden as the one you are already looking at. The filter now stands down only when no current window was hidden, where "a dull preview beats none" still holds.
+- Releasing the trigger before capture finishes can no longer land on such a window either. That target is chosen synchronously from layer, title and size, all of which a shell window has — WeChat's shares even its title with the real window. Windows a capture has measured as blank are now remembered by number and excluded from that choice, and the verdict is dropped again if the window later draws something.
+- `neutralEntrySkipsTheOrbitCardTheWayQuickSwitchDoes` read the developer's live `showOrbitCard` preference through the test host's own `UserDefaults`, so a ring built from just the Orbit card came back empty — and the test failed — on any machine where that card had been turned off. Tests that build a ring containing the Orbit card now pin the setting and restore it, telling "never written" apart from "written false" so the developer's own preference survives the run.
+
+### Validation
+
+- The test targets contain 64 `OrbitTests` tests and 2 `OrbitUITests` methods; the unit target passes with 0 failures, and `scripts/ci_validate.sh` passes.
+- The blank-window threshold and the shell window's measurements come from capturing every qualifying window on a live desktop, not from estimates.
+
 ## 1.5.1 — 2026-08-08
 
 ### Fixed
