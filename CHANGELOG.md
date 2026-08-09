@@ -29,7 +29,7 @@
 
 ### Validation
 
-- The test targets contain 58 `OrbitTests` tests and 2 `OrbitUITests` methods; the unit target passes with 0 failures, and `scripts/ci_validate.sh` passes.
+- The test targets contain 61 `OrbitTests` tests and 2 `OrbitUITests` methods; the unit target passes with 0 failures, and `scripts/ci_validate.sh` passes.
 - A clean Debug build produces no Swift warnings, and `plutil -lint` passes for all 11 bundled localizations.
 - The installed `/Applications/Orbit.app` was manually verified across fullscreen Chrome Spaces and into a normal Chrome window; each selected window became on-screen, including the formerly failing fullscreen target that reports a misleading successful `AXRaise` before the Window-menu fallback completes the Space switch.
 

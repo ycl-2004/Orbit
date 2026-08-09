@@ -264,7 +264,7 @@ xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
 
 Universal 2 检查、干净机器安装和权限回归清单见
 [docs/release-checklist.md](docs/release-checklist.md)。GitHub Actions 会在每次 push
-和 pull request 上执行元数据检查、Debug 构建以及 58 个 `OrbitTests` 测试。
+和 pull request 上执行元数据检查、Debug 构建以及 61 个 `OrbitTests` 测试。
 
 </details>
 

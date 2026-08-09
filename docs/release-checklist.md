@@ -24,7 +24,7 @@ architecture is missing, the archive must not be published. The current
 release filename is `Orbit-macOS.zip` because it is Universal 2; an
 architecture-specific filename is not appropriate for this artifact.
 
-GitHub Actions runs the metadata check, a Debug Universal 2 build, and the 58
+GitHub Actions runs the metadata check, a Debug Universal 2 build, and the 61
 `OrbitTests` tests for every push and pull request. A version tag must match the
 Xcode `MARKETING_VERSION`, for example `v1.5.1`.
 
