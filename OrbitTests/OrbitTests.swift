@@ -360,6 +360,57 @@ struct OrbitTests {
         #expect(activatedWindow == target)
     }
 
+    /// 松手往往赶在缩略图截完之前，而「切到哪扇窗」根本不需要缩略图 —— 窗口号、
+    /// 标题和位置窗口服务同步就能给。以前只有「你此刻就在的那个应用」备了这条同步
+    /// 答案，别的应用一律答 nil，于是切到 Chrome 时退化成普通的应用激活：应用到了
+    /// 前面，却停在它自己记得的那扇窗上，而不是你选的那扇。
+    @Test func anotherAppsWindowTargetIsKnownBeforeAnyThumbnailExists() {
+        let chromeWindow = WindowTarget(
+            id: 300,
+            title: "The window you picked",
+            frame: CGRect(x: 0, y: 0, width: 1200, height: 800)
+        )
+        var asked: (pid_t, CGWindowID?, [CGWindowID])?
+
+        let target = OrbitRingViewModel.windowTargetWithoutCapture(
+            for: listed("com.browser", "Chrome", processIdentifier: 77),
+            currentWindow: CurrentWindow(processIdentifier: 42, id: 100),
+            preferredCurrentAppWindow: WindowTarget(id: 200, title: "Other app", frame: .zero),
+            recentWindowIDs: [300, 400],
+            lookup: { pid, excluded, preferred in
+                asked = (pid, excluded, preferred)
+                return chromeWindow
+            }
+        )
+
+        #expect(target == chromeWindow)
+        #expect(asked?.0 == 77)
+        // 别的应用没有「你正看着的那一扇」要躲开：它的每一扇窗都是合法目的地。
+        #expect(asked?.1 == nil)
+        #expect(asked?.2 == [300, 400])
+    }
+
+    /// 而你此刻就在的那个应用继续用唤出瞬间算好的那条答案 —— 那时 Orbit 的面板还
+    /// 没进窗口表，「你正看着哪一扇」才问得出来，现在再算已经晚了。
+    @Test func theCurrentAppKeepsTheTargetComputedWhenTheRingOpened() {
+        let precomputed = WindowTarget(id: 200, title: "Previous sibling", frame: .zero)
+        var lookupRan = false
+
+        let target = OrbitRingViewModel.windowTargetWithoutCapture(
+            for: listed("com.current", "Current", processIdentifier: 42),
+            currentWindow: CurrentWindow(processIdentifier: 42, id: 100),
+            preferredCurrentAppWindow: precomputed,
+            recentWindowIDs: [100, 200],
+            lookup: { _, _, _ in
+                lookupRan = true
+                return WindowTarget(id: 999, title: "Recomputed", frame: .zero)
+            }
+        )
+
+        #expect(target == precomputed)
+        #expect(!lookupRan)
+    }
+
     @Test @MainActor func dismissalExplicitlyRestoresTheCancelState() {
         let model = OrbitRingViewModel(
             apps: [listed("com.a", "Alpha")],
@@ -877,6 +928,89 @@ struct OrbitTests {
             requiringTitle: false
         )
         #expect(unavailableWithoutTitles == nil)
+
+        // 换一个应用来问的时候没有「正看着的那一扇」要躲开，最近用过的那一扇就是
+        // 答案 —— 包括它在别的应用里会被当作当前窗口排除掉的那一号。
+        let inAnotherApp = WindowServerInspector.mostRecentOtherWindow(
+            in: [window(100, "First"), window(200, "Second")],
+            ownedBy: 42,
+            excluding: nil,
+            preferredIDs: [100],
+            requiringTitle: true
+        )
+        #expect(inAnotherApp?.id == 100)
+    }
+
+    /// 每一级切换报的都只是「请求被接受了」：AX 的 raise 对一扇它根本没去成的窗
+    /// 照样报成功，Chromium 的 `set index` 原地重排一下也报成功。回头问一次窗口
+    /// 服务，是唯一能分辨「你到了」和「应用到了前面但停在别的窗上」的办法。
+    @Test func aSwitchOnlyCountsAsLandedWhenTheTargetIsTheFrontWindow() {
+        let size = OrbitPreferences.minimumRealWindowSize
+        func window(id: Int, title: String?) -> [String: Any] {
+            var value: [String: Any] = [
+                kCGWindowOwnerPID as String: 42,
+                kCGWindowNumber as String: id,
+                kCGWindowLayer as String: 0,
+                kCGWindowAlpha as String: 1.0,
+                kCGWindowBounds as String: [
+                    "X": 0,
+                    "Y": 0,
+                    "Width": size.width + 1,
+                    "Height": size.height + 1
+                ]
+            ]
+            if let title { value[kCGWindowName as String] = title }
+            return value
+        }
+
+        // 切对了：目标就是最前的那扇。
+        #expect(
+            WindowServerInspector.switchLanded(
+                in: [window(id: 200, title: "Picked"), window(id: 100, title: "Old")],
+                on: 200,
+                ownedBy: 42,
+                requiringTitle: true
+            )
+        )
+        // 应用到了前面，却停在它自己记得的那扇窗上 —— 正是要认出来的那个失败。
+        #expect(
+            !WindowServerInspector.switchLanded(
+                in: [window(id: 100, title: "Old"), window(id: 200, title: "Picked")],
+                on: 200,
+                ownedBy: 42,
+                requiringTitle: true
+            )
+        )
+        // 目标在别的 Space 上，压根不在这份表里。
+        #expect(
+            !WindowServerInspector.switchLanded(
+                in: [window(id: 100, title: "Old")],
+                on: 200,
+                ownedBy: 42,
+                requiringTitle: true
+            )
+        )
+
+        // 没有屏幕录制权限时标题一律读不到，而 Chromium 的全屏窗会把无标题的容器
+        // 面排在页面前头。严判会把每一次正确的切换都判成失败，然后把整条降级链再
+        // 跑一遍；退到「目标露面了没有」这个问得出来的问题。
+        let untitled = [window(id: 804, title: nil), window(id: 735, title: nil)]
+        #expect(
+            WindowServerInspector.switchLanded(
+                in: untitled,
+                on: 735,
+                ownedBy: 42,
+                requiringTitle: false
+            )
+        )
+        #expect(
+            !WindowServerInspector.switchLanded(
+                in: untitled,
+                on: 999,
+                ownedBy: 42,
+                requiringTitle: false
+            )
+        )
     }
 
     /// 预览只藏「你正看着的那一扇」，而且只在你正用的那个应用里藏 ——

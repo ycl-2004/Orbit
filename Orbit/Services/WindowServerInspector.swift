@@ -105,7 +105,61 @@ enum WindowServerInspector {
             return false
         }
 
-        return windows.contains { window in
+        return contains(window: id, ownedBy: pid, in: windows)
+    }
+
+    /// 这次切换到底落在那扇窗上了没有。
+    ///
+    /// Every step of a switch reports only whether the *request* was accepted:
+    /// an AX raise returns success for a window on another Space it never
+    /// reached, and Chromium's AppleScript `set index` answers true after a
+    /// reorder that crossed nothing. Asking the window server afterwards is the
+    /// only answer that comes from where the user is actually looking, and it
+    /// is what lets a failed step fall through to the next one instead of
+    /// leaving the wrong window in front.
+    ///
+    /// - Returns: true when the switch landed — and also when the window server
+    ///   declined to answer, because one failed query must not send an already
+    ///   correct switch back through the fallback chain.
+    static func switchLanded(on target: CGWindowID, ownedBy pid: pid_t) -> Bool {
+        let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+        guard let windows = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
+            return true
+        }
+
+        return switchLanded(
+            in: windows,
+            on: target,
+            ownedBy: pid,
+            requiringTitle: CGPreflightScreenCaptureAccess()
+        )
+    }
+
+    /// Pure form used by regression tests.
+    ///
+    /// 两种强度，跟这个文件里别处一样由权限决定用哪种。读得到标题时问的是最严的
+    /// 那个问题——最前面的那扇是不是它——它能认出「切到了应用、但落在了另一扇窗」。
+    /// 读不到标题时这个问题问不得：Chromium 的全屏窗口会把几扇无标题的容器面排在
+    /// 页面前头，严判会把每一次正确的切换都判成失败，然后把整条降级链再跑一遍。
+    /// 那时退到能问的那个问题：目标窗口在当前 Space 上露面了没有。
+    static func switchLanded(
+        in windows: [[String: Any]],
+        on target: CGWindowID,
+        ownedBy pid: pid_t,
+        requiringTitle: Bool
+    ) -> Bool {
+        guard requiringTitle else {
+            return contains(window: target, ownedBy: pid, in: windows)
+        }
+        return frontWindow(in: windows, ownedBy: pid, requiringTitle: true) == target
+    }
+
+    private static func contains(
+        window id: CGWindowID,
+        ownedBy pid: pid_t,
+        in windows: [[String: Any]]
+    ) -> Bool {
+        windows.contains { window in
             window[kCGWindowOwnerPID as String] as? Int == Int(pid)
                 && window[kCGWindowNumber as String] as? Int == Int(id)
         }
@@ -152,12 +206,17 @@ enum WindowServerInspector {
         }
     }
 
-    /// The best sibling window to switch to from the frontmost window of an
-    /// app. Orbit's own per-app MRU history wins; the Window Server's existing
-    /// front-to-back list is the stable fallback for windows not seen before.
+    /// The best window to switch to inside one app. Orbit's own per-app MRU
+    /// history wins; the Window Server's existing front-to-back list is the
+    /// stable fallback for windows not seen before.
+    ///
+    /// - Parameter currentWindowID: The window the user is looking at right
+    ///   now, which must never be the answer — switching to it is a no-op.
+    ///   `nil` when the app is not the one in front, where every window it owns
+    ///   is a legitimate destination.
     static func mostRecentOtherWindow(
         ownedBy pid: pid_t,
-        excluding currentWindowID: CGWindowID,
+        excluding currentWindowID: CGWindowID?,
         preferredIDs: [CGWindowID]
     ) -> WindowTarget? {
         let options: CGWindowListOption = [.excludeDesktopElements]
@@ -179,7 +238,7 @@ enum WindowServerInspector {
     static func mostRecentOtherWindow(
         in windows: [[String: Any]],
         ownedBy pid: pid_t,
-        excluding currentWindowID: CGWindowID,
+        excluding currentWindowID: CGWindowID?,
         preferredIDs: [CGWindowID],
         requiringTitle: Bool
     ) -> WindowTarget? {

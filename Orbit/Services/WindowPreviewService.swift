@@ -189,12 +189,21 @@ final class WindowPreviewService {
 
     /// The app's window that best answers to `target`.
     ///
-    /// Titles do not survive the trip between frameworks intact — Chrome hands
-    /// ScreenCaptureKit `PV UV 数据处理` and Accessibility
+    /// 三级判据，能问到窗口号就不必猜。
+    ///
+    /// `_AXUIElementGetWindow` hands back the very `CGWindowID` the window was
+    /// listed under, which settles the question outright. It is also the fix for
+    /// a real misfire: titles do not survive the trip between frameworks intact
+    /// — Chrome hands ScreenCaptureKit `PV UV 数据处理` and Accessibility
     /// `PV UV 数据处理 - Google Chrome - YC (AI Profile)` for the same window —
-    /// so an equality test alone misses, and several windows can legitimately
-    /// share a title anyway. Agreement on both title and frame is taken as
-    /// certain; either one alone is a fallback.
+    /// so when the title misses, the frame used to decide. Several fullscreen
+    /// Chrome windows report *identical* frames, so that fallback would raise
+    /// whichever one AX happened to list first and then report success, which
+    /// suppressed the Window-menu path that could actually have crossed Spaces.
+    ///
+    /// 所以窗口号一旦全员可问，它就是唯一的判据：问遍了都没有这一号，说明辅助
+    /// 功能确实看不见这扇窗，该老实返回 nil 去走下一级，而不是拿标题和尺寸凑一个
+    /// 出来。只有在窗口号答不上来时（旧系统、或应用不给），才退回原来的标题/尺寸。
     private static func axWindow(matching target: WindowTarget, pid: pid_t) -> AXUIElement? {
         let axApp = AXUIElementCreateApplication(pid)
         // An app busy on its main thread answers slowly or not at all, and the
@@ -207,8 +216,15 @@ final class WindowPreviewService {
 
         var titleOnly: AXUIElement?
         var frameOnly: AXUIElement?
+        var everyWindowNamedItsID = true
 
         for window in windows {
+            if let id = axWindowID(of: window) {
+                if id == target.id { return window }
+            } else {
+                everyWindowNamedItsID = false
+            }
+
             let titleAgrees = titles(axTitle(of: window), agreeWith: target.title)
             let frameAgrees = frame(of: window).map { $0.matches(target.frame) } == true
 
@@ -217,10 +233,41 @@ final class WindowPreviewService {
             if frameAgrees, frameOnly == nil { frameOnly = window }
         }
 
+        // 每扇窗都报得出窗口号，而没有一个是目标：这是一个确定的「没有」。
+        guard !everyWindowNamedItsID else { return nil }
+
         // Title before frame: windows people keep several of are usually the
         // same size as each other, so a frame is the weaker discriminator.
         return titleOnly ?? frameOnly
     }
+
+    /// 这个 AX 窗口在窗口服务那边的号码。
+    ///
+    /// `_AXUIElementGetWindow` is the one bridge between Accessibility and the
+    /// window server, and it has no public equivalent — the same reason AltTab,
+    /// Rectangle and yabai all reach for it. It is resolved at run time instead
+    /// of being linked against, so a system that no longer exports it costs the
+    /// precise match and nothing else: every caller already handles `nil`.
+    private static func axWindowID(of window: AXUIElement) -> CGWindowID? {
+        guard let getWindow = axWindowIDFunction else { return nil }
+        var id: CGWindowID = 0
+        guard getWindow(window, &id) == .success, id != kCGNullWindowID else { return nil }
+        return id
+    }
+
+    private typealias AXWindowIDFunction = @convention(c) (
+        AXUIElement,
+        UnsafeMutablePointer<CGWindowID>
+    ) -> AXError
+
+    /// 只解析一次。`dlsym` 每次调用都要走一遍符号表，而这个函数在一次切换里会被
+    /// 问上十几遍。
+    private static let axWindowIDFunction: AXWindowIDFunction? = {
+        guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "_AXUIElementGetWindow") else {
+            return nil
+        }
+        return unsafeBitCast(symbol, to: AXWindowIDFunction.self)
+    }()
 
     /// Internal for the unit tests; pure, so `nonisolated` is safe.
     nonisolated static func titles(_ axTitle: String?, agreeWith captured: String) -> Bool {
@@ -280,11 +327,18 @@ final class WindowPreviewService {
     /// - Parameter hiding: 要略过的窗口，通常是用户此刻正看着的那一扇。
     /// - Parameter preferredWindowIDs: 该应用的窗口 MRU；命中的窗口先于面积排序，
     ///   让转盘默认目标和快速松手目标保持一致。
+    /// - Parameter onPartial: 每截好一扇窗就带着当前这份结果调用一次。
+    ///
+    ///   截图是逐扇顺序做的，而以前只有整轮跑完才交出结果——于是队列里但凡有一扇
+    ///   要走 `SCStream` 的全屏窗（单扇最多两秒），前面五张早就截好的图也一起被扣
+    ///   着，面板空着，松手时也就没有窗口目标可用。谁先截好谁先算数，把那段窗口期
+    ///   压到第一扇窗的耗时。
     func previews(
         forProcessIdentifier pid: pid_t,
         scale: CGFloat,
         hiding hidden: CGWindowID? = nil,
-        preferredWindowIDs: [CGWindowID] = []
+        preferredWindowIDs: [CGWindowID] = [],
+        onPartial: (([WindowPreview]) -> Void)? = nil
     ) async -> [WindowPreview] {
         guard Self.hasScreenRecordingPermission() else { return [] }
 
@@ -390,6 +444,10 @@ final class WindowPreviewService {
             if variance >= Self.blankVarianceThreshold {
                 windowsWithContent += 1
             }
+
+            // 交出的每一份中间结果都过同一道空白过滤，面板和松手目标才不会先看到
+            // 一扇随后就会被丢掉的辅助窗。
+            onPartial?(Self.droppingBlankWindows(previews))
         }
 
         return Self.droppingBlankWindows(previews)

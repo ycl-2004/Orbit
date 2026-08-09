@@ -124,9 +124,21 @@ extension AppRecord {
     ///   front-to-back window order along with it. Off when the caller has
     ///   already singled out a window, since bringing every window forward
     ///   would bury it again.
+    /// - Parameter reopeningWhenWindowless: 激活后发现屏幕上一扇窗都没有时，要不
+    ///   要像点 Dock 图标那样让 bundle 重开一个。
+    ///
+    ///   这个检查是同步做的，而它问的 `hasOnscreenWindow` 只看得见当前 Space。
+    ///   目标窗口在别的 Space 上全屏、而这个应用在当前 Space 恰好没有窗口时，
+    ///   Space 还没切过去，检查必然答"没有窗口"——于是紧接着一次 reopen，等于
+    ///   在刚选好的窗口上又点了一下 Dock 图标，应用自己挑一扇窗盖掉它。所以调用
+    ///   方一旦已经指定了窗口，就该关掉这一步：那种情况下"看不见窗口"是切换正在
+    ///   路上的正常样子，不是需要补救的空手。
     /// - Returns: 是否已经发出了有效的激活请求。
     @discardableResult
-    func bringToFront(raisingAllWindows: Bool = true) -> Bool {
+    func bringToFront(
+        raisingAllWindows: Bool = true,
+        reopeningWhenWindowless: Bool = true
+    ) -> Bool {
         if let running = NSRunningApplication(processIdentifier: processIdentifier) {
             if running.isHidden {
                 running.unhide()
@@ -135,7 +147,8 @@ extension AppRecord {
             let options: NSApplication.ActivationOptions = raisingAllWindows ? [.activateAllWindows] : []
             if running.activate(options: options) {
                 // 激活成功但没有窗口：让 bundle 自己重开一个。
-                if !WindowServerInspector.hasOnscreenWindow(processIdentifier: processIdentifier) {
+                if reopeningWhenWindowless,
+                   !WindowServerInspector.hasOnscreenWindow(processIdentifier: processIdentifier) {
                     reopenBundle()
                 }
                 return true

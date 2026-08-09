@@ -615,6 +615,20 @@ enum OrbitPreferences {
     /// interruption rather than a completion.
     static let maximumSwitchFallbackDelay: TimeInterval = 3
 
+    /// 切换发出之后，隔多久回头问一次窗口服务「落在那扇窗上了吗」。
+    ///
+    /// Polled rather than checked once, because the two cases have opposite
+    /// needs: a switch inside one Space is done almost immediately, while
+    /// crossing to a fullscreen Space runs an animation first. Polling answers
+    /// the fast case fast and still gives the slow one room.
+    static let switchVerificationPollInterval: TimeInterval = 0.12
+
+    /// 等到这里还没落到目标窗上，就认定这一级没做成，降到下一级。
+    ///
+    /// 比一次 Space 切换动画（约 0.5 秒）宽出一截 —— 判早了会把一次正在路上的
+    /// 正确切换当成失败，紧接着再切一次，用户看到的是画面跳两下。
+    static let switchVerificationTimeout: TimeInterval = 0.9
+
     static let maxVisibleApps = 12
     static let dispersionParticleCount = 72
     static let dispersionDuration: TimeInterval = 0.55

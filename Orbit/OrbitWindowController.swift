@@ -25,6 +25,17 @@ final class OrbitWindowController: NSObject {
     private var model: OrbitRingViewModel?
     private var notificationTokens: [NSObjectProtocol] = []
 
+    /// 哪一次切换还算数。
+    ///
+    /// A switch no longer finishes inside one turn of the run loop: each step
+    /// is followed by up to `switchVerificationTimeout` of polling before it
+    /// gives up and falls through to the next one. Two switches in quick
+    /// succession therefore overlap, and without this the first one's polling
+    /// would notice it is not on its target any more — because the user has
+    /// since moved on — and "recover" by dragging them back. Every deferred
+    /// step checks that it still belongs to the newest gesture.
+    private var switchGeneration = 0
+
     private override init() {
         super.init()
 
@@ -64,6 +75,10 @@ final class OrbitWindowController: NSObject {
         // being opened right now, and telling the hotkey service otherwise
         // would switch key handling straight back off.
         tearDownPanel()
+
+        // 圆环一唤出，上一次切换的补救就不再是用户要的东西了 —— 他已经在挑下一个
+        // 目的地。让那条还在轮询的降级链就地作废，别在选择的过程中把画面抢走。
+        switchGeneration += 1
 
         // Capture the real frontmost app before the Orbit panel enters the
         // window list. This prevents Orbit from excluding the wrong app. Whether
@@ -178,12 +193,23 @@ final class OrbitWindowController: NSObject {
         model.handle(command, value: value)
     }
 
+    /// 一次窗口切换依次可以走的几条路，能力从强到弱。
+    private enum SwitchStage: String {
+        case directAX
+        case windowMenu
+        case appleScript
+        case plainActivation
+    }
+
     private func activate(
         _ app: AppRecord,
         window: WindowTarget?,
         originatingFrontmostProcess: pid_t?
     ) {
         dismissImmediately()
+
+        switchGeneration += 1
+        let generation = switchGeneration
 
         // Let the ring leave the screen before anything else comes forward.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
@@ -198,7 +224,44 @@ final class OrbitWindowController: NSObject {
             windowSwitchLogger.notice(
                 "request pid=\(app.processIdentifier, privacy: .public) target=\(window.id, privacy: .public) origin=\(originatingFrontmostProcess ?? -1, privacy: .public)"
             )
+            self.perform(
+                .directAX,
+                app: app,
+                window: window,
+                origin: originatingFrontmostProcess,
+                generation: generation
+            )
+        }
+    }
 
+    /// 这一步还属于最新的那次切换吗。
+    private func isCurrent(_ generation: Int) -> Bool {
+        generation == switchGeneration
+    }
+
+    /// 走一级切换。
+    ///
+    /// 每一级只做一件事，然后交给 `verifyLanding` 去问窗口服务这次到底落在哪扇窗
+    /// 上；没落到就降到下一级。这个回头确认是必须的，因为每一级返回的都只是「请求
+    /// 被接受了」而不是「你到了」：AX 的 raise 对一扇在别的 Space 上、它根本没去成
+    /// 的窗口照样报成功，Chromium 的 `set index` 在原地重排一下也报成功。以前这些
+    /// 「成功」直接结束整次切换，于是切到了应用、却停在它自己记得的那扇窗上。
+    private func perform(
+        _ stage: SwitchStage,
+        app: AppRecord,
+        window: WindowTarget,
+        origin: pid_t?,
+        generation: Int
+    ) {
+        guard isCurrent(generation) else {
+            windowSwitchLogger.notice(
+                "superseded before \(stage.rawValue, privacy: .public) target=\(window.id, privacy: .public)"
+            )
+            return
+        }
+
+        switch stage {
+        case .directAX:
             // Name the window *before* activating the app. macOS follows an
             // application onto the Space its main window lives on, so a window
             // chosen first is a window the switch actually lands on — including
@@ -216,32 +279,44 @@ final class OrbitWindowController: NSObject {
                 focusSucceeded: picked,
                 targetWasOnScreen: targetWasOnScreen,
                 targetProcess: app.processIdentifier,
-                originatingFrontmostProcess: originatingFrontmostProcess
+                originatingFrontmostProcess: origin
             )
             windowSwitchLogger.notice(
                 "direct AX target=\(window.id, privacy: .public) picked=\(picked, privacy: .public) wasOnScreen=\(targetWasOnScreen, privacy: .public) completes=\(directFocusCompletesSwitch, privacy: .public)"
             )
 
-            if directFocusCompletesSwitch {
-                // `.activateAllWindows` would restore the app's own
-                // front-to-back order, undoing the choice just made.
-                _ = app.bringToFront(raisingAllWindows: false)
-
-                // Some apps re-assert their own front window as they come
-                // forward. One settle pass after activation catches them.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                    WindowPreviewService.focus(window, pid: app.processIdentifier)
-                }
+            guard directFocusCompletesSwitch else {
+                perform(.windowMenu, app: app, window: window, origin: origin, generation: generation)
                 return
             }
 
+            // `.activateAllWindows` would restore the app's own front-to-back
+            // order, undoing the choice just made — and a reopen would let the
+            // app pick a window of its own over the one already named.
+            _ = app.bringToFront(raisingAllWindows: false, reopeningWhenWindowless: false)
+
+            // Some apps re-assert their own front window as they come
+            // forward. One settle pass after activation catches them.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+                guard self?.isCurrent(generation) == true else { return }
+                WindowPreviewService.focus(window, pid: app.processIdentifier)
+            }
+            verifyLanding(
+                after: stage,
+                app: app,
+                window: window,
+                origin: origin,
+                next: .windowMenu,
+                generation: generation
+            )
+
+        case .windowMenu:
             // Accessibility saw no such window — for Chromium-based apps it
-            // never sees any. Two fallbacks, the more capable one first:
-            //
-            // The app's own Window menu (which Chromium *does* expose to
-            // Accessibility) performs a real makeKeyAndOrderFront, so it can
-            // cross Spaces — a fullscreen window on another Space is exactly
-            // the case AppleScript's reorder-only `set index` cannot reach.
+            // often sees none at all. The app's own Window menu (which Chromium
+            // *does* expose to Accessibility) performs a real
+            // makeKeyAndOrderFront, so it can cross Spaces — a fullscreen
+            // window on another Space is exactly the case AppleScript's
+            // reorder-only `set index` cannot reach.
             let knownTitles = WindowServerInspector.windowTitles(ownedBy: app.processIdentifier)
             let menuPressed = ScriptedWindowFocus.focusViaWindowMenu(
                 window,
@@ -251,52 +326,142 @@ final class OrbitWindowController: NSObject {
             windowSwitchLogger.notice(
                 "menu result target=\(window.id, privacy: .public) pressed=\(menuPressed, privacy: .public) known=\(knownTitles.count, privacy: .public)"
             )
-            if menuPressed {
-                // The Window-menu action is itself the cross-Space operation.
-                // If Chrome was already frontmost behind Orbit, activating the
-                // process again can restore the old fullscreen window and undo
-                // the selection. Only a switch originating in another process
-                // needs a follow-up application activation.
-                if ScriptedWindowFocus.needsActivationAfterWindowMenu(
-                    targetProcess: app.processIdentifier,
-                    originatingFrontmostProcess: originatingFrontmostProcess
-                ) {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        let activated = app.bringToFront(raisingAllWindows: false)
-                        windowSwitchLogger.notice(
-                            "cross-app activation target=\(window.id, privacy: .public) result=\(activated, privacy: .public)"
-                        )
-                    }
-                } else {
-                    windowSwitchLogger.notice(
-                        "same-app menu switch target=\(window.id, privacy: .public); no reactivation"
-                    )
-                }
+            guard menuPressed else {
+                perform(.appleScript, app: app, window: window, origin: origin, generation: generation)
                 return
             }
 
+            // The Window-menu action is itself the cross-Space operation. If
+            // the app is already frontmost, activating the process again can
+            // restore its old fullscreen window and undo the selection. Only a
+            // switch that comes from another process needs a follow-up
+            // application activation.
+            //
+            // 问的是「此刻」谁在前台，而不是唤出圆环那一刻谁在前台：这一级也可能
+            // 是从上一级降下来的，而上一级已经把目标应用激活过了。
+            let frontmostNow = NSWorkspace.shared.frontmostApplication?.processIdentifier
+            if ScriptedWindowFocus.needsActivationAfterWindowMenu(
+                targetProcess: app.processIdentifier,
+                originatingFrontmostProcess: frontmostNow ?? origin
+            ) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+                    guard self?.isCurrent(generation) == true else { return }
+                    let activated = app.bringToFront(
+                        raisingAllWindows: false,
+                        reopeningWhenWindowless: false
+                    )
+                    windowSwitchLogger.notice(
+                        "cross-app activation target=\(window.id, privacy: .public) result=\(activated, privacy: .public)"
+                    )
+                }
+            } else {
+                windowSwitchLogger.notice(
+                    "same-app menu switch target=\(window.id, privacy: .public); no reactivation"
+                )
+            }
+            verifyLanding(
+                after: stage,
+                app: app,
+                window: window,
+                origin: origin,
+                next: .appleScript,
+                generation: generation
+            )
+
+        case .appleScript:
             // Apple Events reorder: right window within the current Space.
-            // Only when that too comes back empty-handed does this degrade to
-            // plain app activation, the behaviour Orbit always had.
             //
             // 这一步是唯一可能拖很久才回来的：对一个应用首次发 Apple Event 会弹出
             // 系统的自动化授权框，而那个框在屏幕上挂多久，这里就阻塞多久。所以回来
             // 之后要先问一句"这次切换还是用户正在做的事吗"。
             let requestedAt = Date()
-            ScriptedWindowFocus.focus(window, bundleIdentifier: app.id) { switched in
+            ScriptedWindowFocus.focus(window, bundleIdentifier: app.id) { [weak self] switched in
                 let elapsed = Date().timeIntervalSince(requestedAt)
                 windowSwitchLogger.notice(
                     "AppleScript fallback target=\(window.id, privacy: .public) switched=\(switched, privacy: .public) elapsed=\(elapsed, privacy: .public)"
                 )
-                guard !switched else { return }
                 guard ScriptedWindowFocus.fallbackActivationIsStillRelevant(elapsed: elapsed) else {
                     windowSwitchLogger.notice(
                         "stale fallback abandoned target=\(window.id, privacy: .public)"
                     )
                     return
                 }
-                _ = app.bringToFront()
+                guard let self else { return }
+                guard switched else {
+                    self.perform(
+                        .plainActivation,
+                        app: app,
+                        window: window,
+                        origin: origin,
+                        generation: generation
+                    )
+                    return
+                }
+                // `set index` 报的成功只覆盖「找到了同名的窗口并重排了一下」。跨
+                // Space 它做不到，而那正是它最常被叫到的场合，所以这里同样要确认。
+                self.verifyLanding(
+                    after: .appleScript,
+                    app: app,
+                    window: window,
+                    origin: origin,
+                    next: .plainActivation,
+                    generation: generation
+                )
             }
+
+        case .plainActivation:
+            // 最后的退路，也是 Orbit 一直以来的行为：把应用整个带到前面，让它自己
+            // 决定停在哪扇窗上。到这里说明没有任何一条路能指定窗口了。
+            windowSwitchLogger.notice(
+                "plain activation target=\(window.id, privacy: .public)"
+            )
+            _ = app.bringToFront()
+        }
+    }
+
+    /// 等窗口服务确认这次切换真的落在了目标窗口上；等不到就降到 `next`。
+    ///
+    /// 轮询而不是只查一次：同一个 Space 内部的切换几乎立刻就到位，而跨到一个全屏
+    /// Space 要先跑完一段动画。轮询让前者快、后者也够宽。
+    private func verifyLanding(
+        after stage: SwitchStage,
+        app: AppRecord,
+        window: WindowTarget,
+        origin: pid_t?,
+        next: SwitchStage,
+        generation: Int,
+        deadline: Date? = nil
+    ) {
+        let deadline = deadline
+            ?? Date().addingTimeInterval(OrbitPreferences.switchVerificationTimeout)
+
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + OrbitPreferences.switchVerificationPollInterval
+        ) { [weak self] in
+            guard let self, self.isCurrent(generation) else { return }
+
+            if WindowServerInspector.switchLanded(on: window.id, ownedBy: app.processIdentifier) {
+                windowSwitchLogger.notice(
+                    "landed via \(stage.rawValue, privacy: .public) target=\(window.id, privacy: .public)"
+                )
+                return
+            }
+            guard Date() >= deadline else {
+                self.verifyLanding(
+                    after: stage,
+                    app: app,
+                    window: window,
+                    origin: origin,
+                    next: next,
+                    generation: generation,
+                    deadline: deadline
+                )
+                return
+            }
+            windowSwitchLogger.notice(
+                "\(stage.rawValue, privacy: .public) did not land target=\(window.id, privacy: .public); falling back to \(next.rawValue, privacy: .public)"
+            )
+            self.perform(next, app: app, window: window, origin: origin, generation: generation)
         }
     }
 

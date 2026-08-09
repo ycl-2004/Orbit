@@ -364,11 +364,17 @@ final class OrbitRingViewModel: ObservableObject {
                 hiding: currentWindow?.hiddenWindow(inAppWith: app.processIdentifier),
                 preferredWindowIDs: app.processIdentifier == currentWindow?.processIdentifier
                     ? recentCurrentAppWindowIDs
-                    : []
+                    : [],
+                // 每截好一扇就摆上去，而不是等整轮跑完。一扇要走 SCStream 的全屏
+                // 窗能把整轮拖到两秒，而触发键往往在那之前就松开了。
+                onPartial: { [weak self] partial in
+                    guard let self, !Task.isCancelled else { return }
+                    self.publish(partial)
+                }
             )
         guard !Task.isCancelled else { return }
 
-        previews = Array(captured.prefix(OrbitPreferences.maxVisiblePreviews))
+        publish(captured)
         isLoadingPreviews = false
         if previews.isEmpty {
             if let owners = WindowServerInspector.windowOwners() {
@@ -379,6 +385,17 @@ final class OrbitRingViewModel: ObservableObject {
                 previewState = .unavailable
             }
         } else {
+            previewState = .ready
+        }
+    }
+
+    /// 把一份结果摆上面板，中途的和最终的走同一条路。
+    ///
+    /// 第一份中间结果一到就切出 `.loading`：面板已经有图可看了，还挂着转圈只是
+    /// 让人多等一拍。真正空手而归的情况由 `loadPreviews` 收尾时处理。
+    private func publish(_ captured: [WindowPreview]) {
+        previews = Array(captured.prefix(OrbitPreferences.maxVisiblePreviews))
+        if !previews.isEmpty {
             previewState = .ready
         }
     }
@@ -394,10 +411,45 @@ final class OrbitRingViewModel: ObservableObject {
         if previews.indices.contains(selectedWindowIndex) {
             return previews[selectedWindowIndex].target
         }
-        guard selectedApp?.processIdentifier == currentWindow?.processIdentifier else {
-            return nil
+        guard let selectedApp, !selectedApp.isOrbit else { return nil }
+        return Self.windowTargetWithoutCapture(
+            for: selectedApp,
+            currentWindow: currentWindow,
+            preferredCurrentAppWindow: preferredCurrentAppWindow,
+            recentWindowIDs: AppActivationHistory.shared.recentWindowIDs(for: selectedApp.id)
+        )
+    }
+
+    /// 预览还没截完时，这次切换要落到哪扇窗上。
+    ///
+    /// 「切到哪扇窗」只需要窗口号、标题和位置，窗口服务同步就能给；缩略图是给人
+    /// 看的，跟切得准不准没有关系。可是从选中卡片到松开触发键往往只有几百毫秒，
+    /// 而截图要慢得多——一扇在别的 Space 上的全屏窗就得走 `SCStream`，单扇最多两
+    /// 秒。原先只有「你此刻就在的那个应用」备了这条同步答案，别的应用一律返回
+    /// nil，于是松手快一点，整次切换就退化成普通的应用激活：切到了 Chrome，落在
+    /// 它自己记得的那扇窗上，而不是你选的那扇。这个偶发正是它。
+    ///
+    /// `nonisolated` 且参数全部传入，纯粹是为了能被单测直接调用。
+    nonisolated static func windowTargetWithoutCapture(
+        for app: AppRecord,
+        currentWindow: CurrentWindow?,
+        preferredCurrentAppWindow: WindowTarget?,
+        recentWindowIDs: [CGWindowID],
+        lookup: (pid_t, CGWindowID?, [CGWindowID]) -> WindowTarget? = {
+            WindowServerInspector.mostRecentOtherWindow(
+                ownedBy: $0,
+                excluding: $1,
+                preferredIDs: $2
+            )
         }
-        return preferredCurrentAppWindow
+    ) -> WindowTarget? {
+        // 当前应用那条答案是唤出的一瞬间算好的——那时 Orbit 的面板还没进窗口表，
+        // 「你正看着哪一扇」还问得出来。现在再算就晚了，所以直接用它。
+        if app.processIdentifier == currentWindow?.processIdentifier {
+            return preferredCurrentAppWindow
+        }
+        // 别的应用没有「正看着的那一扇」要躲开，它的每一扇窗都是合法目的地。
+        return lookup(app.processIdentifier, nil, recentWindowIDs)
     }
 
     /// Dismissal destroys the model, but clearing transient selection first
