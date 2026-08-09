@@ -123,7 +123,7 @@
 
 /* Ring — window preview panel */
 "preview.empty.title" = "App auswählen";
-"preview.empty.message" = "Wähle eine Karte, um die Fenstervorschau zu sehen.";
+"preview.empty.message" = "Bewege den Zeiger auf eine Karte oder wähle sie aus, um ihre Fenster anzuzeigen.";
 "preview.loading.title" = "Vorschau wird geladen";
 "preview.loading.message" = "Das aktuelle Fensterbild wird abgerufen.";
 "preview.orbit.title" = "Orbit läuft";

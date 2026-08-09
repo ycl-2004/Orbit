@@ -2,12 +2,12 @@
 //  OrbitTrail.swift
 //  Orbit
 //
-//  The dashed arc the cards travel on.
+//  The quiet C-track the cards travel on.
 //
 
 import SwiftUI
 
-/// 卡片脚下那条虚线轨道，外加每张卡片在轨道上的落点。
+/// 卡片脚下那条轻轨道，外加每张卡片在轨道上的落点。
 ///
 /// The frosted band this replaces sat on the same radius as the cards, so the
 /// cards covered almost all of it and what came through the gaps read as a
@@ -15,11 +15,10 @@ import SwiftUI
 /// anything, which is what finally lets the ring say "orbit" without a single
 /// extra pixel of chrome.
 ///
-/// 虚线，而且是 Welcome 那一条虚线。The onboarding illustration draws the orbit
-/// as a dashed accent ellipse, and it is the single most recognisable mark the
-/// product owns. Repeating the exact stroke here means the ring the user is
-/// shown on day one and the ring they summon on day two are drawn by the same
-/// hand.
+/// 轨道仍然沿用 Welcome 的 accent 色，但不再复制一条高存在感的虚线。
+/// The onboarding illustration can afford a dashed accent ellipse; in the live
+/// switcher a continuous, hairline C-track keeps the same product cue without
+/// looking like a loading or debug indicator.
 ///
 /// 圆点是后来补的，因为光有弧线不够。An arc floating between the hub and the
 /// cards touches neither of them, so it read as a stray shape rather than as the
@@ -52,18 +51,21 @@ struct OrbitTrail: View {
             .rotation(.radians(arc.lowerBound))
     }
 
-    /// 暗底上同一个酒红会掉一大截，线的存在感要补回来。
+    /// 暗底上略微补一点，但始终让卡片和选中落点先被看见。
     private var lineOpacity: Double {
-        colorScheme == .dark ? 0.78 : 0.58
+        colorScheme == .dark ? 0.24 : 0.16
     }
+
+    private var lineWidth: CGFloat { 1.25 }
 
     var body: some View {
         ZStack {
             track
-                // Welcome 用的就是这一支笔：2pt，dash [5, 4]。
+                // Continuous and fine: the ring backdrop already supplies the
+                // soft atmospheric band underneath this directional cue.
                 .stroke(
                     tint.opacity(lineOpacity),
-                    style: StrokeStyle(lineWidth: 2, lineCap: .butt, dash: [5, 4])
+                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .frame(width: radius * 2, height: radius * 2)
                 // 两端淡出，轨道才是"路过"而不是"起止"。
@@ -99,7 +101,7 @@ struct OrbitTrail: View {
         } else {
             Circle()
                 .fill(tint.opacity(lineOpacity * 0.75))
-                .frame(width: 3.5, height: 3.5)
+                .frame(width: 3, height: 3)
         }
     }
 

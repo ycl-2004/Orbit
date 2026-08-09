@@ -123,7 +123,7 @@
 
 /* Ring — window preview panel */
 "preview.empty.title" = "Elektu aplikaĵon";
-"preview.empty.message" = "Elektu karton por vidi ĝian fenestran antaŭrigardon.";
+"preview.empty.message" = "Ŝvebu super aŭ elektu karton por antaŭrigardi ĝiajn fenestrojn.";
 "preview.loading.title" = "Ŝargante antaŭrigardon";
 "preview.loading.message" = "Akirante la plej novan fenestran bildon.";
 "preview.orbit.title" = "Orbit funkcias";

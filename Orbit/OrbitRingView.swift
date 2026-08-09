@@ -1144,6 +1144,8 @@ struct OrbitRingView: View {
                 OrbitAppCard(
                     app: app,
                     cardNumber: index + 1,
+                    depthIndex: index,
+                    depthCount: model.apps.count,
                     angle: model.angle(for: index),
                     isSelected: model.selectedID == app.id,
                     isDragging: model.draggedAppID == app.id,
@@ -1254,7 +1256,8 @@ private struct OrbitPreviewPanel: View {
                     systemName: "square.grid.2x2",
                     titleKey: "preview.empty.title",
                     messageKey: "preview.empty.message",
-                    chromeless: true
+                    chromeless: true,
+                    horizontalOffset: -24
                 )
             case .loading:
                 statusCard(
@@ -1410,7 +1413,8 @@ private struct OrbitPreviewPanel: View {
         actionKey: String? = nil,
         action: (() -> Void)? = nil,
         showsProgress: Bool = false,
-        chromeless: Bool = false
+        chromeless: Bool = false,
+        horizontalOffset: CGFloat = 0
     ) -> some View {
         VStack(spacing: 14) {
             ZStack {
@@ -1481,6 +1485,7 @@ private struct OrbitPreviewPanel: View {
         .padding(.vertical, chromeless ? 12 : 24)
         .modifier(OrbitSurface(enabled: !chromeless))
         .modifier(OrbitTextHalo(enabled: chromeless))
+        .offset(x: horizontalOffset)
     }
 }
 
@@ -1651,6 +1656,11 @@ private struct OrbitPreviewWindowCard: View {
 private struct OrbitAppCard: View {
     let app: AppRecord
     let cardNumber: Int
+    /// Render order is also the deck order: later cards sit in front of earlier
+    /// cards, so the depth ramp follows the existing spread instead of changing
+    /// which card wins an overlap.
+    let depthIndex: Int
+    let depthCount: Int
     /// Where the card sits on the ring, in radians (0 = 3 o'clock).
     let angle: Double
     let isSelected: Bool
@@ -1667,6 +1677,66 @@ private struct OrbitAppCard: View {
     @State private var scatterProgress = 0.0
 
     private var isDark: Bool { colorScheme == .dark }
+
+    /// Three quiet tiers are enough for the eye to read the fan as a deck.
+    /// Selected and dragged states intentionally override these values below.
+    private var depthTier: Int {
+        guard depthCount > 1 else { return 2 }
+        let progress = Double(depthIndex) / Double(depthCount - 1)
+        switch progress {
+        case ..<0.34: return 0
+        case ..<0.67: return 1
+        default: return 2
+        }
+    }
+
+    private var depthOpacity: Double {
+        switch depthTier {
+        case 0: 0.94
+        case 1: 0.97
+        default: 1
+        }
+    }
+
+    private var depthScale: CGFloat {
+        switch depthTier {
+        case 0: 0.97
+        case 1: 0.985
+        default: 1
+        }
+    }
+
+    private var depthContactShadowOpacity: Double {
+        switch depthTier {
+        case 0: 0.06
+        case 1: 0.08
+        default: 0.10
+        }
+    }
+
+    private var depthAmbientShadowOpacity: Double {
+        switch depthTier {
+        case 0: 0.07
+        case 1: 0.10
+        default: 0.13
+        }
+    }
+
+    private var depthAmbientShadowRadius: CGFloat {
+        switch depthTier {
+        case 0: 12
+        case 1: 14
+        default: 16
+        }
+    }
+
+    private var depthAmbientShadowY: CGFloat {
+        switch depthTier {
+        case 0: 5
+        case 1: 6
+        default: 8
+        }
+    }
 
     /// 卡片只跟着扇面转一部分，不是转满。
     ///
@@ -1801,15 +1871,15 @@ private struct OrbitAppCard: View {
         // 卡片之间糊得更平。那一档的分离交给边框。
         .shadow(color: isDark ? .clear : contactShadow, radius: isSelected ? 4 : 3, y: 2)
         .shadow(
-            color: isDragging ? OrbitPalette.burgundy.opacity(0.24) : .black.opacity(isSelected ? 0.16 : 0.11),
-            radius: isSelected ? 22 : 15,
-            y: isSelected ? 11 : 7
+            color: isDragging ? OrbitPalette.burgundy.opacity(0.24) : .black.opacity(isSelected ? 0.16 : depthAmbientShadowOpacity),
+            radius: isSelected ? 22 : depthAmbientShadowRadius,
+            y: isSelected ? 11 : depthAmbientShadowY
         )
-        .scaleEffect(isSelected ? 1.1 : 1)
+        .scaleEffect(isSelected ? 1.1 : depthScale)
         .rotationEffect(cardRotation)
         .offset(gravityOffset)
         .offset(dragOffset)
-        .opacity(isVanishing ? 0.35 : 1)
+        .opacity(isVanishing ? 0.35 : (isSelected || isDragging ? 1 : depthOpacity))
         // Particles are drawn in unrotated screen space, so aim them straight
         // at the ring center rather than at the card's own bottom edge.
         .cardScatter(progress: scatterProgress, towards: angle + .pi)
@@ -1895,7 +1965,7 @@ private struct OrbitAppCard: View {
 
     /// 贴着卡片底边那一道接触影。
     private var contactShadow: Color {
-        .black.opacity(isSelected ? 0.16 : 0.11)
+        .black.opacity(isSelected ? 0.16 : depthContactShadowOpacity)
     }
 
     /// 边框也跟着光走：向着中心的那条边接住高光，背光的一边收在主色的发丝线上。

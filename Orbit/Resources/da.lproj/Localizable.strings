@@ -123,7 +123,7 @@
 
 /* Ring — window preview panel */
 "preview.empty.title" = "Vælg en app";
-"preview.empty.message" = "Vælg et kort for at se vinduets forhåndsvisning.";
+"preview.empty.message" = "Hold markøren over eller vælg et kort for at se vinduerne.";
 "preview.loading.title" = "Indlæser forhåndsvisning";
 "preview.loading.message" = "Henter det nyeste vinduesbillede.";
 "preview.orbit.title" = "Orbit kører";

@@ -77,8 +77,16 @@ struct OrbitScrim: View {
                 // desktop instead of turning into a white bridge.
                 .mask {
                     ZStack {
-                        ForEach(Array(content.enumerated()), id: \.offset) { _, rect in
-                            pool(for: rect, in: proxy.size)
+                        ForEach(Array(content.enumerated()), id: \.offset) { index, rect in
+                            // The ring is the visual anchor; the preview supports
+                            // it from the opening rather than competing with it.
+                            pool(
+                                for: rect,
+                                in: proxy.size,
+                                opacity: poolOpacity(for: index),
+                                spread: poolSpread(for: index),
+                                feather: poolFeather(for: index)
+                            )
                         }
                     }
                 }
@@ -148,7 +156,13 @@ struct OrbitScrim: View {
     /// 适度放大是因为椭圆比它的外接矩形小。The content it has to sit under is
     /// a circular fan or a rounded stage, so the box's corners are empty; a small
     /// expansion gives the content a soft edge without reaching the other pool.
-    private func pool(for content: CGRect, in size: CGSize) -> some View {
+    private func pool(
+        for content: CGRect,
+        in size: CGSize,
+        opacity: Double,
+        spread: CGFloat,
+        feather: CGFloat
+    ) -> some View {
         let box = CGRect(
             x: content.minX * size.width,
             y: content.minY * size.height,
@@ -160,12 +174,39 @@ struct OrbitScrim: View {
         return Ellipse()
             .fill(.white)
             .frame(
-                width: max(box.width, 1) * Self.spread,
-                height: max(box.height, 1) * Self.spread
+                width: max(box.width, 1) * spread,
+                height: max(box.height, 1) * spread
             )
             .position(x: box.midX, y: box.midY)
-            .blur(radius: Self.feather)
+            .blur(radius: feather)
             .frame(width: size.width, height: size.height)
+            .opacity(opacity)
+    }
+
+    /// Ring and Preview share one atmosphere, not one brightness level.
+    ///
+    /// Keeping the mask local preserves the desktop as a usable drop surface;
+    /// varying the mask alpha gives the ring a stronger visual anchor while the
+    /// preview remains a quieter result field. Reduce Transparency keeps both
+    /// pools more opaque so the accessibility setting still delivers contrast.
+    private func poolOpacity(for index: Int) -> Double {
+        if reducesTransparency {
+            return index == 0 ? 0.98 : 0.90
+        }
+        if isDark {
+            return index == 0 ? 0.88 : 0.74
+        }
+        return index == 0 ? 0.80 : 0.66
+    }
+
+    /// The ring can carry a wider, softer field; Preview benefits from a
+    /// tighter field so the gap reads as intentional desktop instead of glow.
+    private func poolSpread(for index: Int) -> CGFloat {
+        index == 0 ? 1.08 : 1.02
+    }
+
+    private func poolFeather(for index: Int) -> CGFloat {
+        index == 0 ? 92 : 72
     }
 
     /// 内容外框往外让出的余量、椭圆的放大倍数，以及糊开的半径。
@@ -174,8 +215,6 @@ struct OrbitScrim: View {
     /// shape into a pool. Most of the reach is ramp, so it reads as light
     /// gathering around the ring rather than as a panel with soft corners.
     private static let margin: CGFloat = 24
-    private static let spread: CGFloat = 1.08
-    private static let feather: CGFloat = 92
 
     /// 配重那一团摆在星芯的对角，越过屏幕中心一点点。
     private var counterweight: UnitPoint {
