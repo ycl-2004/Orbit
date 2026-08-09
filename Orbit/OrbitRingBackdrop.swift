@@ -2,31 +2,38 @@
 //  OrbitRingBackdrop.swift
 //  Orbit
 //
-//  The frosted track the app cards sit on, shared by the ring itself and the
-//  appearance preview in Settings.
+//  The light the cards sit in, shared by the ring itself and the appearance
+//  preview in Settings.
 //
 
 import SwiftUI
 
-/// 卡片背后那条磨砂轨道：只沿着扇面本身铺一条弧带，不再画一整块圆盘。
+/// 卡片背后那道光晕：沿着扇面铺开的一段辉光，不是一块玻璃。
 ///
-/// A disc has to reach as far in every direction as the fan reaches in one, so
-/// at small app counts most of it was empty tinted glass — a plate the cards
-/// only ever covered one side of, and the more crowded the desktop behind it,
-/// the more colour the material pulled out of it. A band that begins and ends
-/// with the fan keeps the cards legible over an arbitrary desktop, leaves the
-/// hub and the side facing the preview open, and shortens by itself as apps
-/// come and go.
+/// 这里换过两次。A disc came first, and at small app counts most of it was
+/// empty tinted glass. A band along the fan replaced it and fixed the waste,
+/// but not the real problem: the band shared its radius with the cards, so the
+/// cards covered nearly all of it, and the only parts that ever reached the eye
+/// were the slivers between them — a frosted plate with a rim, seen through
+/// gaps, which reads as a smudge that failed to render rather than as anything
+/// deliberate.
 ///
-/// The ring and the Settings preview both draw through here, so the two can no
-/// longer drift apart on what the glass is made of; the preview only passes a
-/// shorter arc.
+/// So the glass is gone. What is left is light: a few concentric blurred
+/// strokes with no edge anywhere, which cannot show a seam between two cards
+/// because it has no seam to show. It gives the fan a ground to sit on and a
+/// reason for the cards' lit edges, and it stops competing with them for
+/// attention. The line that actually says "orbit" is `OrbitTrail`, drawn inside
+/// the fan where nothing covers it.
+///
+/// The ring and the Settings preview both draw through here, so the two cannot
+/// drift apart on what the light is made of; the preview only passes a shorter
+/// arc.
 struct OrbitRingBackdrop: View {
-    /// Radius of the band's centre line — the circle the card centres sit on.
+    /// Radius of the glow's centre line — the circle the card centres sit on.
     let radius: CGFloat
-    /// Radial thickness of the band.
+    /// Radial thickness of the glow at its widest.
     let thickness: CGFloat
-    /// 轨道要盖住的那段角度。
+    /// 光晕要盖住的那段角度。
     ///
     /// In `OrbitRingViewModel.angle(for:)`'s convention: 0 is 3 o'clock and the
     /// angle grows clockwise. `Circle`'s own trim starts and runs the same way,
@@ -44,78 +51,40 @@ struct OrbitRingBackdrop: View {
             .rotation(.radians(arc.lowerBound))
     }
 
-    /// Round caps are what turn the two ends into the outer edge of a card
-    /// rather than a cut, so every layer has to share them.
-    private var band: StrokeStyle {
-        StrokeStyle(lineWidth: thickness, lineCap: .round)
-    }
-
     var body: some View {
         ZStack {
-            // 光晕负责把轨道接回桌布，所以它不能有边：任何轮廓都会读成第二条轨道。
-            // 它的半径要跟着带宽走，不然一条细带外面会挂着一圈比它自己还厚的雾。
-            track
-                .stroke(tint.opacity(0.08), style: band)
-                .blur(radius: thickness * 0.15)
-
-            // 一条窄带撑得住比整块圆盘更实的材质，而且越实，白色窗口和花桌布之间的
-            // 差别就越小。
-            track
-                .stroke(.thinMaterial, style: band)
-                .overlay {
-                    // Lit from the top-left, the same direction the cards are
-                    // lit from, so the band sits in the same room as them. The
-                    // tint stays a wash — it is here to say the glass is
-                    // Orbit's, not to be a colour of its own.
-                    track.stroke(
-                        LinearGradient(
-                            colors: [
-                                .white.opacity(0.16),
-                                tint.opacity(0.03),
-                                tint.opacity(0.07)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        style: band
-                    )
-                }
-                .overlay {
-                    // The rim follows the band's own stadium outline instead of
-                    // a circle, which is the whole point of it: it stops where
-                    // the cards stop rather than closing a ring around them.
-                    OrbitRingTrackOutline(arc: arc, thickness: thickness)
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    .white.opacity(0.30),
-                                    tint.opacity(0.10),
-                                    .clear
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                }
-                .shadow(color: .black.opacity(0.09), radius: 14, y: 8)
+            // 两层同心柔光，一层比一层窄、一层比一层实，都糊到没有边为止 ——
+            // 只要有一层收出清晰的轮廓，整道光就又变回一条带子了。
+            //
+            // 浓度按 Welcome 那两团柔光来（0.10–0.13）。On the warm near-white
+            // ground the scrim now lays down, anything heavier stops reading as
+            // the light the fan is standing in and starts reading as a coloured
+            // shape someone drew behind the cards.
+            glow(width: thickness * 1.25, blur: thickness * 0.42, color: tint.opacity(0.10))
+            glow(width: thickness * 0.72, blur: thickness * 0.26, color: tint.opacity(0.13))
         }
-        // The centre line is what the caller positions on the hub; the band
-        // spills half its thickness either side of this frame on purpose.
+        // The centre line is what the caller positions on the hub; the glow
+        // spills well past this frame on purpose.
         .frame(width: radius * 2, height: radius * 2)
         .mask { taper }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+
+    private func glow(width: CGFloat, blur: CGFloat, color: Color) -> some View {
+        track
+            .stroke(color, style: StrokeStyle(lineWidth: width, lineCap: .round))
+            .blur(radius: blur)
     }
 }
 
 private extension OrbitRingBackdrop {
     /// 两端顺着弧线淡掉，而不是硬生生收在一个圆头上。
     ///
-    /// A round cap on a band this thick reads as a bubble stuck to the end of
-    /// the track — the shape is right, the edge is not. Fading the last tenth
-    /// of the sweep instead lets the glass run out from under the first and
-    /// last card, so the track ends where the fan does without announcing it.
+    /// A round cap on a glow this wide reads as a bubble stuck to the end of the
+    /// arc. Fading the last tenth of the sweep instead lets the light run out
+    /// from under the first and last card, so it ends where the fan does without
+    /// announcing it.
     ///
     /// The span has to include the caps, not just the arc between the two end
     /// cards, or a short fan — one app, whose sweep is a few degrees while its
@@ -134,23 +103,8 @@ private extension OrbitRingBackdrop {
             startAngle: .radians(arc.lowerBound - capAngle),
             endAngle: .radians(arc.upperBound + capAngle)
         )
-        // 遮罩要比被遮的内容大：带子本身就溢出自己的 frame 半个厚度，光晕和阴影
-        // 还要再溢出一截，用同尺寸的遮罩会把它们齐根切掉。
-        .frame(width: (radius + thickness) * 2, height: (radius + thickness) * 2)
-    }
-}
-
-/// The outline of the stroked band, so a hairline can be drawn along its edge.
-private struct OrbitRingTrackOutline: Shape {
-    let arc: ClosedRange<Double>
-    let thickness: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        let sweep = min(max(arc.upperBound - arc.lowerBound, 0), 2 * .pi)
-        return Circle()
-            .trim(from: 0, to: sweep / (2 * .pi))
-            .rotation(.radians(arc.lowerBound))
-            .path(in: rect)
-            .strokedPath(StrokeStyle(lineWidth: thickness, lineCap: .round))
+        // 遮罩要比被遮的内容大：辉光本来就溢出自己的 frame 一大截，用同尺寸的
+        // 遮罩会把它齐根切掉。
+        .frame(width: (radius + thickness * 2) * 2, height: (radius + thickness * 2) * 2)
     }
 }

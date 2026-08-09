@@ -57,7 +57,11 @@
 "prefs.group.ringBackdrop" = "Ring backdrop";
 "prefs.appearance.ringBackdrop" = "Show ring backdrop";
 "prefs.appearance.ringBackdropColor" = "Backdrop color";
-"prefs.appearance.ringBackdrop.note" = "The disc behind the app cards. Its color follows the accent color until you set it here. The window preview keeps its own surface either way.";
+"prefs.appearance.ringBackdropMode" = "Color source";
+"ringBackdropMode.followAccent" = "Follow Accent";
+"ringBackdropMode.custom" = "Custom";
+"prefs.appearance.ringBackdropCustomColor" = "Custom backdrop color";
+"prefs.appearance.ringBackdrop.note" = "Choose whether the backdrop follows the accent color or uses its own color. The window preview keeps its own surface either way.";
 "prefs.appearance.hideWindowless" = "Hide apps with no windows";
 "prefs.appearance.hideWindowless.note" = "Apps that are running without any open window are left off the ring. Minimized and full-screen windows still count.";
 

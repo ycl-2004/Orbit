@@ -40,6 +40,18 @@ enum CardScale: String, CaseIterable, Identifiable {
     }
 }
 
+/// Whether the ring backdrop borrows the accent or has its own colour.
+enum RingBackdropMode: String, CaseIterable, Identifiable {
+    case followAccent
+    case custom
+
+    var id: String { rawValue }
+
+    var localizedName: String {
+        NSLocalizedString("ringBackdropMode.\(rawValue)", comment: "Ring backdrop colour source")
+    }
+}
+
 /// Where the ring appears when Orbit is summoned.
 enum RingPlacement: String, CaseIterable, Identifiable {
     /// Centered on the screen that currently holds the cursor.
@@ -97,6 +109,27 @@ enum OrbitPreferences {
 
         var localizedName: String {
             NSLocalizedString("cardFinish.\(rawValue)", comment: "Card finish name")
+        }
+
+        /// 整个召唤层该按哪种外观来画。`nil` = 跟系统。
+        ///
+        /// 这个设置的名字说的是卡片，但没有人是这么理解它的。Picking Black turned
+        /// the cards dark and left the wash, the hub, the empty state and the
+        /// preview panel light — a switcher assembled out of two different
+        /// themes. Whoever reaches for it is choosing how the ring should look,
+        /// so it has to decide the whole layer.
+        ///
+        /// Driving it through `NSAppearance` on the panels rather than threading
+        /// a colour down every view: one property flips SwiftUI's `colorScheme`,
+        /// `.primary` and `.secondary`, every system material, and
+        /// `windowBackgroundColor` together. Anything hand-plumbed would drift
+        /// apart again the first time a new surface was added.
+        var appearanceName: NSAppearance.Name? {
+            switch self {
+            case .white: .aqua
+            case .black: .darkAqua
+            case .system: nil
+            }
         }
     }
 
@@ -379,6 +412,27 @@ enum OrbitPreferences {
         set { defaults.set(newValue, forKey: "ringBackdropEnabled") }
     }
 
+    /// 圆盘颜色来自哪里。
+    ///
+    /// Follow Accent is represented by the absence of a stored backdrop colour.
+    /// That keeps existing installs on the old inherited behaviour and makes
+    /// returning to the inherited value a real reset rather than a copied colour.
+    static var ringBackdropMode: RingBackdropMode {
+        get { hasCustomRingBackdropColor ? .custom : .followAccent }
+        set {
+            switch newValue {
+            case .followAccent:
+                defaults.removeObject(forKey: "ringBackdropColor")
+            case .custom:
+                // Capture the current accent when Custom is chosen for the first
+                // time, so the visible colour does not jump during the switch.
+                if !hasCustomRingBackdropColor {
+                    setColor(accentColor, forKey: "ringBackdropColor")
+                }
+            }
+        }
+    }
+
     /// 圆盘自己的颜色，跟 accent 分开存。
     ///
     /// The accent also paints the selected card's hairline, the confirm hub and
@@ -394,7 +448,7 @@ enum OrbitPreferences {
     /// Whether the backdrop colour has been chosen on its own rather than
     /// inherited from the accent. The settings window needs this to know when
     /// its swatch has to follow an accent change.
-    static var hasCustomRingBackdropColor: Bool {
+    private static var hasCustomRingBackdropColor: Bool {
         defaults.data(forKey: "ringBackdropColor") != nil
     }
 
@@ -498,19 +552,54 @@ enum OrbitPreferences {
         (ringRadius(cardCount: cardCount) + cardScale.height * 0.5 + 72) * 2
     }
 
-    /// 磨砂轨道的径向厚度：一张卡片那么宽，不是一张卡片那么高。
+    /// 卡片脚下那道辉光的径向宽度。
     ///
-    /// 轨道是卡片脚下的一条环形跑道，不是一块把卡片整个裹住的玻璃。Sizing it to
-    /// clear a card's corners means the band has to be wider than a card is
-    /// tall, and at that width it stops reading as a track and starts reading
-    /// as the plate it replaced — it was the thickness, not the tint, that made
-    /// the old backdrop feel like it took over the screen. A card is rotated so
-    /// its long axis points at the hub, so a band one card *wide* leaves the
-    /// top and bottom of each card standing slightly proud of it, which is what
-    /// gives the ring its depth and keeps the hollow in the middle wide open.
+    /// Wider than the band it replaced rather than narrower: a glow with no edge
+    /// cannot be "covered" the way a plate could, so its size is free to be
+    /// chosen for how far the light should reach instead of for how much of it
+    /// will survive behind the cards. Reaching past a card's own height is what
+    /// makes the fan look like it is standing *in* the light rather than on top
+    /// of a shape.
     static var ringTrackThickness: CGFloat {
-        cardScale.dimension * 0.88
+        cardScale.dimension * 0.95
     }
+
+    /// 卡片跟着扇面转多少 —— 1 是完全跟随，0 是永远正立。
+    ///
+    /// Full follow points every icon straight outward, which is correct and
+    /// looks like a dropped deck: with no card upright there is no baseline for
+    /// the eye to hold, and the fan reads as spilled rather than dealt. A real
+    /// hand of cards rotates far less than it spreads. Half keeps the spread
+    /// legible while leaving every card close enough to upright to scan.
+    static let cardRotationFollow: Double = 0.5
+
+    /// 轨道线的半径：卡片内缘再往里一点，落在中心和扇面之间的空白上。
+    ///
+    /// Set from the card's inner edge rather than as a fraction of the radius so
+    /// the clearance stays the same at every card size. Clamped against the hub
+    /// so a compact fan — whose cards already sit close in — cannot push the
+    /// line onto the hub's own footprint.
+    static func orbitTrailRadius(cardCount: Int) -> CGFloat {
+        let innerEdge = ringRadius(cardCount: cardCount) - cardScale.height * 0.5
+        return max(centerFootprintRadius + 12, innerEdge - 16)
+    }
+
+    /// 取消时卡片收回中心要花多久，窗口撤除等的就是这段。
+    ///
+    /// Long enough to read as the fan folding back rather than as a stutter,
+    /// short enough that Escape still feels like Escape. The cards' own spring
+    /// is a touch longer than this on purpose — the window leaves while the last
+    /// of the motion is still settling, which no one sees, and waiting for the
+    /// spring to fully rest would be the part that felt slow.
+    static let collapseDuration: TimeInterval = 0.2
+
+    /// 选中的卡片被中心"引力"拉近多少。
+    ///
+    /// Selection already reads through lift and scale; this is what ties it to
+    /// the hub rather than leaving it as a card that happens to be bigger. It
+    /// has to stay small — far enough and the card breaks the arc its
+    /// neighbours are still standing on.
+    static let selectionGravityPull: CGFloat = 12
 
     /// 轨道在扇面两端各多走出去的角度。
     ///
@@ -534,20 +623,30 @@ enum OrbitPreferences {
     /// Widest the preview half is allowed to get.
     static let previewPanelMaximumWidth: CGFloat = 1040
     /// Breathing room around the preview inside the half it owns.
-    static let previewGap: CGFloat = 28
+    static let previewGap: CGFloat = 24
     /// Clearance the ring window keeps from the edges of the visible frame.
     static let screenMargin: CGFloat = 24
-    /// 窗口占可见区域宽度的比例。
+    /// 窗口占可见区域宽度的比例 —— 也就是两半之间隔多远。
     ///
-    /// The ring and the preview each sit at the middle of their own half, so
-    /// the window's width is also the distance between them: at full width the
-    /// disc gets pushed into the screen's left corner. 0.88 lands the disc near
-    /// the 28% mark and the carousel near 72%, which reads as one centred pair
-    /// with the ring clear of the corner.
-    static let layoutWidthRatio: CGFloat = 0.88
+    /// The ring and the preview each sit at the middle of their own half, so the
+    /// window's width is also the distance between them. 0.88 kept the ring out
+    /// of the corner but left a screen's worth of untouched wallpaper between
+    /// the fan and the carousel, and two objects that far apart stop reading as
+    /// one thing. Pulling it in, together with the centroid correction in
+    /// `fanCentroid`, closes that gap from both sides at once.
+    static let layoutWidthRatio: CGFloat = 0.74
+
+    /// 预览卡片按哪个比例算大小。
+    ///
+    /// Deliberately not `layoutWidthRatio`: that one now says how far apart the
+    /// halves sit, and tying the carousel's size to it would have shrunk every
+    /// thumbnail the moment the pair was pulled together. Holding it at the old
+    /// ratio is what keeps a preview scale of 1.0 the same number of pixels it
+    /// has always been.
+    static let previewSizingRatio: CGFloat = 0.82
     /// Upper bound on the foreground card in the window carousel. The half it
     /// sits in narrows it further on a small display.
-    static let previewCardMaximumWidth: CGFloat = 600
+    static let previewCardMaximumWidth: CGFloat = 560
 
     /// Carousel geometry: a neighbour sits `previewSideOffsetRatio` of a card
     /// width out from the middle and is drawn at `previewSideScale`, so its

@@ -57,7 +57,11 @@
 "prefs.group.ringBackdrop" = "リングの背景";
 "prefs.appearance.ringBackdrop" = "リングの背景を表示";
 "prefs.appearance.ringBackdropColor" = "背景の色";
-"prefs.appearance.ringBackdrop.note" = "アプリカードの背後にある円盤です。ここで設定するまで、色はアクセントカラーに従います。ウインドウプレビューはどちらの場合も独自の背景を保ちます。";
+"prefs.appearance.ringBackdropMode" = "色の参照元";
+"ringBackdropMode.followAccent" = "アクセントカラーに合わせる";
+"ringBackdropMode.custom" = "カスタム";
+"prefs.appearance.ringBackdropCustomColor" = "カスタム背景色";
+"prefs.appearance.ringBackdrop.note" = "背景をアクセントカラーに合わせるか、独自の色を使うかを選択します。ウインドウプレビューはどちらの場合も独自の背景を保ちます。";
 "prefs.appearance.hideWindowless" = "ウインドウのないアプリを隠す";
 "prefs.appearance.hideWindowless.note" = "起動中でもウインドウを開いていないアプリはリングに表示しません。最小化されたウインドウやフルスクリーンのウインドウは対象に含まれます。";
 

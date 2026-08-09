@@ -57,7 +57,11 @@
 "prefs.group.ringBackdrop" = "Fond de l’anneau";
 "prefs.appearance.ringBackdrop" = "Afficher le fond de l’anneau";
 "prefs.appearance.ringBackdropColor" = "Couleur du fond";
-"prefs.appearance.ringBackdrop.note" = "Le disque derrière les cartes d’apps. Sa couleur suit la couleur d’accentuation jusqu’à ce que vous la définissiez ici. L’aperçu des fenêtres conserve sa propre surface dans tous les cas.";
+"prefs.appearance.ringBackdropMode" = "Source de couleur";
+"ringBackdropMode.followAccent" = "Suivre la couleur d’accentuation";
+"ringBackdropMode.custom" = "Personnalisé";
+"prefs.appearance.ringBackdropCustomColor" = "Couleur de fond personnalisée";
+"prefs.appearance.ringBackdrop.note" = "Choisissez si le fond suit la couleur d’accentuation ou utilise sa propre couleur. L’aperçu des fenêtres conserve sa propre surface dans tous les cas.";
 "prefs.appearance.hideWindowless" = "Masquer les apps sans fenêtre";
 "prefs.appearance.hideWindowless.note" = "Les apps en cours d’exécution sans aucune fenêtre ouverte n’apparaissent pas dans l’anneau. Les fenêtres réduites et en plein écran comptent toujours.";
 

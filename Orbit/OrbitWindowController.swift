@@ -22,8 +22,18 @@ final class OrbitWindowController: NSObject {
     static let shared = OrbitWindowController()
 
     private var panel: OrbitPanel?
+    /// 铺满屏幕的暗场，永远排在环下面一层。
+    private var scrim: NSPanel?
     private var model: OrbitRingViewModel?
     private var notificationTokens: [NSObjectProtocol] = []
+
+    /// 哪一次收场还算数 —— 跟 `switchGeneration` 同一个道理。
+    ///
+    /// Cancelling now folds the cards back into the hub before the window goes,
+    /// so teardown is deferred by the length of that animation. Re-summoning
+    /// inside that window has to invalidate the pending teardown, or it would
+    /// close the ring the user has just opened.
+    private var dismissGeneration = 0
 
     /// 哪一次切换还算数。
     ///
@@ -146,7 +156,7 @@ final class OrbitWindowController: NSObject {
         )
 
         ringModel.onCancel = { [weak self] in
-            self?.dismissImmediately()
+            self?.dismissCancelled()
         }
         ringModel.onActivate = { [weak self] app, window in
             self?.activate(
@@ -157,9 +167,19 @@ final class OrbitWindowController: NSObject {
         }
 
         model = ringModel
-        panel = makePanel(at: anchor(for: location, on: targetScreen), model: ringModel, on: targetScreen)
-        panel?.orderFrontRegardless()
-        panel?.makeKey()
+        let ringPanel = makePanel(
+            at: anchor(for: location, on: targetScreen),
+            model: ringModel,
+            on: targetScreen
+        )
+        panel = ringPanel
+
+        // 暗场先上，环再压在它上面。
+        scrim = makeScrim(for: ringModel, ringFrame: ringPanel.frame, on: targetScreen)
+        scrim?.orderFrontRegardless()
+
+        ringPanel.orderFrontRegardless()
+        ringPanel.makeKey()
     }
 
     func dismissImmediately() {
@@ -171,10 +191,35 @@ final class OrbitWindowController: NSObject {
         WindowPreviewService.shared.flushCache()
     }
 
+    /// 取消时让卡片沿着来时的路收回中心，再撤窗口。
+    ///
+    /// Only this path animates. Confirming a switch tears down at once, because
+    /// there the ring would otherwise still be sitting over the app the user has
+    /// already chosen — a wait the gesture cannot afford. Cancelling is going
+    /// nowhere, so it can afford to put things back where they came from.
+    private func dismissCancelled() {
+        guard let model, panel != nil, !model.isCollapsing else {
+            dismissImmediately()
+            return
+        }
+
+        model.beginCollapse()
+        dismissGeneration += 1
+        let generation = dismissGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + OrbitPreferences.collapseDuration) { [weak self] in
+            guard let self, self.dismissGeneration == generation else { return }
+            self.dismissImmediately()
+        }
+    }
+
     private func tearDownPanel() {
+        // 任何还挂着的收场动画就此作废：窗口已经要走了，或者已经换了一批。
+        dismissGeneration += 1
         model?.resetForDismissal()
         panel?.orderOut(nil)
         panel = nil
+        scrim?.orderOut(nil)
+        scrim = nil
         model = nil
     }
 
@@ -480,12 +525,112 @@ final class OrbitWindowController: NSObject {
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
-        panel.level = .floating
+        panel.appearance = Self.ringAppearance
+        // 明确比暗场高一级，而不是靠两个同级窗口的排序碰运气。
+        panel.level = Self.ringLevel
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         panel.contentView = NSHostingView(rootView: OrbitRingView(model: model))
         return panel
+    }
+
+    private static let scrimLevel = NSWindow.Level.floating
+    private static let ringLevel = NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue + 1)
+
+    /// 环和暗场共用一个外观 —— 它们是同一层，不能一个亮一个暗。
+    ///
+    /// Read once per summon rather than stored: the setting can change in the
+    /// Settings window while no ring exists, and the next summon builds fresh
+    /// panels anyway.
+    private static var ringAppearance: NSAppearance? {
+        OrbitPreferences.cardFinish.appearanceName.flatMap(NSAppearance.init(named:))
+    }
+
+    /// 铺满整块屏幕的暗场窗口。
+    ///
+    /// 单独一个窗口，而不是把环的面板撑满屏幕：the ring panel is sized and placed
+    /// from the fan's own geometry, and every layout number in the view model
+    /// reads off that size. Stretching it to the display would have made the
+    /// dim free but turned the whole layout into a positioning problem inside a
+    /// screen-sized canvas.
+    ///
+    /// It covers `frame`, not `visibleFrame`, so the menu bar recedes with
+    /// everything else — a dim that stops short of the top edge reads as a
+    /// window rather than as the desktop stepping back. It never takes events:
+    /// the dim changes what the summon *looks* like, not what clicking anywhere
+    /// on it does.
+    private func makeScrim(
+        for model: OrbitRingViewModel,
+        ringFrame: NSRect,
+        on screen: NSScreen?
+    ) -> NSPanel? {
+        guard let screen else { return nil }
+        let bounds = screen.frame
+
+        let panel = NSPanel(
+            contentRect: bounds,
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.appearance = Self.ringAppearance
+        panel.level = Self.scrimLevel
+        panel.hidesOnDeactivate = false
+        panel.isReleasedWhenClosed = false
+        panel.ignoresMouseEvents = true
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
+
+        let hosting = NSHostingView(
+            rootView: OrbitScrim(
+                model: model,
+                focus: scrimFocus(hub: model.hubCenterInPanel, ringFrame: ringFrame, screen: bounds),
+                content: scrimContent(model.contentBounds, ringFrame: ringFrame, screen: bounds),
+                // 「Backdrop color」原本只染卡片脚下那一小圈，几乎看不出改了什么。
+                // 铺满屏幕的那团柔光才是这个偏好真正该管的东西 —— 现在调它，
+                // 整个召唤层的气氛跟着变。
+                bloom: model.showsBackdrop ? OrbitPalette.backdrop : nil
+            )
+        )
+        panel.contentView = hosting
+        return panel
+    }
+
+    /// 把星芯的位置从「面板内的 SwiftUI 坐标」翻成「整屏的单位坐标」。
+    ///
+    /// 两次翻转叠在一起，所以值得单独写出来：SwiftUI counts down from a view's
+    /// top, AppKit counts up from the display's bottom, and the scrim's own
+    /// SwiftUI space counts down again from the top of the screen.
+    private func scrimFocus(hub: CGPoint, ringFrame: NSRect, screen: NSRect) -> UnitPoint {
+        let screenX = ringFrame.minX + hub.x
+        let topDownY = screen.maxY - (ringFrame.maxY - hub.y)
+        return UnitPoint(
+            x: (screenX - screen.minX) / max(screen.width, 1),
+            y: topDownY / max(screen.height, 1)
+        )
+    }
+
+    /// 同样的换算，只是这次搬的是一组相互独立的矩形。
+    ///
+    /// The rect's top edge in the panel becomes its top edge on screen, so the
+    /// flip has to be applied to `maxY` and the height re-added — taking the
+    /// corner alone would land the box a full height off. Keeping each rect
+    /// separate prevents the scrim from filling the gap between the ring and
+    /// preview with one oversized ellipse.
+    private func scrimContent(_ rects: [CGRect], ringFrame: NSRect, screen: NSRect) -> [CGRect] {
+        rects.map { rect in
+            let originX = ringFrame.minX + rect.minX
+            let topDownY = screen.maxY - (ringFrame.maxY - rect.minY)
+            return CGRect(
+                x: (originX - screen.minX) / max(screen.width, 1),
+                y: topDownY / max(screen.height, 1),
+                width: rect.width / max(screen.width, 1),
+                height: rect.height / max(screen.height, 1)
+            )
+        }
     }
 
     /// The cursor only selects which screen the ring belongs to; whether the

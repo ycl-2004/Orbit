@@ -57,7 +57,11 @@
 "prefs.group.ringBackdrop" = "Ring-Hintergrund";
 "prefs.appearance.ringBackdrop" = "Ring-Hintergrund anzeigen";
 "prefs.appearance.ringBackdropColor" = "Hintergrundfarbe";
-"prefs.appearance.ringBackdrop.note" = "Die Scheibe hinter den App-Karten. Ihre Farbe folgt der Akzentfarbe, bis Sie sie hier festlegen. Die Fenstervorschau behält in beiden Fällen ihre eigene Fläche.";
+"prefs.appearance.ringBackdropMode" = "Farbquelle";
+"ringBackdropMode.followAccent" = "Akzentfarbe folgen";
+"ringBackdropMode.custom" = "Benutzerdefiniert";
+"prefs.appearance.ringBackdropCustomColor" = "Benutzerdefinierte Hintergrundfarbe";
+"prefs.appearance.ringBackdrop.note" = "Wählen Sie, ob der Hintergrund der Akzentfarbe folgt oder eine eigene Farbe verwendet. Die Fenstervorschau behält in beiden Fällen ihre eigene Fläche.";
 "prefs.appearance.hideWindowless" = "Apps ohne Fenster ausblenden";
 "prefs.appearance.hideWindowless.note" = "Apps, die laufen, aber kein Fenster geöffnet haben, erscheinen nicht im Ring. Minimierte Fenster und Vollbildfenster zählen weiterhin.";
 

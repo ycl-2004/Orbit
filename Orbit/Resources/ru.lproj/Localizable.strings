@@ -57,7 +57,11 @@
 "prefs.group.ringBackdrop" = "Фон кольца";
 "prefs.appearance.ringBackdrop" = "Показывать фон кольца";
 "prefs.appearance.ringBackdropColor" = "Цвет фона";
-"prefs.appearance.ringBackdrop.note" = "Диск за карточками приложений. Его цвет следует цвету акцента, пока вы не зададите его здесь. Предпросмотр окон в любом случае сохраняет собственную подложку.";
+"prefs.appearance.ringBackdropMode" = "Источник цвета";
+"ringBackdropMode.followAccent" = "Следовать цвету акцента";
+"ringBackdropMode.custom" = "Свой цвет";
+"prefs.appearance.ringBackdropCustomColor" = "Свой цвет фона";
+"prefs.appearance.ringBackdrop.note" = "Выберите, должен ли фон следовать цвету акцента или использовать собственный цвет. Предпросмотр окон в любом случае сохраняет собственную подложку.";
 "prefs.appearance.hideWindowless" = "Скрывать приложения без окон";
 "prefs.appearance.hideWindowless.note" = "Запущенные приложения, у которых не открыто ни одного окна, не появляются в кольце. Свёрнутые и полноэкранные окна по-прежнему учитываются.";
 
