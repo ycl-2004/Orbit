@@ -56,10 +56,12 @@ struct OrbitRingBackdrop: View {
             // 两层同心柔光，一层比一层窄、一层比一层实，都糊到没有边为止 ——
             // 只要有一层收出清晰的轮廓，整道光就又变回一条带子了。
             //
-            // 浓度按 Welcome 那两团柔光来（0.10–0.13）。On the warm near-white
-            // ground the scrim now lays down, anything heavier stops reading as
-            // the light the fan is standing in and starts reading as a coloured
-            // shape someone drew behind the cards.
+            // 浓度按 Welcome 那两团柔光来（0.10–0.13）。The ring's caller now
+            // hands in a tint that has already been lifted for the dusk ground
+            // (`OrbitPalette.backdropOnDusk`), so these two stay where they are:
+            // anything heavier stops reading as the light the fan is standing in
+            // and starts reading as a coloured shape someone drew behind the
+            // cards. 设置页那块预览底是浅的，它传原色，同样合用。
             glow(width: thickness * 1.25, blur: thickness * 0.42, color: tint.opacity(0.10))
             glow(width: thickness * 0.72, blur: thickness * 0.26, color: tint.opacity(0.13))
         }

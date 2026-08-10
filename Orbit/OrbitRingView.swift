@@ -1114,7 +1114,7 @@ struct OrbitRingView: View {
                     radius: model.ringRadius,
                     thickness: OrbitPreferences.ringTrackThickness,
                     arc: model.backdropArc,
-                    tint: OrbitPalette.backdrop
+                    tint: OrbitPalette.backdropOnDusk
                 )
                 .position(hub)
                 .opacity(deployProgress)
@@ -1125,13 +1125,16 @@ struct OrbitRingView: View {
             // 虚线是笔，不是气氛，所以它跟 accent 走 —— Welcome 那条轨道用的
             // 也是 accent。跟着 backdrop 开关一起收：把柔光关掉的人要的是光秃
             // 的扇面，不是换一件新装饰。
+            //
+            // 用 `accentOnDusk` 而不是 `accent(on:)`：这根线落在 scrim 上，而
+            // scrim 两个主题下都是暖影，所以决定它多亮的是那块地，不是系统主题。
             if model.showsBackdrop {
                 OrbitTrail(
                     radius: model.orbitTrailRadius,
                     arc: model.backdropArc,
                     stops: model.apps.indices.map { model.angle(for: $0) },
                     selectedStop: model.selectedIndex,
-                    tint: OrbitPalette.accent(on: colorScheme),
+                    tint: OrbitPalette.accentOnDusk,
                     progress: deployProgress
                 )
                 .position(hub)
@@ -1502,15 +1505,17 @@ private struct OrbitTextHalo: ViewModifier {
 
     func body(content: Content) -> some View {
         if enabled {
-            // 淡一点、糊得更开。
-            //
             // 这块底大部分时候是叠在那潭柔光上的 —— contentBounds 已经把预览这
-            // 一列圈进去了 —— 所以按"孤零零落在壁纸上"的浓度来调，两层加起来
-            // 就成了一块亮斑。它只需要兜住潭够不到的那一点边缘。
+            // 一列圈进去了 —— 所以它只需要兜住潭够不到的那一点边缘。
+            //
+            // 但潭的底换成暖影之后，这层从"别再加亮了"变成了整段文字唯一的依
+            // 靠：the status text is `.primary`, which in the light theme is ink
+            // on a ground that is no longer pale. 提到 0.34 是让它重新变回一小
+            // 块纸 —— 环上其它每样东西都有自己的底，这段字凭什么没有。
             content.background {
                 Ellipse()
                     .fill(Color(nsColor: .windowBackgroundColor))
-                    .opacity(0.16)
+                    .opacity(0.34)
                     .blur(radius: 24)
                     .padding(-18)
             }

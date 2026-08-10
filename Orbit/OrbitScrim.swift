@@ -102,40 +102,63 @@ struct OrbitScrim: View {
 
     private var layers: some View {
         ZStack {
-            if !reducesTransparency {
+            if !reducesTransparency && style.drawsBlur {
                 OrbitBackdropBlur()
             }
 
-            // 轻轻把局部桌面压下去，让前景卡片有对比。
+            // 关掉「地」的时候连 Reduce Transparency 的不透明底也一起收。
             //
-            // In light mode a window-background veil adds white to an already
-            // bright desktop. A restrained neutral dimming layer lowers the
-            // background luminance instead, so the cards can stay light without
-            // the entire summon layer blooming toward white.
-            if reducesTransparency {
-                Color(nsColor: .windowBackgroundColor)
-                    .opacity(opaqueVeilOpacity)
-            } else {
-                Color.black.opacity(isDark ? 0.16 : 0.08)
+            // 那条路径存在的理由是「这层在这儿，所以必须让它可读」。If the layer
+            // is not there at all, an opaque veil is not an accessibility
+            // accommodation — it is the whole thing the user just switched off,
+            // reintroduced under another name.
+            if style.drawsGround {
+                ground
             }
+        }
+    }
 
-            // Keep only a trace of warmth; the accent bloom carries the colour.
-            if !isDark {
-                OrbitPalette.ivory.opacity(0.03)
+    @ViewBuilder
+    private var ground: some View {
+        Group {
+            // 把局部桌面压进黄昏里。
+            //
+            // 压暗的颜色不是黑，是 `dusk`。Neutral black over a warm desktop
+            // takes its hue out faster than its luminance, so the desk reads as
+            // faded rather than dimmed — and a faded desk is still, in value,
+            // the same thing as the white cards standing on it. Dimming in the
+            // accent's own hue family gives the fan a ground instead.
+            //
+            // 这一档比上一版重了一倍多。The old 0.08 was tuned to sit under a
+            // near-white frosted plate and a coat of ivory; both are gone, so
+            // this layer is now the only thing deciding how far back the desk
+            // goes, and it has to actually go somewhere.
+            if reducesTransparency {
+                OrbitPalette.dusk.opacity(opaqueVeilOpacity)
+            } else {
+                OrbitPalette.dusk.opacity(isDark ? 0.18 : 0.22)
             }
 
             // 两团柔光，跟 Welcome 同一个配方：主调落在星芯上，另一团在对角
             // 作配重。它们淡到几乎只是「那一块暖一点」，不是可以指出来的形状。
+            //
+            // 两个主题现在共用一组浓度，因为它们现在落在同一块地上。The light
+            // theme used to need its own, quieter numbers to avoid staining a
+            // bright desktop; on dusk the same restraint just makes the bloom
+            // disappear. Lifting the colour is what keeps it reading as light
+            // rather than as a dark patch of dye.
             if let bloom {
+                let lit = OrbitPalette.lifted(bloom, by: isDark ? 0.42 : 0.30)
+
                 RadialGradient(
-                    colors: [bloom.opacity(isDark ? 0.15 : 0.08), bloom.opacity(0.025), .clear],
+                    colors: [lit.opacity(0.15), lit.opacity(0.035), .clear],
                     center: focus,
                     startRadius: 0,
                     endRadius: 700
                 )
 
                 RadialGradient(
-                    colors: [OrbitPalette.denim.opacity(isDark ? 0.10 : 0.06), .clear],
+                    colors: [OrbitPalette.denim.opacity(0.10), .clear],
                     center: counterweight,
                     startRadius: 0,
                     endRadius: 560
@@ -143,6 +166,9 @@ struct OrbitScrim: View {
             }
         }
     }
+
+    /// 这层地画到哪一步。见 `OrbitPreferences.ScrimStyle`。
+    private var style: OrbitPreferences.ScrimStyle { OrbitPreferences.scrimStyle }
 
     /// 这一潭的形状：贴着一块 Orbit 内容，往外糊掉。
     ///
@@ -235,8 +261,13 @@ struct OrbitScrim: View {
     }
 
     /// 关闭透明度时才使用不透明底，否则系统的可读性设置不会真正生效。
+    ///
+    /// 这条路径两个主题下都收到近乎不透明的 `dusk`。The setting is asking for
+    /// contrast, and a white card on an almost-opaque dusk ground is the most
+    /// contrast this composition can offer — more than the light theme's old
+    /// window-background veil, which put a white plate behind white cards.
     private var opaqueVeilOpacity: Double {
-        isDark ? 0.92 : 0.84
+        isDark ? 0.94 : 0.88
     }
 }
 
@@ -249,6 +280,13 @@ struct OrbitScrim: View {
 /// a window. Together with behind-window blending it keeps the desktop
 /// readable without introducing an opaque white plate.
 ///
+/// 外观钉死在暗的一档，不跟系统翻。Every `NSVisualEffectView` material is two
+/// materials wearing one name, and the light one is a near-white frosted plate
+/// — the single largest white surface Orbit was drawing, and it was underneath
+/// everything else. 这层是「地」，不是「纸」: pinning it means the blur only ever
+/// contributes blur and shade, and the exact colour of the ground is decided by
+/// `OrbitPalette.dusk` above it rather than by whichever variant AppKit picked.
+///
 /// Source: https://developer.apple.com/documentation/appkit/nsvisualeffectview/material-swift.enum/underwindowbackground
 private struct OrbitBackdropBlur: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
@@ -257,6 +295,7 @@ private struct OrbitBackdropBlur: NSViewRepresentable {
         view.blendingMode = .behindWindow
         view.state = .active
         view.isEmphasized = false
+        view.appearance = NSAppearance(named: .darkAqua)
         return view
     }
 

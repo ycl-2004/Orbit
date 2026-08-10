@@ -133,7 +133,36 @@ enum OrbitPreferences {
         }
     }
 
+    /// 召唤层脚下那层地画到哪一步 —— 目前只有隐藏键，没有 UI。
+    ///
+    /// 这个开关是为了把「云」和「模糊」拆开看。The two have always shipped as one
+    /// thing, so "the background is too heavy" could mean either: the visible
+    /// blooms and pools, or the behind-window blur they sit on. Guessing costs a
+    /// build and a look each time; a key costs one build and answers all three.
+    ///
+    /// 定下来之后这个 enum 应该被删掉，只留胜出的那一档。
+    enum ScrimStyle: String {
+        /// 模糊 + 暖影 + 两团柔光。
+        case dusk
+        /// 只留桌面模糊，云和压暗都不画。
+        case blurOnly
+        /// 整层不画，环直接落在桌面上。
+        case none
+
+        var drawsBlur: Bool { self != .none }
+        var drawsGround: Bool { self == .dusk }
+    }
+
     private static let defaults = UserDefaults.standard
+
+    /// `defaults write app.orbit.local scrimStyle dusk|blurOnly|none`
+    static var scrimStyle: ScrimStyle {
+        guard let rawValue = defaults.string(forKey: "scrimStyle"),
+              let style = ScrimStyle(rawValue: rawValue) else {
+            return .dusk
+        }
+        return style
+    }
 
     // MARK: - 旧版本设置迁移
 

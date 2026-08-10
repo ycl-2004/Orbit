@@ -36,6 +36,36 @@ enum OrbitPalette {
     static let paper = Color(red: 0.965, green: 0.955, blue: 0.940)
     static let coral = Color(red: 0.91, green: 0.60, blue: 0.53)
 
+    /// 环脚下那层地 —— 酒红一路压到快成影子。
+    ///
+    /// 纸和地不能是同一种白。The summon layer used to darken with pure black and
+    /// then add `ivory` back on top, over a blur that renders as a near-white
+    /// frosted plate in the light theme. Three layers, all of them pushing the
+    /// desktop toward the same value as the cards sitting on it — which is why
+    /// the fan never had any ground to stand on and the whole thing read as
+    /// white on white.
+    ///
+    /// 黑压不出「暗」，只压出「灰」。Neutral black over a warm wallpaper drains
+    /// its hue before it drains its luminance, so the desk looks faded rather
+    /// than dimmed. Keeping the accent's hue and taking it almost all the way
+    /// down turns the same dimming into dusk: the desktop recedes into the
+    /// family the hub is already lighting the scene with.
+    static let dusk = Color(red: 0.17, green: 0.11, blue: 0.10)
+
+    /// 直接画在 scrim 上的痕迹要用的颜色。
+    ///
+    /// `accent(on:)` 问的是系统主题，因为它服务的是窗口里的东西 —— 设置面板、
+    /// 预览、卡片上的字，那些的底确实跟着主题翻。环不一样：它的底现在两个主题
+    /// 下都是 `dusk`，所以决定笔要多亮的是这块地，不是系统。A hairline of raw
+    /// burgundy on dusk is the same disappearing act the dark theme already had
+    /// to solve.
+    static var accentOnDusk: Color { lifted(burgundy, by: 0.42) }
+    /// 同上，给跟着「Backdrop color」走的那道柔光。
+    ///
+    /// 抬得比笔少。The glow is atmosphere, not a mark: lifting it as far as the
+    /// trail would turn a wash into a pale ring someone can point at.
+    static var backdropOnDusk: Color { lifted(backdrop, by: 0.28) }
+
     /// 暗底上要用的主色。
     ///
     /// 酒红本来就深。On a dark ground it stops being a colour and becomes a hole
