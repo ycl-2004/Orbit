@@ -595,12 +595,15 @@ enum OrbitPreferences {
 
     /// 卡片跟着扇面转多少 —— 1 是完全跟随，0 是永远正立。
     ///
-    /// Full follow points every icon straight outward, which is correct and
-    /// looks like a dropped deck: with no card upright there is no baseline for
-    /// the eye to hold, and the fan reads as spilled rather than dealt. A real
-    /// hand of cards rotates far less than it spreads. Half keeps the spread
-    /// legible while leaving every card close enough to upright to scan.
-    static let cardRotationFollow: Double = 0.5
+    /// 回到 1。上一版按「一手真牌旋转远小于展开」的类比取了 0.5，那个类比对，但
+    /// 它描述的是一手*被握着*的牌 —— 有一只手定义了基准。The fan has no hand.
+    /// Its baseline is the circle itself, and a card at half-follow lines up
+    /// with neither the circle nor the screen: every card sits at its own
+    /// unrelated angle, which is what reads as spilled. Full follow gives every
+    /// card the same relationship to the hub, and a rosette where the rule is
+    /// visible is easier to scan than a spread where each tile is individually
+    /// closer to upright.
+    static let cardRotationFollow: Double = 1.0
 
     /// 轨道线的半径：卡片内缘再往里一点，落在中心和扇面之间的空白上。
     ///

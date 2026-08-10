@@ -1743,13 +1743,14 @@ private struct OrbitAppCard: View {
         }
     }
 
-    /// 卡片只跟着扇面转一部分，不是转满。
+    /// 卡片跟着扇面转，把底边 —— 也就是那行字 —— 对着中心。
     ///
-    /// `angle + .pi / 2` is the full turn that would point every card's bottom
-    /// edge at the hub. Taking a fraction of it keeps the spread readable while
-    /// leaving each card near enough upright that the fan has a baseline — see
-    /// `OrbitPreferences.cardRotationFollow` for why a fully-followed fan reads
-    /// as dropped rather than dealt.
+    /// `angle + .pi / 2` is the full turn that points every card's bottom edge
+    /// at the hub. The fraction stays plumbed through
+    /// `OrbitPreferences.cardRotationFollow` rather than being folded back into
+    /// the constant, because everything downstream — the lit edge, the rim
+    /// gradient — is written against whatever it is set to; hardcoding the turn
+    /// here would silently break them if it is ever dialled back again.
     private var cardRotation: Angle {
         .radians(rotationRadians)
     }
