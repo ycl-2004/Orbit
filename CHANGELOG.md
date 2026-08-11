@@ -1,6 +1,6 @@
 # Orbit release notes
 
-## Unreleased
+## 1.6.0 — 2026-08-11
 
 ### Fixed
 
