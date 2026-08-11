@@ -57,7 +57,11 @@
 "prefs.group.ringBackdrop" = "Ringbakgrunn";
 "prefs.appearance.ringBackdrop" = "Vis ringbakgrunn";
 "prefs.appearance.ringBackdropColor" = "Bakgrunnsfarge";
-"prefs.appearance.ringBackdrop.note" = "Skiven bak app-kortene. Fargen følger aksentfargen til du angir den her. Vindusforhåndsvisningen beholder sin egen flate uansett.";
+"prefs.appearance.ringBackdropMode" = "Fargekilde";
+"ringBackdropMode.followAccent" = "Følg aksentfargen";
+"ringBackdropMode.custom" = "Egendefinert";
+"prefs.appearance.ringBackdropCustomColor" = "Egendefinert bakgrunnsfarge";
+"prefs.appearance.ringBackdrop.note" = "Velg om ringbakgrunnen skal følge aksentfargen eller bruke sin egen farge. Vindusforhåndsvisningen beholder sin egen flate uansett.";
 "prefs.appearance.hideWindowless" = "Skjul apper uten vinduer";
 "prefs.appearance.hideWindowless.note" = "Apper som kjører uten et åpent vindu, vises ikke i ringen. Minimerte vinduer og fullskjermvinduer teller fortsatt med.";
 
@@ -119,7 +123,7 @@
 
 /* Ring — window preview panel */
 "preview.empty.title" = "Velg en app";
-"preview.empty.message" = "Velg et kort for å se forhåndsvisning av vinduet.";
+"preview.empty.message" = "Hold pekeren over eller velg et kort for å forhåndsvise vinduene.";
 "preview.loading.title" = "Laster forhåndsvisning";
 "preview.loading.message" = "Henter det nyeste vindusbildet.";
 "preview.orbit.title" = "Orbit kjører";

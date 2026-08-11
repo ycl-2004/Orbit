@@ -37,7 +37,7 @@ UI_TEST_COUNT="$(find OrbitUITests -type f -name '*.swift' -exec grep -Ehc '^[[:
 # Keep these three in step with each other. Two commits in a row changed the
 # suite without touching this file, which is exactly the drift the check exists
 # to catch — so it names the file to edit rather than only the number it wanted.
-EXPECTED_UNIT_TESTS=61
+EXPECTED_UNIT_TESTS=64
 EXPECTED_UI_TESTS=2
 
 [[ "$UNIT_TEST_COUNT" == "$EXPECTED_UNIT_TESTS" ]] || {

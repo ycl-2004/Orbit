@@ -214,10 +214,14 @@ enum WindowServerInspector {
     ///   now, which must never be the answer — switching to it is a no-op.
     ///   `nil` when the app is not the one in front, where every window it owns
     ///   is a legitimate destination.
+    /// - Parameter knownBlank: Windows a previous capture measured as drawing
+    ///   nothing. 这一层只看得见层级、标题和尺寸，而空壳窗三样都齐全 —— 微信那扇
+    ///   280x380 就是靠这条才不会成为松手时的落点。
     static func mostRecentOtherWindow(
         ownedBy pid: pid_t,
         excluding currentWindowID: CGWindowID?,
-        preferredIDs: [CGWindowID]
+        preferredIDs: [CGWindowID],
+        knownBlank: Set<CGWindowID> = []
     ) -> WindowTarget? {
         let options: CGWindowListOption = [.excludeDesktopElements]
         guard let windows = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
@@ -229,7 +233,8 @@ enum WindowServerInspector {
             ownedBy: pid,
             excluding: currentWindowID,
             preferredIDs: preferredIDs,
-            requiringTitle: CGPreflightScreenCaptureAccess()
+            requiringTitle: CGPreflightScreenCaptureAccess(),
+            knownBlank: knownBlank
         )
     }
 
@@ -240,12 +245,14 @@ enum WindowServerInspector {
         ownedBy pid: pid_t,
         excluding currentWindowID: CGWindowID?,
         preferredIDs: [CGWindowID],
-        requiringTitle: Bool
+        requiringTitle: Bool,
+        knownBlank: Set<CGWindowID> = []
     ) -> WindowTarget? {
         let targets = windows.compactMap { window -> WindowTarget? in
             guard window[kCGWindowOwnerPID as String] as? Int == Int(pid),
                   let rawID = window[kCGWindowNumber as String] as? Int,
                   CGWindowID(rawID) != currentWindowID,
+                  !knownBlank.contains(CGWindowID(rawID)),
                   qualifiesAsWindow(window, requiringTitle: requiringTitle),
                   let boundsDict = window[kCGWindowBounds as String] as? [String: Any],
                   let frame = CGRect(dictionaryRepresentation: boundsDict as CFDictionary) else {

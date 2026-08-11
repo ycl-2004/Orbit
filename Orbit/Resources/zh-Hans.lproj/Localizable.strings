@@ -57,7 +57,11 @@
 "prefs.group.ringBackdrop" = "圆环背景";
 "prefs.appearance.ringBackdrop" = "显示圆环背景";
 "prefs.appearance.ringBackdropColor" = "背景颜色";
-"prefs.appearance.ringBackdrop.note" = "应用卡片背后的那块圆盘。在这里设置之前，它的颜色跟随强调颜色。无论开关如何，窗口预览都保留自己的背景。";
+"prefs.appearance.ringBackdropMode" = "颜色来源";
+"ringBackdropMode.followAccent" = "跟随强调颜色";
+"ringBackdropMode.custom" = "自定义";
+"prefs.appearance.ringBackdropCustomColor" = "自定义背景颜色";
+"prefs.appearance.ringBackdrop.note" = "选择背景跟随强调颜色，或使用单独的颜色。无论如何，窗口预览都保留自己的背景。";
 "prefs.appearance.hideWindowless" = "隐藏没有窗口的应用";
 "prefs.appearance.hideWindowless.note" = "正在运行但一个窗口都没打开的应用不会出现在环上。最小化和全屏的窗口仍然算数。";
 
@@ -119,7 +123,7 @@
 
 /* Ring — window preview panel */
 "preview.empty.title" = "选择一个应用";
-"preview.empty.message" = "选择一张卡片查看它的窗口预览。";
+"preview.empty.message" = "将光标移到卡片上或选择卡片，以预览它的窗口。";
 "preview.loading.title" = "正在加载预览";
 "preview.loading.message" = "正在获取最新的窗口画面。";
 "preview.orbit.title" = "Orbit 正在运行";

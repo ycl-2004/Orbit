@@ -43,6 +43,14 @@ final class OrbitRingViewModel: ObservableObject {
     @Published private(set) var previewState: OrbitPreviewState = .idle
     /// Which of the selected app's windows the arrow keys point at.
     @Published var selectedWindowIndex = 0
+    /// 环正在收回中心，窗口马上就撤。
+    ///
+    /// Only ever set on the cancel path. Spatial consistency says a thing should
+    /// leave the way it arrived, but paying for that on the switch path would
+    /// mean the ring is still on screen, over the app the user just chose, for
+    /// as long as the collapse lasts — a latency the gesture cannot afford.
+    /// Cancelling has nowhere to be, so it can afford to put the cards back.
+    @Published private(set) var isCollapsing = false
 
     var onCancel: (() -> Void)?
     /// Second argument is the window to switch to, when one was picked.
@@ -133,6 +141,12 @@ final class OrbitRingViewModel: ObservableObject {
     var selectedApp: AppRecord? {
         guard let selectedID else { return nil }
         return apps.first(where: { $0.id == selectedID })
+    }
+
+    /// 选中的是环上的第几张卡 —— 轨道上的落点要靠它知道该点亮哪一颗。
+    var selectedIndex: Int? {
+        guard let selectedID else { return nil }
+        return apps.firstIndex(where: { $0.id == selectedID })
     }
 
     /// 一个还没有选中项的环，第一次按方向键该落在哪张卡上。
@@ -233,7 +247,7 @@ final class OrbitRingViewModel: ObservableObject {
     /// 环。这里量的是"在默认版式下这一半有多宽"，于是倍率 1.0 复现的正好是今天
     /// 的尺寸，一个像素不差。
     private var desiredPreviewCardWidth: CGFloat {
-        let half = visibleFrame.width * OrbitPreferences.layoutWidthRatio / 2
+        let half = visibleFrame.width * OrbitPreferences.previewSizingRatio / 2
         let usable = half - OrbitPreferences.previewGap * 2
         let base = min(OrbitPreferences.previewCardMaximumWidth, usable / OrbitPreferences.previewCarouselSpan)
         return max(120, base * OrbitPreferences.previewScale)
@@ -295,9 +309,105 @@ final class OrbitRingViewModel: ObservableObject {
         return (fanStartAngle - span - padding)...(fanStartAngle + padding)
     }
 
-    /// Read once per showing, like `showsPreview`: the disc must not appear or
+    /// Read once per showing, like `showsPreview`: the glow must not appear or
     /// vanish underneath a fan that is already on screen.
     let showsBackdrop = OrbitPreferences.ringBackdropEnabled
+
+    /// 轨道线的半径。
+    var orbitTrailRadius: CGFloat {
+        OrbitPreferences.orbitTrailRadius(cardCount: apps.count)
+    }
+
+    /// 扇面的重心离画布中心有多远。
+    ///
+    /// The canvas is a square centred on the hub, but the fan only ever occupies
+    /// one side of it — it opens from 12 o'clock down the left — so centring the
+    /// *canvas* in its half leaves the cards hugging the far edge and a screen's
+    /// worth of empty wallpaper between them and the carousel. Centring what is
+    /// actually drawn closes that gap without touching the fan's anchor, which
+    /// has to stay at 12 o'clock for spatial memory to work.
+    ///
+    /// Only part of it is applied (see `fanRecentring`): correcting the whole
+    /// way puts the fan dead centre and the hub visibly off to one side, which
+    /// trades one lopsided composition for another.
+    var fanCentroid: CGSize {
+        guard !apps.isEmpty else { return .zero }
+        var sumX = 0.0
+        var sumY = 0.0
+        for index in apps.indices {
+            let angle = angle(for: index)
+            sumX += cos(angle)
+            sumY += sin(angle)
+        }
+        let count = Double(apps.count)
+        return CGSize(
+            width: CGFloat(sumX / count) * ringRadius,
+            height: CGFloat(sumY / count) * ringRadius
+        )
+    }
+
+    /// 画布要往回挪多少，才能让扇面（而不是画布）落在这一半的正中间。
+    ///
+    /// 只横向纠正。The fan's vertical imbalance is a fraction of its horizontal
+    /// one, and correcting it moved the hub off the line the carousel sits on —
+    /// buying a few points of balance inside the left column at the cost of the
+    /// one alignment that ties the two columns together. The hub and the preview
+    /// now share the panel's centre line exactly.
+    var fanRecentring: CGSize {
+        CGSize(width: -fanCentroid.width * 0.7, height: 0)
+    }
+
+    /// 星芯落在面板里的哪一点，用 SwiftUI 的坐标（原点在左上）。
+    ///
+    /// The scrim is a second window covering the whole screen and has to know
+    /// exactly where the hub ends up, which is not the ring column's centre —
+    /// `fanRecentring` has already moved it.
+    var hubCenterInPanel: CGPoint {
+        let size = panelSize
+        let column = showsPreview ? columnWidth : size.width
+        return CGPoint(
+            x: column / 2 + fanRecentring.width,
+            y: size.height / 2 + fanRecentring.height
+        )
+    }
+
+    /// 面板里真正画了东西的两块地方：环和预览各自一块。
+    ///
+    /// 不能把它们 union 成一个矩形再交给 scrim。The gap between the two
+    /// columns is deliberately empty, and a single ellipse around that union
+    /// turns the empty desktop into the brightest part of the summon layer.
+    /// Keeping the bounds separate lets the backdrop support each object while
+    /// leaving the space between them available for the user's eyes and files.
+    var contentBounds: [CGRect] {
+        let size = panelSize
+        let hub = hubCenterInPanel
+        let fanReach = OrbitPreferences.ringBackdropRadius(cardCount: apps.count)
+            + OrbitPreferences.cardScale.height * 0.5
+        let fanBounds = CGRect(
+            x: hub.x - fanReach,
+            y: hub.y - fanReach,
+            width: fanReach * 2,
+            height: fanReach * 2
+        )
+        var bounds = [fanBounds]
+
+        if showsPreview {
+            let stage = CGSize(
+                width: previewCardWidth * OrbitPreferences.previewCarouselSpan,
+                height: previewCardWidth / OrbitPreferences.previewStageAspectRatio + 80
+            )
+            bounds.append(
+                CGRect(
+                    x: columnWidth * 1.5 - stage.width / 2,
+                    y: size.height / 2 - stage.height / 2,
+                    width: stage.width,
+                    height: stage.height
+                )
+            )
+        }
+
+        return bounds
+    }
 
     func position(for index: Int) -> CGPoint {
         let center = canvasSize / 2
@@ -461,6 +571,12 @@ final class OrbitRingViewModel: ObservableObject {
         previews = []
         previewState = .idle
         resumeIndex = nil
+        isCollapsing = false
+    }
+
+    /// 让卡片沿着来时的路收回中心。调用方负责在动画走完之后撤掉窗口。
+    func beginCollapse() {
+        isCollapsing = true
     }
 
     func moveSelection(step: Int) {
@@ -935,15 +1051,34 @@ enum OrbitCenterMode: CaseIterable {
 struct OrbitRingView: View {
     @ObservedObject var model: OrbitRingViewModel
 
+    @Environment(\.colorScheme) private var colorScheme
+
     @State private var hasAppeared = false
 
     var body: some View {
         layout
             .frame(width: model.panelSize.width, height: model.panelSize.height)
-            .scaleEffect(hasAppeared ? 1 : 0.9)
-            .opacity(hasAppeared ? 1 : 0)
-            .animation(.spring(response: 0.32, dampingFraction: 0.78), value: hasAppeared)
             .onAppear { hasAppeared = true }
+    }
+
+    /// 1 表示扇面已经完全展开，0 表示所有卡片都还叠在中心。
+    ///
+    /// The whole panel used to arrive as one 0.9→1 scale, which is the motion a
+    /// dialog makes: it says "a thing appeared", not "these came from
+    /// somewhere". Deploying each card outward from the hub instead makes the
+    /// ring's own geometry the animation — the cards travel the radius they
+    /// live on — and gives the dismissal a path to mirror.
+    private var deployProgress: Double {
+        (hasAppeared && !model.isCollapsing) ? 1 : 0
+    }
+
+    /// 每张卡片错开一点起飞，扇面就是"甩"开的而不是"张"开的。
+    ///
+    /// Only on the way out. Staggering the collapse as well would leave the last
+    /// card still travelling after the window is due to go, and a cancel has to
+    /// feel immediate.
+    private func deployDelay(for index: Int) -> Double {
+        model.isCollapsing ? 0 : Double(index) * 0.028
     }
 
     /// Two equal halves rather than an HStack sized by its contents. The ring
@@ -959,6 +1094,11 @@ struct OrbitRingView: View {
 
                 OrbitPreviewPanel(model: model)
                     .frame(width: model.columnWidth)
+                    .opacity(deployProgress)
+                    .animation(
+                        .easeOut(duration: 0.2).delay(model.isCollapsing ? 0 : 0.06),
+                        value: deployProgress
+                    )
             }
         } else {
             ringCanvas
@@ -966,18 +1106,39 @@ struct OrbitRingView: View {
     }
 
     private var ringCanvas: some View {
-        ZStack {
+        let hub = CGPoint(x: model.canvasSize / 2, y: model.canvasSize / 2)
+
+        return ZStack {
             if model.showsBackdrop {
                 OrbitRingBackdrop(
                     radius: model.ringRadius,
                     thickness: OrbitPreferences.ringTrackThickness,
                     arc: model.backdropArc,
-                    tint: OrbitPalette.backdrop
+                    tint: OrbitPalette.backdropOnDusk
                 )
-                .position(
-                    x: model.canvasSize / 2,
-                    y: model.canvasSize / 2
+                .position(hub)
+                .opacity(deployProgress)
+                .animation(.easeOut(duration: 0.28), value: deployProgress)
+                .zIndex(-2)
+            }
+
+            // 虚线是笔，不是气氛，所以它跟 accent 走 —— Welcome 那条轨道用的
+            // 也是 accent。跟着 backdrop 开关一起收：把柔光关掉的人要的是光秃
+            // 的扇面，不是换一件新装饰。
+            //
+            // 用 `accentOnDusk` 而不是 `accent(on:)`：这根线落在 scrim 上，而
+            // scrim 两个主题下都是暖影，所以决定它多亮的是那块地，不是系统主题。
+            if model.showsBackdrop {
+                OrbitTrail(
+                    radius: model.orbitTrailRadius,
+                    arc: model.backdropArc,
+                    stops: model.apps.indices.map { model.angle(for: $0) },
+                    selectedStop: model.selectedIndex,
+                    tint: OrbitPalette.accentOnDusk,
+                    progress: deployProgress
                 )
+                .position(hub)
+                .animation(.spring(response: 0.4, dampingFraction: 0.82), value: deployProgress)
                 .zIndex(-1)
             }
 
@@ -986,6 +1147,8 @@ struct OrbitRingView: View {
                 OrbitAppCard(
                     app: app,
                     cardNumber: index + 1,
+                    depthIndex: index,
+                    depthCount: model.apps.count,
                     angle: model.angle(for: index),
                     isSelected: model.selectedID == app.id,
                     isDragging: model.draggedAppID == app.id,
@@ -1001,11 +1164,7 @@ struct OrbitRingView: View {
                             x: basePosition.x + offset.width,
                             y: basePosition.y + offset.height
                         )
-                        let center = CGPoint(
-                            x: model.canvasSize / 2,
-                            y: model.canvasSize / 2
-                        )
-                        let distance = hypot(draggedCenter.x - center.x, draggedCenter.y - center.y)
+                        let distance = hypot(draggedCenter.x - hub.x, draggedCenter.y - hub.y)
                         model.updateAppDrag(
                             app,
                             offset: offset,
@@ -1014,13 +1173,22 @@ struct OrbitRingView: View {
                     },
                     onDragEnded: { model.finishAppDrag(app) }
                 )
-                .position(basePosition)
+                // 卡片是从中心甩出去的，收的时候原路收回去。
+                .position(deployed(basePosition, from: hub))
+                .scaleEffect(0.55 + 0.45 * deployProgress)
+                .opacity(deployProgress)
+                .animation(
+                    .spring(response: 0.42, dampingFraction: 0.8)
+                        .delay(deployDelay(for: index)),
+                    value: deployProgress
+                )
                 // A lifted card must never slide underneath its neighbours.
                 .zIndex(model.draggedAppID == app.id ? 2 : (model.selectedID == app.id ? 1 : 0))
             }
 
             OrbitCenterControl(
                 mode: model.centerMode,
+                selectionToken: model.selectedID,
                 isFileTargeted: Binding(
                     get: { model.fileDropPhase.acceptsHover },
                     set: { model.setFileDragTargeted($0) }
@@ -1029,16 +1197,28 @@ struct OrbitRingView: View {
                 onConfirm: { model.confirmFromHub() },
                 onDrop: { providers in model.handleFileDrop(providers) }
             )
-            .position(
-                x: model.canvasSize / 2,
-                y: model.canvasSize / 2
-            )
+            .position(hub)
+            // 星芯先亮起来，卡片才从它里面飞出去 —— 光源不能比被照亮的东西晚到。
+            .scaleEffect(0.7 + 0.3 * deployProgress)
+            .opacity(deployProgress)
+            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: deployProgress)
             .zIndex(3)
         }
         .frame(width: model.canvasSize, height: model.canvasSize)
         .background(Color.clear)
+        // 画布按扇面的重心回正，而不是按它自己的几何中心。
+        .offset(model.fanRecentring)
         .animation(.spring(response: 0.26, dampingFraction: 0.8), value: model.selectedID)
         .animation(.spring(response: 0.26, dampingFraction: 0.8), value: model.centerMode)
+    }
+
+    /// 卡片在展开途中该待的位置：从中心一路走到它在环上的家。
+    private func deployed(_ destination: CGPoint, from hub: CGPoint) -> CGPoint {
+        let t = CGFloat(deployProgress)
+        return CGPoint(
+            x: hub.x + (destination.x - hub.x) * t,
+            y: hub.y + (destination.y - hub.y) * t
+        )
     }
 }
 
@@ -1047,6 +1227,8 @@ struct OrbitRingView: View {
 /// side, matching the way a person scans a small stack of related screens.
 private struct OrbitPreviewPanel: View {
     @ObservedObject var model: OrbitRingViewModel
+
+    @Environment(\.colorScheme) private var colorScheme
 
     private var selectedIndex: Int {
         guard model.previews.indices.contains(model.selectedWindowIndex) else { return 0 }
@@ -1064,18 +1246,29 @@ private struct OrbitPreviewPanel: View {
     var body: some View {
         Group {
             switch model.previewState {
+            // 空态和加载态不给容器。
+            //
+            // A panel the size of a real preview, holding one icon and two
+            // lines, was the largest and emptiest object on the screen — it
+            // announced that something was missing rather than quietly waiting
+            // for a selection. Dropping the glass keeps the column's width
+            // reserved, so nothing jumps when a preview does arrive, while the
+            // half itself goes back to being empty space.
             case .idle:
                 statusCard(
                     systemName: "square.grid.2x2",
                     titleKey: "preview.empty.title",
-                    messageKey: "preview.empty.message"
+                    messageKey: "preview.empty.message",
+                    chromeless: true,
+                    horizontalOffset: -24
                 )
             case .loading:
                 statusCard(
                     systemName: "rectangle.inset.filled",
                     titleKey: "preview.loading.title",
                     messageKey: "preview.loading.message",
-                    showsProgress: true
+                    showsProgress: true,
+                    chromeless: true
                 )
             case .ready:
                 carousel
@@ -1119,7 +1312,13 @@ private struct OrbitPreviewPanel: View {
     }
 
     private var carousel: some View {
-        VStack(spacing: 16) {
+        // 翻页器贴到卡片下面来。
+        //
+        // At 16 with a stage that reserved another 24 of slack, the control sat
+        // far enough below the deck to read as a separate object floating on the
+        // desktop rather than as this carousel's own pager. Proximity is the
+        // whole of the relationship here.
+        VStack(spacing: 10) {
             ZStack {
                 ForEach(Array(model.previews.enumerated()), id: \.element.id) { index, preview in
                     if let position = deckPosition(for: index) {
@@ -1132,11 +1331,12 @@ private struct OrbitPreviewPanel: View {
                         .offset(position.offset)
                         .opacity(position.opacity)
                         .zIndex(position.zIndex)
+                        .transition(.opacity)
                         .onTapGesture { model.selectedWindowIndex = index }
                     }
                 }
             }
-            .frame(height: cardScale.height + 24)
+            .frame(height: cardScale.height + 12)
 
             if model.previews.count > 1 {
                 windowControls
@@ -1159,6 +1359,8 @@ private struct OrbitPreviewPanel: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
         .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 1))
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 3)
     }
 
     /// A plain tap target rather than a `Button`: the ring window takes key
@@ -1213,13 +1415,18 @@ private struct OrbitPreviewPanel: View {
         hintKey: String? = nil,
         actionKey: String? = nil,
         action: (() -> Void)? = nil,
-        showsProgress: Bool = false
+        showsProgress: Bool = false,
+        chromeless: Bool = false,
+        horizontalOffset: CGFloat = 0
     ) -> some View {
         VStack(spacing: 14) {
             ZStack {
-                Circle()
-                    .fill(OrbitPalette.burgundy.opacity(0.11))
-                    .frame(width: 74, height: 74)
+                // 空态连这圈底也不要：一个没有内容的图标不该先给自己盖一个座。
+                if !chromeless {
+                    Circle()
+                        .fill(OrbitPalette.burgundy.opacity(0.11))
+                        .frame(width: 74, height: 74)
+                }
 
                 if let app {
                     Image(nsImage: app.icon)
@@ -1228,10 +1435,11 @@ private struct OrbitPreviewPanel: View {
                         .frame(width: 40, height: 40)
                 } else if let systemName {
                     Image(systemName: systemName)
-                        .font(.system(size: 27, weight: .medium))
-                        .foregroundStyle(OrbitPalette.burgundy)
+                        .font(.system(size: chromeless ? 22 : 27, weight: .medium))
+                        .foregroundStyle(OrbitPalette.accent(on: colorScheme).opacity(chromeless ? 0.75 : 1))
                 }
             }
+            .frame(height: chromeless ? 30 : 74)
 
             VStack(spacing: 5) {
                 Text(LocalizedStringKey(titleKey))
@@ -1239,8 +1447,10 @@ private struct OrbitPreviewPanel: View {
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.center)
 
+                // 半透明底上的正文加一档字重 —— 玻璃后面的浅灰细体是这套材质
+                // 里最先糊掉的东西。
                 Text(LocalizedStringKey(messageKey))
-                    .font(.system(size: 13))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1248,7 +1458,7 @@ private struct OrbitPreviewPanel: View {
                 if let hintKey {
                     Text(LocalizedStringKey(hintKey))
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(OrbitPalette.burgundy)
+                        .foregroundStyle(OrbitPalette.accent(on: colorScheme))
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -1257,33 +1467,101 @@ private struct OrbitPreviewPanel: View {
             if showsProgress {
                 ProgressView()
                     .controlSize(.small)
-                    .tint(OrbitPalette.burgundy)
+                    .tint(OrbitPalette.accent(on: colorScheme))
             }
 
             if let actionKey, let action {
                 Text(LocalizedStringKey(actionKey))
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(OrbitPalette.burgundy)
+                    .foregroundStyle(OrbitPalette.accent(on: colorScheme))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
-                    .background(OrbitPalette.burgundy.opacity(0.10), in: Capsule())
+                    .background(OrbitPalette.accent(on: colorScheme).opacity(0.10), in: Capsule())
                     .contentShape(Capsule())
                     .onTapGesture(perform: action)
                     .accessibilityAddTraits(.isButton)
             }
         }
-        // Wide enough to carry roughly the disc's visual weight on its own half
-        // — at 360 the empty state was noticeably lighter than the ring facing
-        // it — while still keeping the message to a couple of short lines.
+        // Wide enough to keep the message to a couple of short lines.
         .frame(maxWidth: 420)
-        .padding(.horizontal, 28)
-        .padding(.vertical, 24)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(.white.opacity(0.24), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
+        .padding(.horizontal, chromeless ? 18 : 28)
+        .padding(.vertical, chromeless ? 12 : 24)
+        .modifier(OrbitSurface(enabled: !chromeless))
+        .modifier(OrbitTextHalo(enabled: chromeless))
+        .offset(x: horizontalOffset)
+    }
+}
+
+/// 无容器状态背后那团看不出边的底。
+///
+/// 上一版把空态的玻璃盒去掉是对的，但去得太干净了：文字直接落在桌面上，正好压在
+/// 一排文件夹图标之间，读不了。The fix is not to put the box back — an empty
+/// state should not occupy the same volume as a full one — it is to give the
+/// text a ground the size of the text. A heavily blurred plate in the window's
+/// own background colour has no edge anyone can see, costs nothing in perceived
+/// weight, and survives any wallpaper underneath it.
+private struct OrbitTextHalo: ViewModifier {
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        if enabled {
+            // 这块底大部分时候是叠在那潭柔光上的 —— contentBounds 已经把预览这
+            // 一列圈进去了 —— 所以它只需要兜住潭够不到的那一点边缘。
+            //
+            // 但潭的底换成暖影之后，这层从"别再加亮了"变成了整段文字唯一的依
+            // 靠：the status text is `.primary`, which in the light theme is ink
+            // on a ground that is no longer pale. 提到 0.34 是让它重新变回一小
+            // 块纸 —— 环上其它每样东西都有自己的底，这段字凭什么没有。
+            content.background {
+                Ellipse()
+                    .fill(Color(nsColor: .windowBackgroundColor))
+                    .opacity(0.34)
+                    .blur(radius: 24)
+                    .padding(-18)
+            }
+        } else {
+            content
+        }
+    }
+}
+
+/// 预览那一侧的面，跟 Welcome 的卡片同一种做法。
+///
+/// `.regularMaterial` + `.white.opacity(0.7)` 的边 + 一层很轻的黑影 —— 这三样
+/// 是 onboarding 那一页每一块浮起来的东西都在用的配方。The panel used to have a
+/// heavier, differently-lit rim than anything else Orbit draws, which is part of
+/// why the two halves of the window never read as one object. Sharing the recipe
+/// is cheaper than inventing a second one and it is what makes them match.
+private struct OrbitSurface: ViewModifier {
+    let enabled: Bool
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// 开了「增强对比度」就把边收实。
+    ///
+    /// The setting exists for people for whom a 1px hairline at 70% white is not
+    /// an edge. Meeting it with a defined border is the documented answer, and it
+    /// costs nothing for everyone else because it is off by default.
+    private var increasesContrast: Bool {
+        NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+    }
+
+    func body(content: Content) -> some View {
+        if enabled {
+            let shape = RoundedRectangle(cornerRadius: OrbitRadius.surface, style: .continuous)
+            content
+                .background(.regularMaterial, in: shape)
+                .overlay(shape.strokeBorder(rim, lineWidth: increasesContrast ? 1.5 : 1))
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0.34 : 0.12), radius: 18, y: 8)
+        } else {
+            content
+        }
+    }
+
+    /// 暗底上 70% 的白边会亮成一根管子；亮底上它才是"光打在玻璃上沿"。
+    private var rim: Color {
+        if increasesContrast { return .primary.opacity(0.55) }
+        return colorScheme == .dark ? .white.opacity(0.18) : .white.opacity(0.7)
     }
 }
 
@@ -1297,7 +1575,7 @@ private struct OrbitPreviewWindowCard: View {
     let isSelected: Bool
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: OrbitRadius.tile, style: .continuous)
 
         Color.clear
             .overlay {
@@ -1305,21 +1583,54 @@ private struct OrbitPreviewWindowCard: View {
                     .aspectRatio(max(preview.aspectRatio, 0.5), contentMode: .fit)
                     .background(OrbitPalette.ivory)
                     .clipShape(shape)
+                    // 标题条压在图上，是这张缩略图和它拍的那扇真窗口之间最明确的
+                    // 一处不同。
+                    //
+                    // A capture of a window, shown at a fraction of its size over
+                    // a blurred desktop, looks exactly like the window it came
+                    // from — in the last build the Terminal preview and the real
+                    // Terminal behind it were indistinguishable. A chip Orbit
+                    // drew, in Orbit's own material, is the frame that says this
+                    // is a picture of a thing rather than the thing.
+                    .overlay(alignment: .bottom) {
+                        if isSelected {
+                            titleChip
+                        }
+                    }
                     .overlay(
                         shape.stroke(
-                            isSelected ? OrbitPalette.burgundy : .black.opacity(0.08),
+                            isSelected
+                                ? OrbitPalette.burgundy
+                                : OrbitPalette.burgundy.opacity(0.22),
                             lineWidth: isSelected ? 2.5 : 1
                         )
                     )
+                    // 选中的那一张也接住中心的光，跟环上被选中的卡片是同一句话。
+                    .shadow(color: .black.opacity(isSelected ? 0.14 : 0.10), radius: 4, y: 2)
                     .shadow(
-                        color: .black.opacity(isSelected ? 0.24 : 0.14),
-                        radius: isSelected ? 18 : 10,
-                        y: isSelected ? 8 : 4
+                        color: isSelected ? OrbitPalette.burgundy.opacity(0.26) : .black.opacity(0.13),
+                        radius: isSelected ? 20 : 12,
+                        y: isSelected ? 9 : 5
                     )
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(preview.title))
             .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private var titleChip: some View {
+        Text(preview.title)
+            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .foregroundStyle(.primary)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(.regularMaterial, in: Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 1))
+            .shadow(color: .black.opacity(0.16), radius: 6, y: 2)
+            .padding(.bottom, 10)
+            .padding(.horizontal, 12)
     }
 
     @ViewBuilder
@@ -1350,6 +1661,11 @@ private struct OrbitPreviewWindowCard: View {
 private struct OrbitAppCard: View {
     let app: AppRecord
     let cardNumber: Int
+    /// Render order is also the deck order: later cards sit in front of earlier
+    /// cards, so the depth ramp follows the existing spread instead of changing
+    /// which card wins an overlap.
+    let depthIndex: Int
+    let depthCount: Int
     /// Where the card sits on the ring, in radians (0 = 3 o'clock).
     let angle: Double
     let isSelected: Bool
@@ -1361,13 +1677,113 @@ private struct OrbitAppCard: View {
     let onDragChanged: (CGSize) -> Void
     let onDragEnded: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+
     @State private var scatterProgress = 0.0
 
-    /// Rotating by the ring angle plus a quarter turn points the card's
-    /// bottom edge — the shortcut hint — at the center, so the icon always
-    /// faces outward.
+    private var isDark: Bool { colorScheme == .dark }
+
+    /// Three quiet tiers are enough for the eye to read the fan as a deck.
+    /// Selected and dragged states intentionally override these values below.
+    private var depthTier: Int {
+        guard depthCount > 1 else { return 2 }
+        let progress = Double(depthIndex) / Double(depthCount - 1)
+        switch progress {
+        case ..<0.34: return 0
+        case ..<0.67: return 1
+        default: return 2
+        }
+    }
+
+    private var depthOpacity: Double {
+        switch depthTier {
+        case 0: 0.94
+        case 1: 0.97
+        default: 1
+        }
+    }
+
+    private var depthScale: CGFloat {
+        switch depthTier {
+        case 0: 0.97
+        case 1: 0.985
+        default: 1
+        }
+    }
+
+    private var depthContactShadowOpacity: Double {
+        switch depthTier {
+        case 0: 0.06
+        case 1: 0.08
+        default: 0.10
+        }
+    }
+
+    private var depthAmbientShadowOpacity: Double {
+        switch depthTier {
+        case 0: 0.07
+        case 1: 0.10
+        default: 0.13
+        }
+    }
+
+    private var depthAmbientShadowRadius: CGFloat {
+        switch depthTier {
+        case 0: 12
+        case 1: 14
+        default: 16
+        }
+    }
+
+    private var depthAmbientShadowY: CGFloat {
+        switch depthTier {
+        case 0: 5
+        case 1: 6
+        default: 8
+        }
+    }
+
+    /// 卡片跟着扇面转，把底边 —— 也就是那行字 —— 对着中心。
+    ///
+    /// `angle + .pi / 2` is the full turn that points every card's bottom edge
+    /// at the hub. The fraction stays plumbed through
+    /// `OrbitPreferences.cardRotationFollow` rather than being folded back into
+    /// the constant, because everything downstream — the lit edge, the rim
+    /// gradient — is written against whatever it is set to; hardcoding the turn
+    /// here would silently break them if it is ever dialled back again.
     private var cardRotation: Angle {
-        .radians(angle + .pi / 2)
+        .radians(rotationRadians)
+    }
+
+    private var rotationRadians: Double {
+        (angle + .pi / 2) * OrbitPreferences.cardRotationFollow
+    }
+
+    /// 中心在卡片自己坐标系里的方向。
+    ///
+    /// The hub sits at `angle + .pi` from the card in screen space; the card is
+    /// then rotated, so what the card itself has to be lit from is that
+    /// direction minus its own rotation. Working it out rather than fixing the
+    /// light to the bottom edge is what lets the highlight stay pointed at the
+    /// hub at any `cardRotationFollow`, including zero.
+    private var hubDirection: Double {
+        angle + .pi - rotationRadians
+    }
+
+    /// 靠中心的那条边，在 `UnitPoint` 里的位置。
+    private var hubSide: UnitPoint {
+        UnitPoint(x: 0.5 + 0.5 * cos(hubDirection), y: 0.5 + 0.5 * sin(hubDirection))
+    }
+
+    private var farSide: UnitPoint {
+        UnitPoint(x: 0.5 - 0.5 * cos(hubDirection), y: 0.5 - 0.5 * sin(hubDirection))
+    }
+
+    /// 选中的卡片被中心拉近一点 —— 屏幕坐标，所以不跟着卡片一起转。
+    private var gravityOffset: CGSize {
+        guard isSelected, !isDragging else { return .zero }
+        let pull = OrbitPreferences.selectionGravityPull
+        return CGSize(width: cos(angle + .pi) * pull, height: sin(angle + .pi) * pull)
     }
 
     private var shortcutHint: String {
@@ -1381,10 +1797,24 @@ private struct OrbitAppCard: View {
         return hints.joined(separator: " · ")
     }
 
+    /// 卡片底下那行字：平时是快捷键，选中之后换成应用名。
+    ///
+    /// 换而不是加：the shortcut is what you needed while you were still looking
+    /// for this card, and it is the one thing you no longer need once you have
+    /// found it. Swapping keeps the card the same height and the fan the same
+    /// shape, so confirming what is selected costs no layout at all.
+    private var caption: String? {
+        if isSelected {
+            return app.name
+        }
+        return shortcutHint.isEmpty ? nil : shortcutHint
+    }
+
     var body: some View {
         let size = OrbitPreferences.cardScale
         let dimension = size.dimension
-        let cornerRadius = dimension * 0.17
+        let cornerRadius = OrbitRadius.card(dimension)
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
 
         VStack(spacing: 0) {
             Spacer(minLength: 0)
@@ -1396,32 +1826,66 @@ private struct OrbitAppCard: View {
 
             Spacer(minLength: 0)
 
-            if !shortcutHint.isEmpty {
-                Text(shortcutHint)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(hintColor)
+            if let caption {
+                Text(caption)
+                    .font(.system(size: isSelected ? 11 : 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(isSelected ? OrbitPalette.accent(on: colorScheme) : hintColor)
                     .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: dimension - 12)
             }
         }
         .padding(.top, dimension * 0.16)
         .padding(.bottom, dimension * 0.1)
         .frame(width: dimension, height: size.height)
         .background(cardBackground(cornerRadius: cornerRadius))
-        // Selection reads through lift and shadow, the way the reference does;
-        // the accent hairline is only there to stay legible without color.
+        // 光是从中心来的：靠中心那一侧亮，远端沉下去。这是整个环里唯一一处
+        // 说明「哪儿有光源」的地方，也是卡片不再像贴纸的原因。
+        .overlay {
+            LinearGradient(
+                colors: [
+                    OrbitPalette.starCore.opacity(lightStrength),
+                    .clear
+                ],
+                startPoint: hubSide,
+                endPoint: farSide
+            )
+            .clipShape(shape)
+            .blendMode(.plusLighter)
+            .allowsHitTesting(false)
+        }
+        // Selection reads through lift, scale and the pull toward the hub; the
+        // rim is here so it stays legible without relying on colour alone.
         .overlay(
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .stroke(isSelected ? OrbitPalette.burgundy.opacity(0.9) : borderColor, lineWidth: isSelected ? 1.5 : 1)
+            shape.stroke(
+                LinearGradient(
+                    colors: rimColors,
+                    startPoint: hubSide,
+                    endPoint: farSide
+                ),
+                lineWidth: isSelected ? 1.5 : 1
+            )
         )
+        // 两层投影：一层贴身的接触影给重量，一层散开的环境影给高度。
+        //
+        // 一层做不到。A single soft shadow that is dark enough to weigh the card
+        // down turns into a bruise, and one light enough to stay clean leaves a
+        // white card floating on the pale ground with nothing holding it — which
+        // is exactly what the last pass shipped. Splitting the job is how real
+        // shadows work and it is the cheapest way to get both.
+        // 暗底上投影是白费的 —— 黑影落在暗地上什么也看不出来，还会把叠着的
+        // 卡片之间糊得更平。那一档的分离交给边框。
+        .shadow(color: isDark ? .clear : contactShadow, radius: isSelected ? 4 : 3, y: 2)
         .shadow(
-            color: isDragging ? OrbitPalette.burgundy.opacity(0.24) : .black.opacity(isSelected ? 0.20 : 0.10),
-            radius: isSelected ? 24 : 16,
-            y: isSelected ? 10 : 4
+            color: isDragging ? OrbitPalette.burgundy.opacity(0.24) : .black.opacity(isSelected ? 0.16 : depthAmbientShadowOpacity),
+            radius: isSelected ? 22 : depthAmbientShadowRadius,
+            y: isSelected ? 11 : depthAmbientShadowY
         )
-        .scaleEffect(isSelected ? 1.1 : 1)
+        .scaleEffect(isSelected ? 1.1 : depthScale)
         .rotationEffect(cardRotation)
+        .offset(gravityOffset)
         .offset(dragOffset)
-        .opacity(isVanishing ? 0.35 : 1)
+        .opacity(isVanishing ? 0.35 : (isSelected || isDragging ? 1 : depthOpacity))
         // Particles are drawn in unrotated screen space, so aim them straight
         // at the ring center rather than at the card's own bottom edge.
         .cardScatter(progress: scatterProgress, towards: angle + .pi)
@@ -1456,7 +1920,16 @@ private struct OrbitAppCard: View {
         let material: AnyShapeStyle
         switch OrbitPreferences.cardFinish {
         case .white:
-            material = AnyShapeStyle(isDragging ? OrbitPalette.ivory : Color.white)
+            // 拖起来的那张变象牙，是原本就有的手感提示；静止那张也从纯白退到
+            // 近白。
+            //
+            // 纯白是没有余地的颜色。With the wash behind it pulled down, a card
+            // at 1.0 becomes the brightest thing on the screen by a margin and
+            // the fan reads as a row of light boxes rather than as paper. Half a
+            // step down still reads as a white card and leaves the hub — the one
+            // thing that is supposed to be emitting — somewhere to be brighter
+            // than.
+            material = AnyShapeStyle(isDragging ? OrbitPalette.ivory : OrbitPalette.paper)
         case .black:
             material = AnyShapeStyle(Color.black.opacity(0.86))
         case .system:
@@ -1480,14 +1953,73 @@ private struct OrbitAppCard: View {
         case .system: .white.opacity(0.2)
         }
     }
+
+    /// 打在卡片上的光有多强 —— 白卡片本来就亮，再加光只会糊掉。
+    ///
+    /// 明显比第一版轻。The light source is an ivory bead now, not a burning
+    /// core, and a white card lit hard by a pale light just loses its own edge.
+    private var lightStrength: Double {
+        let base: Double = switch OrbitPreferences.cardFinish {
+        // 白面上几乎不加：它已经快到顶了，任何 `plusLighter` 都只是在推高总亮度，
+        // 换不来一点形体。The dark finish is where this actually models anything.
+        case .white: 0.03
+        case .black: 0.24
+        case .system: 0.12
+        }
+        return isSelected ? base * 1.5 : base
+    }
+
+    /// 贴着卡片底边那一道接触影。
+    private var contactShadow: Color {
+        .black.opacity(isSelected ? 0.16 : depthContactShadowOpacity)
+    }
+
+    /// 边框也跟着光走：向着中心的那条边接住高光，背光的一边收在主色的发丝线上。
+    ///
+    /// 未选中那根线用 Welcome 的 0.18。It is the weight the onboarding
+    /// illustration outlines everything with, and it is what keeps a white card
+    /// on a warm white ground from having to rely on its shadow alone.
+    ///
+    /// 暗底上换成白线，而且要比浅色那根更实。
+    ///
+    /// An accent hairline at 0.18 is invisible against a dark ground, so the
+    /// shadow side has to swap material rather than just get louder. It also has
+    /// to do more work there: **a shadow cast onto a dark ground is not visible
+    /// at all**, so on the dark theme the rim is the *only* thing separating one
+    /// black card from the black card overlapping it — and the fan's lower arm
+    /// is where three or four of them stack. In light the shadow carries that
+    /// job and the rim can stay a whisper.
+    private var rimColors: [Color] {
+        let far: Color = if isSelected {
+            OrbitPalette.accent(on: colorScheme).opacity(0.85)
+        } else if isDark {
+            .white.opacity(0.26)
+        } else {
+            OrbitPalette.burgundy.opacity(0.18)
+        }
+        return [.white.opacity(isSelected ? 0.9 : 0.75), far]
+    }
 }
 
 private struct OrbitCenterControl: View {
     let mode: OrbitCenterMode
+    /// 选中项换了没有 —— 只用来触发一次脉冲，中心不关心选的是谁。
+    let selectionToken: String?
     @Binding var isFileTargeted: Bool
     let onCancel: () -> Void
     let onConfirm: () -> Void
     let onDrop: ([NSItemProvider]) -> Bool
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// 每次换选中项，星芯轻轻鼓一下。
+    ///
+    /// Arrowing from one card to the next changes two things far apart on
+    /// screen — the card that grew, and the preview that reloaded — and nothing
+    /// at the point the eye actually rests. A beat at the centre ties them
+    /// together. It has to be small: this fires on every keypress, and anything
+    /// with a visible travel becomes a stutter at speed.
+    @State private var pulse = false
 
     /// Keep the hub visible so a file drag has an obvious destination. The
     /// state label changes from Cancel/confirm to Share/Trash as the drag
@@ -1516,19 +2048,27 @@ private struct OrbitCenterControl: View {
                                 width: OrbitPreferences.centerRadius * 2,
                                 height: OrbitPreferences.centerRadius * 2
                             )
+                            .scaleEffect(pulse ? 1.06 : 1)
 
-                        Image(systemName: centerIcon)
-                            .font(.system(size: 24, weight: .medium))
-                            .foregroundStyle(.white)
+                        // 默认状态不戴符号，戴一枚轨道标记。
+                        //
+                        // A × at the centre of the composition told everyone who
+                        // summoned the ring that the likeliest thing they wanted
+                        // was to give up, so it went — but an empty bead read as
+                        // a placeholder waiting to be filled, which is not what
+                        // the anchor of the whole layout should be. The mark is
+                        // the product's own idea at its smallest: a ring, and
+                        // something on it.
+                        if let centerIcon {
+                            Image(systemName: centerIcon)
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundStyle(glyphInk)
+                        } else {
+                            orbitMark
+                        }
                     }
 
-                    Text(centerLabel)
-                        .font(.system(size: 12, weight: .medium))
-                        // 默认状态不该跟卡片抢视线，进入某个动作之后才回到主色。
-                        .foregroundStyle(mode == .cancel ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .background(.regularMaterial, in: Capsule())
+                    caption
                 }
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
@@ -1548,11 +2088,70 @@ private struct OrbitCenterControl: View {
             }
         }
         .onDrop(of: [UTType.fileURL], isTargeted: $isFileTargeted, perform: onDrop)
+        .onChange(of: selectionToken) { _, _ in
+            // 鼓起来用弹簧，落回去慢一点，读起来才是"回弹"而不是"抽搐"。
+            withAnimation(.spring(response: 0.16, dampingFraction: 0.5)) { pulse = true }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.75).delay(0.09)) { pulse = false }
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(centerLabel))
     }
 
-    private var centerIcon: String { mode.iconName }
+    /// `nil` 表示这个状态不戴符号。
+    private var centerIcon: String? {
+        mode == .cancel ? nil : mode.iconName
+    }
+
+    /// 空态的中心标记：一圈轨道，上面挂一颗。
+    ///
+    /// 用形状画而不是拿一个 SF Symbol 凑。The mark has to be the same idea the
+    /// dashed arc outside it is drawing, at a twentieth of the size, and no
+    /// stock glyph is that. It also stays legible at every card scale because it
+    /// is built from the hub's own radius rather than from a font size.
+    private var orbitMark: some View {
+        let unit = OrbitPreferences.centerRadius
+        return ZStack {
+            Circle()
+                .strokeBorder(OrbitPalette.accent(on: colorScheme).opacity(0.34), lineWidth: 1.2)
+                .frame(width: unit * 0.62, height: unit * 0.62)
+
+            Circle()
+                .fill(OrbitPalette.accent(on: colorScheme).opacity(0.55))
+                .frame(width: unit * 0.16, height: unit * 0.16)
+                .offset(y: -unit * 0.31)
+        }
+    }
+
+    /// 中心下面那行字。
+    ///
+    /// 默认状态只留一枚键帽。The way out still has to be visible — cutting the
+    /// label entirely would trade a hub that shouts "give up" for one that says
+    /// nothing about how to leave — but a key cap teaches the keyboard, which is
+    /// how the ring is actually driven, instead of advertising the mouse target.
+    @ViewBuilder
+    private var caption: some View {
+        if mode == .cancel {
+            // 跟 Welcome 的 `KeycapView` 同一颗键帽：圆角 6，regularMaterial，
+            // quaternary 的边。同一个键在两个地方长得一样，才教得会人。
+            Text(verbatim: "esc")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(.quaternary, lineWidth: 1)
+                }
+        } else {
+            Text(centerLabel)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(.regularMaterial, in: Capsule())
+        }
+    }
 
     private var centerLabel: String {
         switch mode {
@@ -1566,81 +2165,106 @@ private struct OrbitCenterControl: View {
         }
     }
 
-    /// 中心是一颗石墨磨砂玻璃，不是一块纯色塑料按钮。
+    /// 中心是这个场景里唯一的光源，不是一颗按钮。
     ///
-    /// 每个状态都共用同一层底，颜色只作为染层叠在上面。Painting each state its
-    /// own solid colour is what made the hub jump between near-black, burgundy
-    /// and ivory as a drag crossed it, and it is why Cancel — a state that means
-    /// nothing is happening — was the loudest thing on screen. One base means
-    /// the states differ by a hue rather than by a step in brightness, and it
-    /// keeps the hub on the same material as the track and the preview.
+    /// 之前它是一块石墨玻璃：构图的圆心上放着画面里最沉的东西，于是整个环没有
+    /// 任何地方能解释卡片的高光是从哪儿来的。A core that actually emits — bright
+    /// at the centre, falling through the state's hue to a dark edge, with a
+    /// corona around it — gives the ring a light source, and it is what every
+    /// lit card edge and every glowing trail on screen is now consistent with.
     ///
-    /// The tints also have to stay dark enough for a white glyph: `coral` and
-    /// `denim` are pale on their own, and the two states that wear them —
-    /// quitting an app, throwing files away — are the two that can least afford
-    /// an icon that is hard to read.
+    /// 状态之间只换色相，不换亮度层级：每个状态共用同一条从亮到暗的梯度，所以
+    /// 拖拽穿过中心时它变的是颜色，不是忽明忽暗地跳。The hues also have to stay
+    /// deep enough at the edge for a white glyph — `coral` and `denim` are pale
+    /// on their own, and the states wearing them (quitting an app, throwing
+    /// files away) are the two that can least afford an icon that is hard to
+    /// read.
     private var hub: some View {
         ZStack {
-            // 一层平铺的黑只会把它压成一颗失效的灰按钮。让暗部有方向，它才是玻璃。
-            // Lit from the same top-left as the cards and the track.
-            Circle()
-                .fill(.regularMaterial)
-                .overlay {
-                    Circle().fill(
-                        LinearGradient(
-                            colors: [
-                                .black.opacity(0.38),
-                                .black.opacity(0.56)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                }
-            Circle().fill(centerTint)
+            // 象牙底，跟 Welcome 中心那块白色圆角砖是同一种东西 —— 一颗浅色的
+            // 珠子，不是一口深色的井。
+            //
+            // 暗色调下让它透一点，底下的暗透上来，象牙就沉成暖米色。A full-strength
+            // cream disc on a dark ground is the brightest thing by a wide
+            // margin and reads as a lamp shining into the room; it should be the
+            // light *in* the room.
+            Circle().fill(OrbitPalette.ivory.opacity(colorScheme == .dark ? 0.72 : 1))
+
+            // 颜色只作为一层很淡的染色浮在上面，中心留白。States差的是色相和
+            // 浓度，不是明暗档位，所以拖拽穿过中心时它变色而不是忽明忽暗。
+            //
+            // 高光收回中心、压低、摊开。An off-centre specular at near-full
+            // strength turned the hub into a glossy egg — a rendered object with
+            // a light hitting it, sitting in a layout made of flat paper. What
+            // it should read as is Welcome's white tile: a calm disc that
+            // happens to be the brightest thing on screen.
+            Circle().fill(
+                RadialGradient(
+                    stops: [
+                        .init(color: OrbitPalette.starCore.opacity(colorScheme == .dark ? 0.38 : 0.55), location: 0),
+                        .init(color: emission.opacity(tintStrength * 0.5), location: 0.55),
+                        .init(color: emission.opacity(tintStrength), location: 1)
+                    ],
+                    center: .init(x: 0.46, y: 0.43),
+                    startRadius: 0,
+                    endRadius: OrbitPreferences.centerRadius * 1.3
+                )
+            )
         }
-        .overlay(Circle().strokeBorder(.white.opacity(0.30), lineWidth: 1))
-        // 只有真的能按下去的状态才发光，默认状态安静。光圈要贴着圆点，
-        // 再往外一点就变成第二个泡泡了。
+        // Welcome 用 0.28 的发丝线勾它的中心砖，这里就是同一根线。
+        .overlay(Circle().strokeBorder(emission.opacity(0.26), lineWidth: 1))
+        // 日冕：贴着珠子的一圈很淡的光，说明光是从这里散出去的。
         .overlay {
-            if let glow = centerGlow {
-                Circle()
-                    .stroke(glow.opacity(glowOpacity), lineWidth: 4)
-                    .scaleEffect(1.08)
-            }
+            Circle()
+                .stroke(emission.opacity(0.10), lineWidth: OrbitPreferences.centerRadius * 0.22)
+                .blur(radius: OrbitPreferences.centerRadius * 0.24)
+                .scaleEffect(1.14)
+                .allowsHitTesting(false)
         }
-        .shadow(
-            color: centerGlow?.opacity(0.26) ?? .black.opacity(0.18),
-            radius: centerGlow == nil ? 10 : 12,
-            y: centerGlow == nil ? 4 : 5
-        )
+        // 投影按 Welcome 的分量来：一层浅浅的彩色扩散，一层很轻的黑。
+        .shadow(color: emission.opacity(0.14), radius: OrbitPreferences.centerRadius * 0.55, y: 2)
+        .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
     }
 
-    private var centerTint: Color {
+    /// 这一状态下星芯染的是什么颜色。
+    private var emission: Color {
         switch mode {
-        case .cancel: .clear
-        case .confirm: OrbitPalette.burgundy.opacity(0.62)
-        case .quit, .trash, .failed: OrbitPalette.coral.opacity(0.50)
-        case .cleanup: OrbitPalette.burgundy.opacity(0.40)
-        case .share: OrbitPalette.denim.opacity(0.46)
-        }
-    }
-
-    /// `nil` 表示这个状态不发光。
-    private var centerGlow: Color? {
-        switch mode {
-        case .cancel: nil
-        case .confirm, .cleanup: OrbitPalette.burgundy
+        case .cancel, .confirm, .cleanup: OrbitPalette.burgundy
         case .quit, .trash, .failed: OrbitPalette.coral
         case .share: OrbitPalette.denim
         }
     }
 
-    /// 退出 App 和丢进废纸篓是唯一两个不可撤销的状态，光圈允许比别人亮一点。
-    private var glowOpacity: Double {
+    /// 符号的颜色。
+    ///
+    /// 浅色的珠子配不了白符号。`coral` and `denim` are too pale to be read as ink
+    /// on ivory either, so the two states wearing them borrow a deeper relative
+    /// of the same hue — the states in question are quitting an app and throwing
+    /// files away, the two that can least afford a glyph that is hard to read.
+    private var glyphInk: Color {
         switch mode {
-        case .quit, .trash, .failed: 0.20
-        default: 0.16
+        case .cancel, .confirm, .cleanup: OrbitPalette.accent(on: colorScheme)
+        case .quit, .trash, .failed: OrbitPalette.ember(0.55)
+        case .share: colorScheme == .dark ? OrbitPalette.denim : OrbitPalette.denimInk
+        }
+    }
+
+    /// 默认状态几乎不上色，真的按得下去的状态才明确染上。
+    ///
+    /// 暗色下整体再收一档：珠子在暗地上本来就是最亮的东西，酒红染上去会把它推向
+    /// 粉，而它该读作暖白。
+    private var tintStrength: Double {
+        let base = rawTintStrength
+        return colorScheme == .dark ? base * 0.78 : base
+    }
+
+    private var rawTintStrength: Double {
+        switch mode {
+        case .cancel: 0.10
+        case .cleanup: 0.26
+        case .confirm: 0.32
+        case .share: 0.34
+        case .quit, .trash, .failed: 0.40
         }
     }
 }

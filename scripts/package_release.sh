@@ -1,9 +1,9 @@
 #!/bin/bash
 # Build the distributable macOS app and create the GitHub Release asset.
-# Usage: scripts/package_release.sh [version]   (default: 1.5.1)
+# Usage: scripts/package_release.sh [version]   (default: 1.6.0)
 set -euo pipefail
 
-VERSION="${1:-1.5.1}"
+VERSION="${1:-1.6.0}"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:--}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$PROJECT_DIR/Build"

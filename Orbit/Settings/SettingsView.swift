@@ -363,14 +363,22 @@ private struct AppearanceSettingsPane: View {
             Section {
                 Toggle("prefs.appearance.ringBackdrop", isOn: $model.ringBackdropEnabled)
 
+                Picker("prefs.appearance.ringBackdropMode", selection: $model.ringBackdropMode) {
+                    ForEach(RingBackdropMode.allCases) { mode in
+                        Text(mode.localizedName).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(!model.ringBackdropEnabled)
+
                 ColorPicker(
-                    "prefs.appearance.ringBackdropColor",
+                    "prefs.appearance.ringBackdropCustomColor",
                     selection: $model.ringBackdropColor,
                     supportsOpacity: false
                 )
                 // A colour for something that is not drawn is a dead control,
                 // not a preference worth keeping live.
-                .disabled(!model.ringBackdropEnabled)
+                .disabled(!model.ringBackdropEnabled || model.ringBackdropMode != .custom)
             } header: {
                 Text("prefs.group.ringBackdrop")
             } footer: {
@@ -472,14 +480,14 @@ private struct AppearancePreview: View {
 
     private var card: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
+            RoundedRectangle(cornerRadius: OrbitRadius.card(previewDimension), style: .continuous)
                 .fill(cardFill)
                 .overlay {
-                    RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
+                    RoundedRectangle(cornerRadius: OrbitRadius.card(previewDimension), style: .continuous)
                         .strokeBorder(cardBorder, lineWidth: 1)
                 }
                 .overlay {
-                    RoundedRectangle(cornerRadius: previewDimension * 0.17, style: .continuous)
+                    RoundedRectangle(cornerRadius: OrbitRadius.card(previewDimension), style: .continuous)
                         .strokeBorder(accentColor.opacity(0.9), lineWidth: 1.5)
                 }
 
@@ -523,7 +531,7 @@ private struct AppearancePreview: View {
     private var cardFill: AnyShapeStyle {
         switch cardFinish {
         case .white:
-            AnyShapeStyle(Color.white)
+            AnyShapeStyle(OrbitPalette.paper)
         case .black:
             AnyShapeStyle(Color.black.opacity(0.86))
         case .system:

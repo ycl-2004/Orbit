@@ -28,6 +28,32 @@ struct OrbitTests {
         return body()
     }
 
+    /// 环上有没有 Orbit 那张卡，是一个用户偏好。
+    ///
+    /// 测试宿主就是 Orbit 本体，`UserDefaults.standard` 因此正是开发者自己那一份：
+    /// 谁在设置里把 Orbit 卡关掉，`OrbitRingViewModel` 就会在 init 里把它从
+    /// `apps` 里滤掉，于是一个只放了这张卡的环变成空环。A test that builds such a
+    /// ring without pinning the setting passes on a default machine and fails on
+    /// a machine where the card is off — which is exactly what
+    /// `neutralEntrySkipsTheOrbitCardTheWayQuickSwitchDoes` did.
+    ///
+    /// 恢复时区分"原来没写过"和"原来写的是 false"：这个偏好默认为 true，把缺省
+    /// 写成 false 会静静改掉开发者的设置。
+    @MainActor
+    private func withOrbitCard<T>(shown: Bool, _ body: () -> T) -> T {
+        let key = "showOrbitCard"
+        let previous = UserDefaults.standard.object(forKey: key)
+        defer {
+            if let previous {
+                UserDefaults.standard.set(previous, forKey: key)
+            } else {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
+        OrbitPreferences.showOrbitCard = shown
+        return body()
+    }
+
     @Test func shortcutKeyRejectsMixedModifierFlags() {
         let alternate = ShortcutKey.alternate
         #expect(alternate.isDown(in: [.maskAlternate]))
@@ -134,6 +160,60 @@ struct OrbitTests {
             window(title: "Orbit — -zsh — 80×24"),
             requiringTitle: true
         ))
+    }
+
+    /// 藏掉当前窗之后只剩空壳窗，就该空着，而不是端出一张纯白卡。
+    ///
+    /// 微信正是这个形状：主窗 1196×904（实测方差 30.2）和一扇 280×380 的空壳
+    /// （实测 8.5），两扇都在 0 层、都叫 "WeChat"、都过得了尺寸门槛。人在微信里
+    /// 唤出环时主窗被当作当前窗藏起来，空白过滤器又因为"只剩一扇"而放行——面板
+    /// 给出一张白卡，`selectedWindowTarget` 也跟着指向那扇壳，切过去等于原地不动。
+    ///
+    /// The concession that lets a lone flat window through is still right for an
+    /// app you are *not* in — it may honestly have nothing better — so both
+    /// answers have to hold.
+    @Test func aLoneBlankWindowIsKeptOnlyWhenNoCurrentWindowWasHidden() {
+        func preview(_ id: CGWindowID, variance: Double) -> WindowPreview {
+            WindowPreview(
+                id: id,
+                title: "WeChat",
+                frame: CGRect(x: 0, y: 0, width: 280, height: 380),
+                image: nil,
+                aspectRatio: 280.0 / 380.0,
+                scale: 2,
+                contentVariance: variance,
+                isStale: false
+            )
+        }
+
+        let shell = preview(989, variance: 8.5)
+        let main = preview(997, variance: 30.2)
+
+        // 人在微信里：主窗被藏，只剩空壳——宁可空着。
+        #expect(WindowPreviewService.droppingBlankWindows([shell], hidCurrentWindow: true).isEmpty)
+
+        // 人在别的应用里：没藏任何东西，这扇淡窗就是它能给的全部。
+        #expect(
+            WindowPreviewService.droppingBlankWindows([shell], hidCurrentWindow: false)
+                .map(\.id) == [989]
+        )
+
+        // 有真窗口时，两种情形都只留真窗口。
+        for hid in [true, false] {
+            #expect(
+                WindowPreviewService.droppingBlankWindows([main, shell], hidCurrentWindow: hid)
+                    .map(\.id) == [997]
+            )
+        }
+    }
+
+    /// 阈值必须落在实测出来的那道空档里。
+    ///
+    /// 8.5 是微信空壳窗的真实读数，25 是这台机器上内容最少的一扇真窗口。把阈值
+    /// 挪出这段区间，要么放过空壳，要么开始吃掉正常窗口。
+    @Test func theBlankThresholdSitsBetweenAShellAndTheDullestRealWindow() {
+        #expect(WindowPreviewService.blankVarianceThreshold > 8.5)
+        #expect(WindowPreviewService.blankVarianceThreshold < 25)
     }
 
     /// "问不出来"必须和"没有窗口"分开。
@@ -303,36 +383,40 @@ struct OrbitTests {
     }
 
     @Test @MainActor func eitherArrowEntersANeutralRingAtThePreviousApp() {
-        let apps = [
-            listed("com.previous", "Previous"),
-            listed("com.older", "Older"),
-            AppRecord.orbitCard
-        ]
-        let movingForward = OrbitRingViewModel(apps: apps, showsPreview: false)
-        let movingBackward = OrbitRingViewModel(apps: apps, showsPreview: false)
+        withOrbitCard(shown: true) {
+            let apps = [
+                listed("com.previous", "Previous"),
+                listed("com.older", "Older"),
+                AppRecord.orbitCard
+            ]
+            let movingForward = OrbitRingViewModel(apps: apps, showsPreview: false)
+            let movingBackward = OrbitRingViewModel(apps: apps, showsPreview: false)
 
-        movingForward.moveSelection(step: 1)
-        movingBackward.moveSelection(step: -1)
+            movingForward.moveSelection(step: 1)
+            movingBackward.moveSelection(step: -1)
 
-        #expect(movingForward.selectedID == "com.previous")
-        #expect(movingBackward.selectedID == "com.previous")
+            #expect(movingForward.selectedID == "com.previous")
+            #expect(movingBackward.selectedID == "com.previous")
+        }
     }
 
     /// Orbit 自己那张卡是清理入口，不是切换目标 —— 确认它只会关掉圆环。所以
     /// 方向键进入一个空选的环时要跳过它，而这正是快速切换预选时用的同一条规则：
     /// 两边不一致的话，同样是松开触发键，结果会取决于高亮是谁放上去的。
     @Test @MainActor func neutralEntrySkipsTheOrbitCardTheWayQuickSwitchDoes() {
-        let withRealTarget = OrbitRingViewModel(
-            apps: [AppRecord.orbitCard, listed("com.previous", "Previous")],
-            showsPreview: false
-        )
-        #expect(withRealTarget.entryCardID == "com.previous")
-        withRealTarget.moveSelection(step: 1)
-        #expect(withRealTarget.selectedID == "com.previous")
+        withOrbitCard(shown: true) {
+            let withRealTarget = OrbitRingViewModel(
+                apps: [AppRecord.orbitCard, listed("com.previous", "Previous")],
+                showsPreview: false
+            )
+            #expect(withRealTarget.entryCardID == "com.previous")
+            withRealTarget.moveSelection(step: 1)
+            #expect(withRealTarget.selectedID == "com.previous")
 
-        // 环上只剩 Orbit 一张卡时没有别的可落，仍然要有个确定的答案。
-        let orbitOnly = OrbitRingViewModel(apps: [AppRecord.orbitCard], showsPreview: false)
-        #expect(orbitOnly.entryCardID == AppRecord.orbitCard.id)
+            // 环上只剩 Orbit 一张卡时没有别的可落，仍然要有个确定的答案。
+            let orbitOnly = OrbitRingViewModel(apps: [AppRecord.orbitCard], showsPreview: false)
+            #expect(orbitOnly.entryCardID == AppRecord.orbitCard.id)
+        }
     }
 
     @Test @MainActor func currentAppWindowTargetCanConfirmBeforePreviewCaptureFinishes() {
@@ -427,37 +511,32 @@ struct OrbitTests {
     }
 
     @Test @MainActor func orbitCardCanBeShownOrHiddenFromTheRing() {
-        let previous = UserDefaults.standard.object(forKey: "showOrbitCard")
-        defer {
-            if let previous {
-                UserDefaults.standard.set(previous, forKey: "showOrbitCard")
-            } else {
-                UserDefaults.standard.removeObject(forKey: "showOrbitCard")
-            }
+        withOrbitCard(shown: true) {
+            let shown = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
+            #expect(shown.apps.contains(where: { $0.isOrbit }))
         }
 
-        OrbitPreferences.showOrbitCard = true
-        let shown = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
-        #expect(shown.apps.contains(where: { $0.isOrbit }))
-
-        OrbitPreferences.showOrbitCard = false
-        let hidden = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
-        #expect(!hidden.apps.contains(where: { $0.isOrbit }))
+        withOrbitCard(shown: false) {
+            let hidden = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
+            #expect(!hidden.apps.contains(where: { $0.isOrbit }))
+        }
     }
 
     @Test @MainActor func orbitCleanupKeepsRingOpenUntilTriggerRelease() {
-        let model = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
-        var didCancel = false
-        model.onCancel = { didCancel = true }
+        withOrbitCard(shown: true) {
+            let model = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
+            var didCancel = false
+            model.onCancel = { didCancel = true }
 
-        model.beginAppDrag(.orbitCard)
-        model.updateAppDrag(.orbitCard, offset: .zero, overCenter: true)
-        model.finishAppDrag(.orbitCard)
+            model.beginAppDrag(.orbitCard)
+            model.updateAppDrag(.orbitCard, offset: .zero, overCenter: true)
+            model.finishAppDrag(.orbitCard)
 
-        #expect(!didCancel)
+            #expect(!didCancel)
 
-        model.triggerReleased()
-        #expect(didCancel)
+            model.triggerReleased()
+            #expect(didCancel)
+        }
     }
 
     @Test func firstLetterFoldsAccentsAndNonLatinNames() {
@@ -939,6 +1018,70 @@ struct OrbitTests {
             requiringTitle: true
         )
         #expect(inAnotherApp?.id == 100)
+    }
+
+    /// 松手太快时的同步落点，也不能落到空壳窗上。
+    ///
+    /// 这一层只看得见层级、标题、尺寸和 alpha，而微信那扇 280x380 的空壳四样
+    /// 全齐 —— 它和主窗连标题都一样叫 "WeChat"。主窗被当作当前窗排除之后，它
+    /// 就成了唯一的候选，于是"切到微信"变成 raise 一扇什么都没画的窗。
+    ///
+    /// Only the capture path can tell the two apart, so what it measured has to
+    /// reach this decision. `preferredIDs` deliberately ranks the shell first
+    /// here: MRU order must not be able to resurrect a window that was already
+    /// ruled out.
+    @Test func aWindowMeasuredAsBlankIsNeverTheSynchronousReleaseTarget() {
+        func window(_ id: Int, width: CGFloat, height: CGFloat) -> [String: Any] {
+            [
+                kCGWindowOwnerPID as String: 7,
+                kCGWindowNumber as String: id,
+                kCGWindowName as String: "WeChat",
+                kCGWindowLayer as String: 0,
+                kCGWindowAlpha as String: 1.0,
+                kCGWindowIsOnscreen as String: true,
+                kCGWindowBounds as String: [
+                    "X": 0, "Y": 0, "Width": width, "Height": height,
+                ]
+            ]
+        }
+
+        let main = window(997, width: 1196, height: 904)
+        let shell = window(989, width: 280, height: 380)
+
+        // 没有像素知识时，这一层分不出来，空壳照样会被选中。
+        #expect(
+            WindowServerInspector.mostRecentOtherWindow(
+                in: [main, shell],
+                ownedBy: 7,
+                excluding: 997,
+                preferredIDs: [989],
+                requiringTitle: true
+            )?.id == 989
+        )
+
+        // 截图那边测过一次之后，它就出局了 —— 这里没有别的窗口可退，答案是"没有"。
+        #expect(
+            WindowServerInspector.mostRecentOtherWindow(
+                in: [main, shell],
+                ownedBy: 7,
+                excluding: 997,
+                preferredIDs: [989],
+                requiringTitle: true,
+                knownBlank: [989]
+            ) == nil
+        )
+
+        // 主窗没被排除时，空壳出局只是把答案让回给它。
+        #expect(
+            WindowServerInspector.mostRecentOtherWindow(
+                in: [main, shell],
+                ownedBy: 7,
+                excluding: nil,
+                preferredIDs: [989],
+                requiringTitle: true,
+                knownBlank: [989]
+            )?.id == 997
+        )
     }
 
     /// 每一级切换报的都只是「请求被接受了」：AX 的 raise 对一扇它根本没去成的窗
