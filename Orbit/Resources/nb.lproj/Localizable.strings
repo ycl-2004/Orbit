@@ -33,6 +33,8 @@
 "prefs.ring.openingBehavior" = "Når Orbit åpnes";
 "prefs.ring.order.note" = "Det nyeste byttemålet blir øverst; resten av de nylige appene sorteres etter navn.";
 "prefs.ring.openingBehavior.note" = "Avbryt starter uten valg. Hurtigbytte velger målet ved klokken 12; slipp for å bytte straks.";
+"prefs.ring.instantOpening" = "Vis ringen med en gang";
+"prefs.ring.instantOpening.note" = "Vis den komplette viften med en gang i stedet for å animere den på plass når Orbit åpnes.";
 "prefs.ring.showOrbitCard" = "Vis ryddekort";
 "prefs.ring.showOrbitCard.note" = "Vis Orbit som et ryddekort for apper uten åpne vinduer.";
 

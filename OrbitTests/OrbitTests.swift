@@ -332,6 +332,27 @@ struct OrbitTests {
         #expect(OrbitPreferences.ringOpeningBehavior == .quickSwitch)
     }
 
+    @Test func instantRingOpeningDefaultsToAnimatedAndPersists() {
+        let defaults = UserDefaults.standard
+        let previous = defaults.object(forKey: "instantRingOpening")
+        defer {
+            if let previous {
+                defaults.set(previous, forKey: "instantRingOpening")
+            } else {
+                defaults.removeObject(forKey: "instantRingOpening")
+            }
+        }
+
+        defaults.removeObject(forKey: "instantRingOpening")
+        #expect(!OrbitPreferences.instantRingOpening)
+
+        OrbitPreferences.instantRingOpening = true
+        #expect(OrbitPreferences.instantRingOpening)
+
+        OrbitPreferences.instantRingOpening = false
+        #expect(!OrbitPreferences.instantRingOpening)
+    }
+
     /// If the current app has another actionable window, that window is the
     /// newest switch destination. It therefore owns the same first slot in
     /// both visual arrangement modes; cleanup never participates here.

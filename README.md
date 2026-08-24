@@ -66,8 +66,8 @@ open /Applications/Orbit.app
 
 Screen Recording permission is requested only if you turn on window previews.
 
-The current Xcode project reports version `1.6.0 (build 7)`. See the
-[1.6.0 release notes](CHANGELOG.md) for the changes since `v1.5.1`.
+The current Xcode project reports version `1.7.0 (build 8)`. See the
+[1.7.0 release notes](CHANGELOG.md) for the changes since `v1.6.0`.
 
 ## Why Orbit
 
@@ -85,6 +85,7 @@ The current Xcode project reports version `1.6.0 (build 7)`. See the
 - Arrow-key navigation enabled by default; optional letter and number shortcuts can be turned on in Settings.
 - Optional window previews beside the ring. Enable **Show window previews** under **Settings → Appearance** and grant Screen Recording permission; macOS requires an Orbit restart after granting it.
 - **When Orbit opens** is selectable in Settings. **Start at Cancel** is the safe default; **Quick switch** preselects the 12-o'clock target so releasing immediately switches to the most recent sibling window or, when none exists, the previous app.
+- Shortcut settings can optionally show the complete ring instantly instead of playing the opening animation; the default remains animated.
 - A pending summon is canceled if another key, mouse button, or scroll gesture arrives before the hold completes, preventing accidental ring openings.
 
 **Center target actions**
@@ -308,7 +309,7 @@ gesture-first workflow. This repository provides:
 - Portable placeholder bundle identifiers under `app.orbit.local`.
 - No developer Team ID, signing certificate, or machine-specific Xcode state.
 - English-first documentation with a separate Simplified Chinese version.
-- Current source build: `1.6.0 (build 7)`.
+- Current source build: `1.7.0 (build 8)`.
 - English is the default app localization; the in-app picker ships English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, Russian, Danish, Norwegian Bokmål, and Esperanto.
 
 ## Credits

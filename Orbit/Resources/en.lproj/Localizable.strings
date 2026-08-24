@@ -33,6 +33,8 @@
 "prefs.ring.openingBehavior" = "When Orbit opens";
 "prefs.ring.order.note" = "The most recent switch target stays at the top; the remaining recent apps are arranged by name.";
 "prefs.ring.openingBehavior.note" = "Cancel starts with nothing selected. Quick switch selects the target at 12 o’clock; release to switch immediately.";
+"prefs.ring.instantOpening" = "Show the ring instantly";
+"prefs.ring.instantOpening.note" = "Show the complete fan immediately instead of animating it into place when Orbit opens.";
 "prefs.ring.showOrbitCard" = "Show cleanup card";
 "prefs.ring.showOrbitCard.note" = "Show Orbit as a cleanup card for apps without open windows.";
 

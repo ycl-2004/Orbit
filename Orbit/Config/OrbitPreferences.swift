@@ -375,6 +375,16 @@ enum OrbitPreferences {
         }
     }
 
+    /// Whether the ring skips its initial fan-opening animation.
+    ///
+    /// The setting only changes how a summon is presented. It does not alter
+    /// the hold threshold, selection animations, preview loading, or the
+    /// collapse animation used when the ring is dismissed.
+    static var instantRingOpening: Bool {
+        get { defaults.object(forKey: "instantRingOpening") as? Bool ?? false }
+        set { defaults.set(newValue, forKey: "instantRingOpening") }
+    }
+
     /// 预览面板的缩放倍率。1.0 就是原本的尺寸。
     ///
     /// 放大不是简单地把上限调高：在常见屏幕上真正卡住卡片的不是

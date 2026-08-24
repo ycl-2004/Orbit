@@ -58,7 +58,9 @@ struct OrbitScrim: View {
 
     @State private var hasAppeared = false
 
-    private var isRaised: Bool { hasAppeared && !model.isCollapsing }
+    private var isRaised: Bool {
+        !model.isCollapsing && (model.opensInstantly || hasAppeared)
+    }
 
     /// 关掉透明度的人要的是「看得清」，不是「看不见」：模糊撤掉，底色留下并加实。
     private var reducesTransparency: Bool {
@@ -93,7 +95,12 @@ struct OrbitScrim: View {
         }
         .ignoresSafeArea()
         .opacity(isRaised ? presence : 0)
-        .animation(.easeOut(duration: 0.16), value: isRaised)
+        .animation(
+            model.opensInstantly && !model.isCollapsing
+                ? nil
+                : .easeOut(duration: 0.16),
+            value: isRaised
+        )
         .animation(.easeOut(duration: 0.18), value: presence)
         .onAppear { hasAppeared = true }
         .allowsHitTesting(false)

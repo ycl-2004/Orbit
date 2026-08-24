@@ -75,6 +75,9 @@ final class OrbitRingViewModel: ObservableObject {
     /// Captured once per showing: the layout flips and the panel resizes
     /// around this, so it must not change while the ring is on screen.
     let showsPreview: Bool
+    /// Captured once per showing so changing Settings cannot alter a ring that
+    /// is already on screen.
+    let opensInstantly: Bool
 
     /// 圆环这一次要出现在哪块屏幕上。
     ///
@@ -125,6 +128,7 @@ final class OrbitRingViewModel: ObservableObject {
         }
         self.showsPreview = showsPreview
             ?? OrbitPreferences.windowPreviewEnabled
+        self.opensInstantly = OrbitPreferences.instantRingOpening
         // The ring is positioned around the current pointer. SwiftUI can emit
         // an initial `onHover` as soon as the panel appears, even though the
         // user has not moved the pointer. Treat that first location as an
@@ -1069,7 +1073,7 @@ struct OrbitRingView: View {
     /// ring's own geometry the animation — the cards travel the radius they
     /// live on — and gives the dismissal a path to mirror.
     private var deployProgress: Double {
-        (hasAppeared && !model.isCollapsing) ? 1 : 0
+        (!model.isCollapsing && (model.opensInstantly || hasAppeared)) ? 1 : 0
     }
 
     /// 每张卡片错开一点起飞，扇面就是"甩"开的而不是"张"开的。
@@ -1078,7 +1082,7 @@ struct OrbitRingView: View {
     /// card still travelling after the window is due to go, and a cancel has to
     /// feel immediate.
     private func deployDelay(for index: Int) -> Double {
-        model.isCollapsing ? 0 : Double(index) * 0.028
+        model.opensInstantly || model.isCollapsing ? 0 : Double(index) * 0.028
     }
 
     /// Two equal halves rather than an HStack sized by its contents. The ring
@@ -1096,7 +1100,9 @@ struct OrbitRingView: View {
                     .frame(width: model.columnWidth)
                     .opacity(deployProgress)
                     .animation(
-                        .easeOut(duration: 0.2).delay(model.isCollapsing ? 0 : 0.06),
+                        model.opensInstantly && !model.isCollapsing
+                            ? nil
+                            : .easeOut(duration: 0.2).delay(model.isCollapsing ? 0 : 0.06),
                         value: deployProgress
                     )
             }
@@ -1118,7 +1124,12 @@ struct OrbitRingView: View {
                 )
                 .position(hub)
                 .opacity(deployProgress)
-                .animation(.easeOut(duration: 0.28), value: deployProgress)
+                .animation(
+                    model.opensInstantly && !model.isCollapsing
+                        ? nil
+                        : .easeOut(duration: 0.28),
+                    value: deployProgress
+                )
                 .zIndex(-2)
             }
 
@@ -1138,7 +1149,12 @@ struct OrbitRingView: View {
                     progress: deployProgress
                 )
                 .position(hub)
-                .animation(.spring(response: 0.4, dampingFraction: 0.82), value: deployProgress)
+                .animation(
+                    model.opensInstantly && !model.isCollapsing
+                        ? nil
+                        : .spring(response: 0.4, dampingFraction: 0.82),
+                    value: deployProgress
+                )
                 .zIndex(-1)
             }
 
@@ -1178,8 +1194,10 @@ struct OrbitRingView: View {
                 .scaleEffect(0.55 + 0.45 * deployProgress)
                 .opacity(deployProgress)
                 .animation(
-                    .spring(response: 0.42, dampingFraction: 0.8)
-                        .delay(deployDelay(for: index)),
+                    model.opensInstantly && !model.isCollapsing
+                        ? nil
+                        : .spring(response: 0.42, dampingFraction: 0.8)
+                            .delay(deployDelay(for: index)),
                     value: deployProgress
                 )
                 // A lifted card must never slide underneath its neighbours.
@@ -1201,7 +1219,12 @@ struct OrbitRingView: View {
             // 星芯先亮起来，卡片才从它里面飞出去 —— 光源不能比被照亮的东西晚到。
             .scaleEffect(0.7 + 0.3 * deployProgress)
             .opacity(deployProgress)
-            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: deployProgress)
+            .animation(
+                model.opensInstantly && !model.isCollapsing
+                    ? nil
+                    : .spring(response: 0.3, dampingFraction: 0.85),
+                value: deployProgress
+            )
             .zIndex(3)
         }
         .frame(width: model.canvasSize, height: model.canvasSize)

@@ -167,6 +167,10 @@ final class SettingsModel: ObservableObject {
         didSet { writeThrough { OrbitPreferences.ringOpeningBehavior = ringOpeningBehavior } }
     }
 
+    @Published var instantRingOpening: Bool = OrbitPreferences.instantRingOpening {
+        didSet { writeThrough { OrbitPreferences.instantRingOpening = instantRingOpening } }
+    }
+
     // MARK: - 窗口预览
 
     @Published var windowPreviewEnabled: Bool = OrbitPreferences.windowPreviewEnabled {
@@ -230,6 +234,7 @@ final class SettingsModel: ObservableObject {
             ringOrder = OrbitPreferences.ringOrder
             previewScale = Double(OrbitPreferences.previewScale)
             ringOpeningBehavior = OrbitPreferences.ringOpeningBehavior
+            instantRingOpening = OrbitPreferences.instantRingOpening
             windowPreviewEnabled = OrbitPreferences.windowPreviewEnabled
             launchAtLogin = LoginItemService.reload()
             hasAccessibility = TriggerMonitor.accessibilityIsTrusted()

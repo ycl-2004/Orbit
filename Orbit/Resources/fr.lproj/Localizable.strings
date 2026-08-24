@@ -33,6 +33,8 @@
 "prefs.ring.openingBehavior" = "À l’ouverture d’Orbit";
 "prefs.ring.order.note" = "La cible de basculement la plus récente reste en haut ; les autres apps récentes sont classées par nom.";
 "prefs.ring.openingBehavior.note" = "Annuler démarre sans sélection. Basculement rapide sélectionne la cible à 12 h ; relâchez pour basculer.";
+"prefs.ring.instantOpening" = "Afficher l’anneau instantanément";
+"prefs.ring.instantOpening.note" = "Affiche immédiatement l’éventail complet au lieu de l’animer à l’ouverture d’Orbit.";
 "prefs.ring.showOrbitCard" = "Afficher la carte de nettoyage";
 "prefs.ring.showOrbitCard.note" = "Afficher Orbit comme carte pour quitter les apps sans fenêtre ouverte.";
 

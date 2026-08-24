@@ -33,6 +33,8 @@
 "prefs.ring.openingBehavior" = "Orbit을 열 때";
 "prefs.ring.order.note" = "가장 최근 전환 대상은 맨 위에 고정하고 나머지 최근 앱은 이름순으로 정렬합니다.";
 "prefs.ring.openingBehavior.note" = "취소로 시작하면 아무 대상도 선택하지 않습니다. 빠른 전환은 12시 방향 대상을 선택하며 키를 놓으면 바로 전환됩니다.";
+"prefs.ring.instantOpening" = "링 즉시 표시";
+"prefs.ring.instantOpening.note" = "Orbit을 열 때 펼침 애니메이션 없이 완성된 부채꼴을 바로 표시합니다.";
 "prefs.ring.showOrbitCard" = "정리 카드 표시";
 "prefs.ring.showOrbitCard.note" = "열린 윈도우가 없는 앱을 종료하는 정리 카드로 Orbit을 표시합니다.";
 

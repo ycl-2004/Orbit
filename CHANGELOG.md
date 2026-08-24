@@ -1,5 +1,20 @@
 # Orbit release notes
 
+## 1.7.0 — 2026-08-24
+
+### Added
+
+- Shortcut settings now include an optional **Show the ring instantly** toggle. When enabled, the complete fan appears in its final layout as soon as Orbit opens instead of playing the deployment animation; preview contents can still load asynchronously.
+
+### Changed
+
+- Same-Space window activation no longer waits through fixed hand-off or first-verification delays. Cross-Space and accessibility fallback paths retain their correctness checks.
+
+### Validation
+
+- The test targets contain 65 `OrbitTests` tests and 2 `OrbitUITests` methods; the unit target passes with 0 failures, and `scripts/ci_validate.sh` passes.
+- The release artifact is verified as a signed Universal 2 archive before publishing.
+
 ## 1.6.0 — 2026-08-11
 
 ### Fixed

@@ -257,27 +257,27 @@ final class OrbitWindowController: NSObject {
         switchGeneration += 1
         let generation = switchGeneration
 
-        // Let the ring leave the screen before anything else comes forward.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            guard let window else {
-                windowSwitchLogger.notice(
-                    "app-only activation pid=\(app.processIdentifier, privacy: .public)"
-                )
-                _ = app.bringToFront()
-                return
-            }
-
+        // The ring has already been ordered out by `dismissImmediately()`. Do
+        // not add a fixed hand-off delay here: on the normal path the target
+        // app can be asked to activate in this same turn of the main queue.
+        guard let window else {
             windowSwitchLogger.notice(
-                "request pid=\(app.processIdentifier, privacy: .public) target=\(window.id, privacy: .public) origin=\(originatingFrontmostProcess ?? -1, privacy: .public)"
+                "app-only activation pid=\(app.processIdentifier, privacy: .public)"
             )
-            self.perform(
-                .directAX,
-                app: app,
-                window: window,
-                origin: originatingFrontmostProcess,
-                generation: generation
-            )
+            _ = app.bringToFront()
+            return
         }
+
+        windowSwitchLogger.notice(
+            "request pid=\(app.processIdentifier, privacy: .public) target=\(window.id, privacy: .public) origin=\(originatingFrontmostProcess ?? -1, privacy: .public)"
+        )
+        perform(
+            .directAX,
+            app: app,
+            window: window,
+            origin: originatingFrontmostProcess,
+            generation: generation
+        )
     }
 
     /// 这一步还属于最新的那次切换吗。
@@ -341,11 +341,14 @@ final class OrbitWindowController: NSObject {
             // app pick a window of its own over the one already named.
             _ = app.bringToFront(raisingAllWindows: false, reopeningWhenWindowless: false)
 
-            // Some apps re-assert their own front window as they come
-            // forward. One settle pass after activation catches them.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
-                guard self?.isCurrent(generation) == true else { return }
-                WindowPreviewService.focus(window, pid: app.processIdentifier)
+            // Some apps re-assert their own front window as they cross to a
+            // different Space. Keep one background settle pass for that case;
+            // same-Space switches do not need a second visible hand-off.
+            if !targetWasOnScreen {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+                    guard self?.isCurrent(generation) == true else { return }
+                    WindowPreviewService.focus(window, pid: app.processIdentifier)
+                }
             }
             verifyLanding(
                 after: stage,
@@ -390,7 +393,9 @@ final class OrbitWindowController: NSObject {
                 targetProcess: app.processIdentifier,
                 originatingFrontmostProcess: frontmostNow ?? origin
             ) {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+                // Let the AX action finish its current turn before activating
+                // the other process, but do not impose a perceptible timer.
+                DispatchQueue.main.async { [weak self] in
                     guard self?.isCurrent(generation) == true else { return }
                     let activated = app.bringToFront(
                         raisingAllWindows: false,
@@ -467,8 +472,8 @@ final class OrbitWindowController: NSObject {
 
     /// 等窗口服务确认这次切换真的落在了目标窗口上；等不到就降到 `next`。
     ///
-    /// 轮询而不是只查一次：同一个 Space 内部的切换几乎立刻就到位，而跨到一个全屏
-    /// Space 要先跑完一段动画。轮询让前者快、后者也够宽。
+    /// 先立即检查一次：同一个 Space 内部的切换通常已经到位，不必平白等待一个轮询
+    /// 间隔。只有检查失败才进入轮询，因为跨到一个全屏 Space 要先跑完一段动画。
     private func verifyLanding(
         after stage: SwitchStage,
         app: AppRecord,
@@ -476,24 +481,15 @@ final class OrbitWindowController: NSObject {
         origin: pid_t?,
         next: SwitchStage,
         generation: Int,
-        deadline: Date? = nil
+        deadline: Date? = nil,
+        delay: TimeInterval = 0
     ) {
         let deadline = deadline
             ?? Date().addingTimeInterval(OrbitPreferences.switchVerificationTimeout)
 
-        DispatchQueue.main.asyncAfter(
-            deadline: .now() + OrbitPreferences.switchVerificationPollInterval
-        ) { [weak self] in
-            guard let self, self.isCurrent(generation) else { return }
-
-            if WindowServerInspector.switchLanded(on: window.id, ownedBy: app.processIdentifier) {
-                windowSwitchLogger.notice(
-                    "landed via \(stage.rawValue, privacy: .public) target=\(window.id, privacy: .public)"
-                )
-                return
-            }
-            guard Date() >= deadline else {
-                self.verifyLanding(
+        guard delay == 0 else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.verifyLanding(
                     after: stage,
                     app: app,
                     window: window,
@@ -502,13 +498,35 @@ final class OrbitWindowController: NSObject {
                     generation: generation,
                     deadline: deadline
                 )
-                return
             }
-            windowSwitchLogger.notice(
-                "\(stage.rawValue, privacy: .public) did not land target=\(window.id, privacy: .public); falling back to \(next.rawValue, privacy: .public)"
-            )
-            self.perform(next, app: app, window: window, origin: origin, generation: generation)
+            return
         }
+
+        guard isCurrent(generation) else { return }
+
+        if WindowServerInspector.switchLanded(on: window.id, ownedBy: app.processIdentifier) {
+            windowSwitchLogger.notice(
+                "landed via \(stage.rawValue, privacy: .public) target=\(window.id, privacy: .public)"
+            )
+            return
+        }
+        guard Date() >= deadline else {
+            verifyLanding(
+                after: stage,
+                app: app,
+                window: window,
+                origin: origin,
+                next: next,
+                generation: generation,
+                deadline: deadline,
+                delay: OrbitPreferences.switchVerificationPollInterval
+            )
+            return
+        }
+        windowSwitchLogger.notice(
+            "\(stage.rawValue, privacy: .public) did not land target=\(window.id, privacy: .public); falling back to \(next.rawValue, privacy: .public)"
+        )
+        perform(next, app: app, window: window, origin: origin, generation: generation)
     }
 
     private func makePanel(at location: CGPoint, model: OrbitRingViewModel, on screen: NSScreen?) -> OrbitPanel {

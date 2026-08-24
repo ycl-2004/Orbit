@@ -275,6 +275,9 @@ private struct ShortcutSettingsPane: View {
                 }
                 .pickerStyle(.menu)
                 .help(Text("prefs.ring.openingBehavior.note"))
+
+                Toggle("prefs.ring.instantOpening", isOn: $model.instantRingOpening)
+                    .help(Text("prefs.ring.instantOpening.note"))
             } header: {
                 Text("prefs.group.trigger")
             } footer: {

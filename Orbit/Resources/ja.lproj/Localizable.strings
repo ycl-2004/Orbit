@@ -33,6 +33,8 @@
 "prefs.ring.openingBehavior" = "Orbit を開いたとき";
 "prefs.ring.order.note" = "直近の切り替え先は最上部に固定し、残りの最近使ったアプリを名前順に並べます。";
 "prefs.ring.openingBehavior.note" = "キャンセル開始では何も選択しません。クイック切り替えでは 12 時のターゲットを選択し、キーを離すとすぐ切り替わります。";
+"prefs.ring.instantOpening" = "リングをすぐに表示";
+"prefs.ring.instantOpening.note" = "Orbit を開いたとき、展開アニメーションを再生せず完全な扇形をすぐに表示します。";
 "prefs.ring.showOrbitCard" = "クリーンアップカードを表示";
 "prefs.ring.showOrbitCard.note" = "開いているウインドウがないアプリを終了するためのカードとして Orbit を表示します。";
 

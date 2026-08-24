@@ -33,6 +33,8 @@
 "prefs.ring.openingBehavior" = "Kiam Orbit malfermiĝas";
 "prefs.ring.order.note" = "La plej lastatempa ŝanĝcelo restas supre; la ceteraj lastatempaj aplikaĵoj estas aranĝitaj laŭnome.";
 "prefs.ring.openingBehavior.note" = "Nuligi komencas sen elekto. Rapida ŝanĝo elektas la celon je la 12-a; liberigu por tuj ŝanĝi.";
+"prefs.ring.instantOpening" = "Montri la ringon tuj";
+"prefs.ring.instantOpening.note" = "Montru la kompletan ventumilon tuj anstataŭ animi ĝin en lokon kiam Orbit malfermiĝas.";
 "prefs.ring.showOrbitCard" = "Montri purigan karton";
 "prefs.ring.showOrbitCard.note" = "Montri Orbit kiel purigan karton por aplikaĵoj sen malfermitaj fenestroj.";
 

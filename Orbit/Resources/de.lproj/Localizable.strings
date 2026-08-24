@@ -33,6 +33,8 @@
 "prefs.ring.openingBehavior" = "Beim Öffnen von Orbit";
 "prefs.ring.order.note" = "Das neueste Wechselziel bleibt oben; die übrigen zuletzt verwendeten Apps werden nach Namen sortiert.";
 "prefs.ring.openingBehavior.note" = "Abbrechen startet ohne Auswahl. Schnellwechsel wählt das Ziel auf 12 Uhr; Loslassen wechselt sofort.";
+"prefs.ring.instantOpening" = "Ring sofort anzeigen";
+"prefs.ring.instantOpening.note" = "Beim Öffnen von Orbit den vollständigen Fächer sofort anzeigen, ohne Einblendanimation.";
 "prefs.ring.showOrbitCard" = "Aufräumkarte anzeigen";
 "prefs.ring.showOrbitCard.note" = "Orbit als Karte zum Beenden von Apps ohne offene Fenster anzeigen.";
 

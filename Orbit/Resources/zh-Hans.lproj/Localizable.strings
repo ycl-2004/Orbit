@@ -33,6 +33,8 @@
 "prefs.ring.openingBehavior" = "打开 Orbit 时";
 "prefs.ring.order.note" = "最近的切换目标固定在最上方，其余最近应用按名称排列。";
 "prefs.ring.openingBehavior.note" = "“从取消开始”不会选中任何目标；“快速切换”会选中 12 点目标，松手立即切换。";
+"prefs.ring.instantOpening" = "直接显示扇形";
+"prefs.ring.instantOpening.note" = "打开 Orbit 时直接显示完整扇形，不播放展开动画。";
 "prefs.ring.showOrbitCard" = "显示清理卡片";
 "prefs.ring.showOrbitCard.note" = "显示 Orbit 清理卡片，用于关闭没有打开窗口的应用。";
 
