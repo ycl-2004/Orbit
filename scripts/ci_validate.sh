@@ -23,8 +23,8 @@ grep -Fq "Current source build: \`${EXPECTED_SOURCE_VERSION}\`." README.md || {
     echo "README.md does not contain the current source version: $EXPECTED_SOURCE_VERSION" >&2
     exit 1
 }
-grep -Fq "当前源码版本：\`${EXPECTED_SOURCE_VERSION_ZH}\`。" README.zh-CN.md || {
-    echo "README.zh-CN.md does not contain the current source version: $EXPECTED_SOURCE_VERSION_ZH" >&2
+grep -Fq "當前原始碼版本：\`${EXPECTED_SOURCE_VERSION_ZH}\`。" README.zh-TW.md || {
+    echo "README.zh-TW.md does not contain the current source version: $EXPECTED_SOURCE_VERSION_ZH" >&2
     exit 1
 }
 grep -Eq "^## ${MARKETING_VERSION//./\\.} —" CHANGELOG.md || {

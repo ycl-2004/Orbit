@@ -28,7 +28,7 @@
   ·
   <a href="CONTRIBUTING.md">Contributing</a>
   ·
-  <a href="README.zh-CN.md">简体中文</a>
+  <a href="README.zh-TW.md">繁體中文</a>
 </p>
 
 <p align="center">
@@ -348,4 +348,4 @@ associated with this repository.
 - [Contributing guide](CONTRIBUTING.md)
 - [Privacy policy](PRIVACY.md)
 - [Decision records](docs/decisions)
-- [Simplified Chinese README](README.zh-CN.md)
+- [Traditional Chinese README](README.zh-TW.md)
