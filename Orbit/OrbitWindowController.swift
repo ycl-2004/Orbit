@@ -195,7 +195,7 @@ final class OrbitWindowController: NSObject {
     /// already chosen — a wait the gesture cannot afford. Cancelling is going
     /// nowhere, so it can afford to put things back where they came from.
     private func dismissCancelled() {
-        guard let model, panel != nil, !model.isCollapsing else {
+        guard let model, panel != nil, !model.isCollapsing, !model.reducesMotion else {
             dismissImmediately()
             return
         }

@@ -9,6 +9,7 @@
 //
 
 import AppKit
+import SwiftUI
 
 extension OrbitPreferences {
     // Geometry is driven by one rule: neighbouring cards always overlap by the
@@ -141,6 +142,35 @@ extension OrbitPreferences {
     /// of the motion is still settling, which no one sees, and waiting for the
     /// spring to fully rest would be the part that felt slow.
     static let collapseDuration: TimeInterval = 0.2
+
+    // 展开：从窗口出现到扇面停稳。
+    //
+    // The fan used to take about three quarters of a second to come to rest:
+    // a 28 ms delay per card put the twelfth card in flight a third of a second
+    // late, and a soft 0.42 s spring then took as long again to settle. Every
+    // part below is roughly halved, and the per-card delay has a ceiling on its
+    // total, so a full ring opens as quickly as a short one and still reads as
+    // thrown out from the hub rather than switched on.
+
+    /// 卡片之间错开的上限：第一张和最后一张最多差这么久。
+    static let deployStaggerTotal: TimeInterval = 0.08
+    /// 卡片少的时候每两张之间错开多少；总量另有上面那个上限。
+    static let deployStaggerStep: TimeInterval = 0.012
+
+    /// 第 `index` 张卡片晚多久起飞。
+    static func deployDelay(forCard index: Int, of count: Int) -> TimeInterval {
+        guard count > 1 else { return 0 }
+        return Double(index) * min(deployStaggerStep, deployStaggerTotal / Double(count - 1))
+    }
+
+    static let deployCardSpring = Animation.spring(response: 0.24, dampingFraction: 0.86)
+    static let deployTrailSpring = Animation.spring(response: 0.26, dampingFraction: 0.86)
+    static let deployHubSpring = Animation.spring(response: 0.2, dampingFraction: 0.86)
+    static let deployBackdropFade = Animation.easeOut(duration: 0.18)
+    static let deployScrimFade = Animation.easeOut(duration: 0.14)
+    static let deployPanelFade = Animation.easeOut(duration: 0.16)
+    /// 预览面板比卡片晚一拍出现：先看见环，再看见窗口。
+    static let deployPanelDelay: TimeInterval = 0.04
 
     /// 选中的卡片被中心"引力"拉近多少。
     ///

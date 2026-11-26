@@ -11,7 +11,7 @@
 //
 
 import AppKit
-import Combine
+import Observation
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -25,26 +25,33 @@ enum OrbitPreviewState: Equatable {
     case unavailable
 }
 
+/// 环的状态。
+///
+/// `@Observable` rather than `ObservableObject`: each view redraws only when a
+/// property it actually read changes. With one `objectWillChange` for the whole
+/// model, every drag event re-ran the ring, all of its cards, the preview panel
+/// and the scrim, though only the dragged card had moved.
 @MainActor
-final class OrbitRingViewModel: ObservableObject {
-    @Published private(set) var apps: [AppRecord]
-    @Published var selectedID: String?
-    @Published var draggedAppID: String?
-    @Published var dragOffset: CGSize = .zero
-    @Published var dragOverCenter = false
+@Observable
+final class OrbitRingViewModel {
+    private(set) var apps: [AppRecord]
+    var selectedID: String?
+    var draggedAppID: String?
+    var dragOffset: CGSize = .zero
+    var dragOverCenter = false
     /// 正在退出、消散动画还没放完的卡片。
     ///
     /// They can no longer be selected: releasing the trigger on one would hand
     /// `bringToFront` an app that is on its way out, and that relaunches it.
-    @Published private(set) var departingAppIDs: Set<String> = []
-    @Published var fileDropPhase: DropLifecycle = .resting
-    @Published var fileTrashReady = false
+    private(set) var departingAppIDs: Set<String> = []
+    var fileDropPhase: DropLifecycle = .resting
+    var fileTrashReady = false
     /// 上一次拖放没做成，中心正在把这件事说出来。
-    @Published private(set) var fileDropFailed = false
-    @Published private(set) var previews: [WindowPreview] = []
-    @Published private(set) var previewState: OrbitPreviewState = .idle
+    private(set) var fileDropFailed = false
+    private(set) var previews: [WindowPreview] = []
+    private(set) var previewState: OrbitPreviewState = .idle
     /// Which of the selected app's windows the arrow keys point at.
-    @Published var selectedWindowIndex = 0
+    var selectedWindowIndex = 0
     /// 环正在收回中心，窗口马上就撤。
     ///
     /// Only ever set on the cancel path. Spatial consistency says a thing should
@@ -52,14 +59,19 @@ final class OrbitRingViewModel: ObservableObject {
     /// mean the ring is still on screen, over the app the user just chose, for
     /// as long as the collapse lasts — a latency the gesture cannot afford.
     /// Cancelling has nowhere to be, so it can afford to put the cards back.
-    @Published private(set) var isCollapsing = false
+    private(set) var isCollapsing = false
 
+    @ObservationIgnored
     var onCancel: (() -> Void)?
     /// Second argument is the window to switch to, when one was picked.
+    @ObservationIgnored
     var onActivate: ((AppRecord, WindowTarget?) -> Void)?
 
+    @ObservationIgnored
     private var fileTrashTask: DispatchWorkItem?
+    @ObservationIgnored
     private var dragExitTask: DispatchWorkItem?
+    @ObservationIgnored
     private var fileFailureTask: DispatchWorkItem?
     /// 触发键松开（或按了 Esc）时，环正被一个手势占着：先记下来，手势落地再关。
     ///
@@ -69,24 +81,32 @@ final class OrbitRingViewModel: ObservableObject {
     /// on screen with nothing left to close it — or remembered by only one of
     /// several timers, and lost when another drag cancelled that timer. One
     /// flag, checked every time a gesture comes to rest, covers all of them.
+    @ObservationIgnored
     private var dismissalPending = false
     /// Cursor position that hover must move away from before it can select.
     /// This starts at the moment the ring opens, so the card underneath the
     /// pointer does not become selected just because the panel appeared there.
+    @ObservationIgnored
     private var hoverAnchor: CGPoint?
     /// Where the selection stood when it was cleared, so arrowing again picks
     /// up from there instead of starting over.
+    @ObservationIgnored
     private var resumeIndex: Int?
+    @ObservationIgnored
     private var bulkCleanupAttemptedIDs: Set<String> = []
+    @ObservationIgnored
     private var bulkCleanupPendingIDs: Set<String> = []
+    @ObservationIgnored
     private var bulkCleanupSucceededIDs: Set<String> = []
 
     /// Captured once per showing: the layout flips and the panel resizes
     /// around this, so it must not change while the ring is on screen.
     let showsPreview: Bool
     /// Captured once per showing so changing Settings cannot alter a ring that
-    /// is already on screen.
+    /// is already on screen. Reduce Motion counts as asking for it.
     let opensInstantly: Bool
+    /// 系统的「减弱动态效果」，唤出时读一次。开着时取消也不播收起动画。
+    let reducesMotion: Bool
 
     /// Read once per showing, like `showsPreview`: the glow must not appear or
     /// vanish underneath a fan that is already on screen.
@@ -165,7 +185,8 @@ final class OrbitRingViewModel: ObservableObject {
         self.layoutCount = ringApps.count
         self.showsPreview = showsPreview
             ?? OrbitPreferences.windowPreviewEnabled
-        self.opensInstantly = OrbitPreferences.instantRingOpening
+        self.reducesMotion = OrbitPreferences.reducesMotion
+        self.opensInstantly = OrbitPreferences.instantRingOpening || reducesMotion
         // The ring is positioned around the current pointer. SwiftUI can emit
         // an initial `onHover` as soon as the panel appears, even though the
         // user has not moved the pointer. Treat that first location as an
@@ -553,7 +574,12 @@ final class OrbitRingViewModel: ObservableObject {
     func updateAppDrag(_ app: AppRecord, offset: CGSize, overCenter: Bool) {
         guard draggedAppID == app.id else { return }
         dragOffset = offset
-        dragOverCenter = overCenter
+        // Observation notifies on every write, equal or not, and the hub's mode
+        // reads this. Writing it only when it flips keeps a drag from redrawing
+        // the hub on every pointer move.
+        if dragOverCenter != overCenter {
+            dragOverCenter = overCenter
+        }
     }
 
     func finishAppDrag(_ app: AppRecord) {

@@ -13,6 +13,8 @@ import SwiftUI
 struct CardScatterModifier: ViewModifier {
     let progress: Double
     let targetAngle: Double
+    /// `false` 时卡片只淡出：不画碎片，也不糊开。
+    let showsFragments: Bool
 
     @State private var shards: [Shard] = []
     @State private var measuredSize = CGSize.zero
@@ -46,11 +48,11 @@ struct CardScatterModifier: ViewModifier {
             // 只在真的在消散时才挂上碎片层：环上每张卡片常驻一套 GeometryReader
             // 和 Canvas，开环时白白多出十几层。
             .background {
-                if progress > 0 {
+                if showsFragments, progress > 0 {
                     fragmentLayer
                 }
             }
-            .blur(radius: CGFloat(progress) * Timing.blurRadius)
+            .blur(radius: showsFragments ? CGFloat(progress) * Timing.blurRadius : 0)
     }
 
     private var cardOpacity: Double {
@@ -149,7 +151,7 @@ private struct ScatterSequence {
 
 extension View {
     /// Adds the short card-to-hub fragment animation used by quit gestures.
-    func cardScatter(progress: Double, towards angle: Double = .pi / 2) -> some View {
-        modifier(CardScatterModifier(progress: progress, targetAngle: angle))
+    func cardScatter(progress: Double, towards angle: Double = .pi / 2, fragments: Bool = true) -> some View {
+        modifier(CardScatterModifier(progress: progress, targetAngle: angle, showsFragments: fragments))
     }
 }

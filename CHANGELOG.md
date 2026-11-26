@@ -25,6 +25,11 @@
 
 ### Changed
 
+- The ring opens about twice as fast. The per-card launch delay now has an 80 ms ceiling for the whole fan instead of 28 ms per card, and the cards, trail and hub use shorter, firmer springs, so a full ring settles in roughly 0.35 s instead of 0.75 s.
+- With **Reduce Motion** on, the ring appears and disappears without the fan animation, a quitting card fades instead of breaking apart, and the hub no longer pulses on selection.
+- Dragging a card redraws only that card: the ring model uses Observation, cards skip redrawing when their own inputs are unchanged, and the hub only updates when the drag crosses into or out of the quit zone. Stored colours are decoded once instead of on every redraw.
+- Keystrokes, clicks and scrolls that have nothing to do with Orbit — no trigger held, no ring open — pass through the event tap without waiting for Orbit's main thread.
+- Internal cleanup: the backdrop glow and the trail share one arc definition, the ring card and the Settings preview share one card-finish palette, the card depth tiers are one table, and the preview's glass capsules share one recipe.
 - CI and release builds run on GitHub's `xcode-27` runner with Xcode 27.2, and use `actions/checkout@v7` and `softprops/action-gh-release@v3`; the Node 20 versions no longer run on hosted runners. The metadata check no longer counts tests by hand.
 - `scripts/package_release.sh` takes its default version from the project's `MARKETING_VERSION`.
 - The README and release checklist describe the macOS 15+ **Privacy & Security → Open Anyway** flow; the Control-click **Open** shortcut no longer bypasses Gatekeeper.

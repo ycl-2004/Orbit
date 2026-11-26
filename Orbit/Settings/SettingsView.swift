@@ -486,7 +486,7 @@ private struct AppearancePreview: View {
     private var card: some View {
         ZStack {
             RoundedRectangle(cornerRadius: OrbitRadius.card(previewDimension), style: .continuous)
-                .fill(cardFill)
+                .fill(cardFinish.face())
                 .overlay {
                     RoundedRectangle(cornerRadius: OrbitRadius.card(previewDimension), style: .continuous)
                         .strokeBorder(cardBorder, lineWidth: 1)
@@ -531,17 +531,6 @@ private struct AppearancePreview: View {
     /// four size choices visibly different in a compact settings row.
     private var previewDimension: CGFloat {
         cardScale.dimension * 0.55
-    }
-
-    private var cardFill: AnyShapeStyle {
-        switch cardFinish {
-        case .white:
-            AnyShapeStyle(OrbitPalette.paper)
-        case .black:
-            AnyShapeStyle(Color.black.opacity(0.86))
-        case .system:
-            AnyShapeStyle(.regularMaterial)
-        }
     }
 
     private var cardBorder: Color {

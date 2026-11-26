@@ -6,6 +6,7 @@
 
 import Testing
 import AppKit
+import SwiftUI
 import UniformTypeIdentifiers
 @testable import Orbit
 
@@ -799,6 +800,64 @@ struct OrbitTests {
         #expect(try await eventually { model.fileDropFailed })
         #expect(model.centerMode == .failed)
         #expect(!didCancel)
+    }
+
+    /// 卡片之间的错开有总上限：满环的最后一张不会比短环晚太多才起飞。
+    @Test func deployStaggerIsCappedForAFullRing() {
+        #expect(OrbitPreferences.deployDelay(forCard: 0, of: 12) == 0)
+        #expect(OrbitPreferences.deployDelay(forCard: 0, of: 1) == 0)
+        #expect(OrbitPreferences.deployDelay(forCard: 11, of: 12) <= OrbitPreferences.deployStaggerTotal + 0.000_001)
+        // 卡片少的时候按每张的步长走，不把总时长摊开。
+        #expect(abs(OrbitPreferences.deployDelay(forCard: 2, of: 3) - OrbitPreferences.deployStaggerStep * 2) < 0.000_001)
+    }
+
+    /// 颜色按存下的字节缓存：改了颜色，下一次读到的必须是新的。
+    @Test func cachedAccentColorFollowsAChange() {
+        let store = OrbitPreferences.store
+        let previous = store.object(forKey: "accentColor")
+        defer {
+            if let previous {
+                store.set(previous, forKey: "accentColor")
+            } else {
+                store.removeObject(forKey: "accentColor")
+            }
+        }
+
+        func red(_ color: Color) -> CGFloat {
+            NSColor(color).usingColorSpace(.sRGB)?.redComponent ?? -1
+        }
+
+        OrbitPreferences.accentColor = Color(red: 1, green: 0, blue: 0)
+        #expect(abs(red(OrbitPreferences.accentColor) - 1) < 0.01)
+        #expect(abs(red(OrbitPreferences.accentColor) - 1) < 0.01)
+
+        OrbitPreferences.accentColor = Color(red: 0, green: 0, blue: 1)
+        #expect(abs(red(OrbitPreferences.accentColor)) < 0.01)
+    }
+
+    /// 卡片比较时不看回调：回调每次重画都是新建的，只要卡片自己的输入没变，
+    /// SwiftUI 就该跳过它。
+    @Test func cardsCompareByTheirInputsNotTheirCallbacks() {
+        func card(selected: Bool) -> OrbitAppCard {
+            OrbitAppCard(
+                app: listed("com.a", "Alpha"),
+                cardNumber: 1,
+                depthIndex: 0,
+                depthCount: 3,
+                angle: -.pi / 2,
+                isSelected: selected,
+                isDragging: false,
+                isVanishing: false,
+                dragOffset: .zero,
+                onSelect: {},
+                onHoverSelect: {},
+                onDragChanged: { _ in },
+                onDragEnded: {}
+            )
+        }
+
+        #expect(card(selected: false) == card(selected: false))
+        #expect(card(selected: false) != card(selected: true))
     }
 
     /// 旧键搬到新键、修饰键拼写跟着翻译；新键已经有值时不覆盖；不再读的键被清掉。

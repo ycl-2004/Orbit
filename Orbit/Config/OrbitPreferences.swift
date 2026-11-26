@@ -161,6 +161,15 @@ enum OrbitPreferences {
     static let isHostingUnitTests =
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 
+    /// 系统设置里的「减弱动态效果」。
+    ///
+    /// 打开时环直接出现、直接消失，退出的卡片淡出而不碎开，星芯不再随选中鼓动。
+    /// Views read the same setting through `\.accessibilityReduceMotion`; this
+    /// is for the places that are not views.
+    static var reducesMotion: Bool {
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    }
+
     /// 设置存放的域。测试时换成一个专用域，并在第一次用到时清空，每次都从默认值开始。
     static let storeName = isHostingUnitTests
         ? "app.orbit.local.unit-tests"
@@ -492,15 +501,29 @@ enum OrbitPreferences {
         defaults.data(forKey: "ringBackdropColor") != nil
     }
 
+    /// 解过的颜色，按存下来的那串字节记住。
+    ///
+    /// The colours are stored as keyed archives, and the ring reads them a few
+    /// dozen times per redraw — every card's rim, the hub, the trail. Decoding
+    /// each time was the bulk of that cost. Keying on the bytes rather than
+    /// invalidating on write means a value changed anywhere, including with
+    /// `defaults write`, is still picked up on the next read.
+    private static var decodedColors: [String: (data: Data, color: Color)] = [:]
+
     private static func color(forKey key: String) -> Color? {
-        guard let data = defaults.data(forKey: key),
-              let color = try? NSKeyedUnarchiver.unarchivedObject(
-                ofClass: NSColor.self,
-                from: data
-              ) else {
+        guard let data = defaults.data(forKey: key) else { return nil }
+        if let cached = decodedColors[key], cached.data == data {
+            return cached.color
+        }
+        guard let nsColor = try? NSKeyedUnarchiver.unarchivedObject(
+            ofClass: NSColor.self,
+            from: data
+        ) else {
             return nil
         }
-        return Color(nsColor: color)
+        let color = Color(nsColor: nsColor)
+        decodedColors[key] = (data, color)
+        return color
     }
 
     private static func setColor(_ newValue: Color, forKey key: String) {

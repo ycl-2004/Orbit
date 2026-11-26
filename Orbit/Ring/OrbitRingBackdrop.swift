@@ -41,14 +41,8 @@ struct OrbitRingBackdrop: View {
     let arc: ClosedRange<Double>
     let tint: Color
 
-    private var sweep: Double {
-        min(max(arc.upperBound - arc.lowerBound, 0), 2 * .pi)
-    }
-
     private var track: some Shape {
-        Circle()
-            .trim(from: 0, to: sweep / (2 * .pi))
-            .rotation(.radians(arc.lowerBound))
+        RingArc(range: arc).track
     }
 
     var body: some View {
@@ -92,21 +86,10 @@ private extension OrbitRingBackdrop {
     /// cards, or a short fan — one app, whose sweep is a few degrees while its
     /// caps are tens — would be masked away almost entirely.
     var taper: some View {
-        let capAngle = Double(thickness / 2 / radius)
-        let fade = 0.09
-        return AngularGradient(
-            stops: [
-                .init(color: .clear, location: 0),
-                .init(color: .white, location: fade),
-                .init(color: .white, location: 1 - fade),
-                .init(color: .clear, location: 1)
-            ],
-            center: .center,
-            startAngle: .radians(arc.lowerBound - capAngle),
-            endAngle: .radians(arc.upperBound + capAngle)
+        RingArc(range: arc).taper(
+            fade: 0.09,
+            overhang: Double(thickness / 2 / radius),
+            size: (radius + thickness * 2) * 2
         )
-        // 遮罩要比被遮的内容大：辉光本来就溢出自己的 frame 一大截，用同尺寸的
-        // 遮罩会把它齐根切掉。
-        .frame(width: (radius + thickness * 2) * 2, height: (radius + thickness * 2) * 2)
     }
 }

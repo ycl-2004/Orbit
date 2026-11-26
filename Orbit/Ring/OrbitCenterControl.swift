@@ -32,6 +32,8 @@ struct OrbitCenterControl: View {
     /// SwiftUI 只看见最后的 `false`，跟原来一样，于是什么都不播。
     @State private var pulseCount = 0
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         ZStack {
             // The forgiving hit target extends beyond the visible hub so a
@@ -96,6 +98,7 @@ struct OrbitCenterControl: View {
         }
         .onDrop(of: [UTType.fileURL], isTargeted: $isFileTargeted, perform: onDrop)
         .onChange(of: selectionToken) { _, _ in
+            guard !reduceMotion else { return }
             pulseCount &+= 1
         }
         .accessibilityElement(children: .combine)

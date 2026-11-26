@@ -35,6 +35,15 @@ extension TriggerMonitor {
     /// 回调里要做的事：先同步判断这个按键要不要吞，其余的放到下一拍处理，
     /// 让回调尽快返回 —— 回调慢了，系统会把整个 tap 停掉。
     fileprivate func handleTapEvent(type: CGEventType, flags: CGEventFlags, keyCode: Int64) -> Bool {
+        // 触发键没按着、环也没开：这一次按键、点击或滚轮跟 Orbit 没有关系，原样
+        // 放行，不在主线程上再排一次队。修饰键的变化和 tap 被停掉永远要处理。
+        switch type {
+        case .keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel:
+            guard triggerPressed || orbitHasOpened else { return false }
+        default:
+            break
+        }
+
         let service = self
         let shouldConsumeKeyDown = type == .keyDown && orbitIsOpen
 

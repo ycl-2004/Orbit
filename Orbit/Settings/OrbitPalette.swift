@@ -82,15 +82,31 @@ enum OrbitPalette {
     ///
     /// 手动算而不是用 `Color.mix(with:by:)`：后者要 macOS 15，而这里只是往白端
     /// 走一步，用不着把部署目标抬上去。
+    ///
+    /// 结果按 (颜色, 幅度) 记住：环每画一遍要问二三十次，而颜色和幅度一共就那几种，
+    /// 每次都走一遍色彩空间转换是白花的。
     static func lifted(_ color: Color, by amount: Double) -> Color {
+        let key = LiftKey(color: color, amount: amount)
+        if let cached = liftedColors[key] { return cached }
         guard let rgb = NSColor(color).usingColorSpace(.sRGB) else { return color }
         let step = min(max(amount, 0), 1)
-        return Color(
+        let result = Color(
             red: Double(rgb.redComponent) + (1 - Double(rgb.redComponent)) * step,
             green: Double(rgb.greenComponent) + (1 - Double(rgb.greenComponent)) * step,
             blue: Double(rgb.blueComponent) + (1 - Double(rgb.blueComponent)) * step
         )
+        // 只有改颜色时才会出现新的键；设个上限，免得在取色器里拖一圈攒下一堆。
+        if liftedColors.count > 32 { liftedColors.removeAll() }
+        liftedColors[key] = result
+        return result
     }
+
+    private struct LiftKey: Hashable {
+        let color: Color
+        let amount: Double
+    }
+
+    private static var liftedColors: [LiftKey: Color] = [:]
 
     /// 星芯最亮的那一点。
     ///

@@ -12,7 +12,7 @@ import SwiftUI
 /// selected window stays in front while its neighbours peek out on either
 /// side, matching the way a person scans a small stack of related screens.
 struct OrbitPreviewPanel: View {
-    @ObservedObject var model: OrbitRingViewModel
+    let model: OrbitRingViewModel
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -144,9 +144,7 @@ struct OrbitPreviewPanel: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 1))
-        .shadow(color: .black.opacity(0.12), radius: 8, y: 3)
+        .glassCapsule(shadow: .black.opacity(0.12), radius: 8, y: 3)
     }
 
     /// A plain tap target rather than a `Button`: the ring window takes key
@@ -311,6 +309,17 @@ struct OrbitTextHalo: ViewModifier {
     }
 }
 
+/// 浮在预览上的小胶囊（页码、窗口标题）：毛玻璃底、半透明白边、一层投影。
+///
+/// 投影各处不同：页码贴着整块面板，标题压在截图上，后者要更实一点才浮得起来。
+private extension View {
+    func glassCapsule(shadow: Color, radius: CGFloat, y: CGFloat) -> some View {
+        background(.regularMaterial, in: Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 1))
+            .shadow(color: shadow, radius: radius, y: y)
+    }
+}
+
 /// 预览那一侧的面，跟 Welcome 的卡片同一种做法。
 ///
 /// `.regularMaterial` + `.white.opacity(0.7)` 的边 + 一层很轻的黑影 —— 这三样
@@ -412,9 +421,7 @@ struct OrbitPreviewWindowCard: View {
             .truncationMode(.middle)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(.regularMaterial, in: Capsule())
-            .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 1))
-            .shadow(color: .black.opacity(0.16), radius: 6, y: 2)
+            .glassCapsule(shadow: .black.opacity(0.16), radius: 6, y: 2)
             .padding(.bottom, 10)
             .padding(.horizontal, 12)
     }

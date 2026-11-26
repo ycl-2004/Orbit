@@ -36,7 +36,7 @@ struct OrbitScrim: View {
     /// The scrim lives in its own window, so without this it would blink out at
     /// teardown while the cards were still folding back into the hub — the desk
     /// would return before the ring had left it.
-    @ObservedObject var model: OrbitRingViewModel
+    let model: OrbitRingViewModel
     /// Where the ring's hub lands, in unit coordinates of the full screen.
     let focus: UnitPoint
     /// Orbit 实际画了东西的几块地方，同样是整屏的单位坐标。
@@ -95,7 +95,7 @@ struct OrbitScrim: View {
         }
         .ignoresSafeArea()
         .opacity(isRaised ? presence : 0)
-        .animation(model.deployAnimation(.easeOut(duration: 0.16)), value: isRaised)
+        .animation(model.deployAnimation(OrbitPreferences.deployScrimFade), value: isRaised)
         .animation(.easeOut(duration: 0.18), value: presence)
         .onAppear { hasAppeared = true }
         .allowsHitTesting(false)

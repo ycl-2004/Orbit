@@ -29,67 +29,21 @@ struct OrbitAppCard: View {
 
     @Environment(\.colorScheme) private var colorScheme
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var scatterProgress = 0.0
 
     private var isDark: Bool { colorScheme == .dark }
 
     /// Three quiet tiers are enough for the eye to read the fan as a deck.
     /// Selected and dragged states intentionally override these values below.
-    private var depthTier: Int {
-        guard depthCount > 1 else { return 2 }
+    private var depth: DepthTier {
+        guard depthCount > 1 else { return .front }
         let progress = Double(depthIndex) / Double(depthCount - 1)
         switch progress {
-        case ..<0.34: return 0
-        case ..<0.67: return 1
-        default: return 2
-        }
-    }
-
-    private var depthOpacity: Double {
-        switch depthTier {
-        case 0: 0.94
-        case 1: 0.97
-        default: 1
-        }
-    }
-
-    private var depthScale: CGFloat {
-        switch depthTier {
-        case 0: 0.97
-        case 1: 0.985
-        default: 1
-        }
-    }
-
-    private var depthContactShadowOpacity: Double {
-        switch depthTier {
-        case 0: 0.06
-        case 1: 0.08
-        default: 0.10
-        }
-    }
-
-    private var depthAmbientShadowOpacity: Double {
-        switch depthTier {
-        case 0: 0.07
-        case 1: 0.10
-        default: 0.13
-        }
-    }
-
-    private var depthAmbientShadowRadius: CGFloat {
-        switch depthTier {
-        case 0: 12
-        case 1: 14
-        default: 16
-        }
-    }
-
-    private var depthAmbientShadowY: CGFloat {
-        switch depthTier {
-        case 0: 5
-        case 1: 6
-        default: 8
+        case ..<0.34: return .back
+        case ..<0.67: return .middle
+        default: return .front
         }
     }
 
@@ -179,7 +133,7 @@ struct OrbitAppCard: View {
             if let caption {
                 Text(caption)
                     .font(.system(size: isSelected ? 11 : 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(isSelected ? OrbitPalette.accent(on: colorScheme) : hintColor)
+                    .foregroundStyle(isSelected ? OrbitPalette.accent(on: colorScheme) : OrbitPreferences.cardFinish.hintColor)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .frame(maxWidth: dimension - 12)
@@ -227,18 +181,18 @@ struct OrbitAppCard: View {
         // 卡片之间糊得更平。那一档的分离交给边框。
         .shadow(color: isDark ? .clear : contactShadow, radius: isSelected ? 4 : 3, y: 2)
         .shadow(
-            color: isDragging ? OrbitPalette.burgundy.opacity(0.24) : .black.opacity(isSelected ? 0.16 : depthAmbientShadowOpacity),
-            radius: isSelected ? 22 : depthAmbientShadowRadius,
-            y: isSelected ? 11 : depthAmbientShadowY
+            color: isDragging ? OrbitPalette.burgundy.opacity(0.24) : .black.opacity(isSelected ? 0.16 : depth.ambientShadowOpacity),
+            radius: isSelected ? 22 : depth.ambientShadowRadius,
+            y: isSelected ? 11 : depth.ambientShadowY
         )
-        .scaleEffect(isSelected ? 1.1 : depthScale)
+        .scaleEffect(isSelected ? 1.1 : depth.scale)
         .rotationEffect(cardRotation)
         .offset(gravityOffset)
         .offset(dragOffset)
-        .opacity(isVanishing ? 0.35 : (isSelected || isDragging ? 1 : depthOpacity))
+        .opacity(isVanishing ? 0.35 : (isSelected || isDragging ? 1 : depth.opacity))
         // Particles are drawn in unrotated screen space, so aim them straight
         // at the ring center rather than at the card's own bottom edge.
-        .cardScatter(progress: scatterProgress, towards: angle + .pi)
+        .cardScatter(progress: scatterProgress, towards: angle + .pi, fragments: !reduceMotion)
         .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .onTapGesture(perform: onSelect)
         .gesture(
@@ -253,7 +207,12 @@ struct OrbitAppCard: View {
         }
         .onChange(of: isVanishing) { _, newValue in
             if newValue {
-                withAnimation(.easeIn(duration: OrbitPreferences.dispersionDuration)) {
+                // 减弱动态效果时只淡出，不碎开。
+                withAnimation(
+                    reduceMotion
+                        ? .easeOut(duration: 0.2)
+                        : .easeIn(duration: OrbitPreferences.dispersionDuration)
+                ) {
                     scatterProgress = 1
                 }
             } else {
@@ -269,53 +228,18 @@ struct OrbitAppCard: View {
     }
 
     private func cardBackground(cornerRadius: CGFloat) -> some View {
-        let material: AnyShapeStyle
-        switch OrbitPreferences.cardFinish {
-        case .white:
-            // 拖起来的那张变象牙，是原本就有的手感提示；静止那张也从纯白退到
-            // 近白。
-            //
-            // 纯白是没有余地的颜色。With the wash behind it pulled down, a card
-            // at 1.0 becomes the brightest thing on the screen by a margin and
-            // the fan reads as a row of light boxes rather than as paper. Half a
-            // step down still reads as a white card and leaves the hub — the one
-            // thing that is supposed to be emitting — somewhere to be brighter
-            // than.
-            material = AnyShapeStyle(isDragging ? OrbitPalette.ivory : OrbitPalette.paper)
-        case .black:
-            material = AnyShapeStyle(Color.black.opacity(0.86))
-        case .system:
-            material = AnyShapeStyle(.regularMaterial)
-        }
-        return RoundedRectangle(cornerRadius: cornerRadius, style: .continuous).fill(material)
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(OrbitPreferences.cardFinish.face(isLifted: isDragging))
     }
 
-    private var hintColor: Color {
-        switch OrbitPreferences.cardFinish {
-        case .white: .black.opacity(0.42)
-        case .black: .white.opacity(0.55)
-        case .system: .secondary
-        }
-    }
-
-    /// 打在卡片上的光有多强 —— 白卡片本来就亮，再加光只会糊掉。
-    ///
-    /// 明显比第一版轻。The light source is an ivory bead now, not a burning
-    /// core, and a white card lit hard by a pale light just loses its own edge.
     private var lightStrength: Double {
-        let base: Double = switch OrbitPreferences.cardFinish {
-        // 白面上几乎不加：它已经快到顶了，任何 `plusLighter` 都只是在推高总亮度，
-        // 换不来一点形体。The dark finish is where this actually models anything.
-        case .white: 0.03
-        case .black: 0.24
-        case .system: 0.12
-        }
+        let base = OrbitPreferences.cardFinish.lightStrength
         return isSelected ? base * 1.5 : base
     }
 
     /// 贴着卡片底边那一道接触影。
     private var contactShadow: Color {
-        .black.opacity(isSelected ? 0.16 : depthContactShadowOpacity)
+        .black.opacity(isSelected ? 0.16 : depth.contactShadowOpacity)
     }
 
     /// 边框也跟着光走：向着中心的那条边接住高光，背光的一边收在主色的发丝线上。
@@ -342,5 +266,93 @@ struct OrbitAppCard: View {
             OrbitPalette.burgundy.opacity(0.18)
         }
         return [.white.opacity(isSelected ? 0.9 : 0.75), far]
+    }
+}
+
+/// 卡片只在它自己的输入变了时才重画。
+///
+/// The callbacks are rebuilt on every pass of the ring and closures cannot be
+/// compared, so without this every card body re-ran whenever anything on the
+/// ring changed — including each pointer move of a drag that only one card
+/// takes part in. The callbacks only ever act on `app`, which compares by
+/// identity, and on its position, which `angle` and `cardNumber` stand for.
+extension OrbitAppCard: Equatable {
+    static func == (lhs: OrbitAppCard, rhs: OrbitAppCard) -> Bool {
+        lhs.app == rhs.app
+            && lhs.cardNumber == rhs.cardNumber
+            && lhs.depthIndex == rhs.depthIndex
+            && lhs.depthCount == rhs.depthCount
+            && lhs.angle == rhs.angle
+            && lhs.isSelected == rhs.isSelected
+            && lhs.isDragging == rhs.isDragging
+            && lhs.isVanishing == rhs.isVanishing
+            && lhs.dragOffset == rhs.dragOffset
+    }
+}
+
+/// 卡片按在牌堆里的远近分三档，每一档的透明度、大小和两层投影一起定。
+private struct DepthTier {
+    let opacity: Double
+    let scale: CGFloat
+    let contactShadowOpacity: Double
+    let ambientShadowOpacity: Double
+    let ambientShadowRadius: CGFloat
+    let ambientShadowY: CGFloat
+
+    static let back = DepthTier(
+        opacity: 0.94, scale: 0.97,
+        contactShadowOpacity: 0.06,
+        ambientShadowOpacity: 0.07, ambientShadowRadius: 12, ambientShadowY: 5
+    )
+    static let middle = DepthTier(
+        opacity: 0.97, scale: 0.985,
+        contactShadowOpacity: 0.08,
+        ambientShadowOpacity: 0.10, ambientShadowRadius: 14, ambientShadowY: 6
+    )
+    static let front = DepthTier(
+        opacity: 1, scale: 1,
+        contactShadowOpacity: 0.10,
+        ambientShadowOpacity: 0.13, ambientShadowRadius: 16, ambientShadowY: 8
+    )
+}
+
+/// 卡片材质的配色。环上的卡片和设置页的预览卡都从这里取，两边不会各改各的。
+extension OrbitPreferences.CardFinish {
+    /// 卡面。
+    ///
+    /// 拖起来的那张白卡片变象牙，是原本就有的手感提示；静止那张也从纯白退到近白。
+    ///
+    /// 纯白是没有余地的颜色。With the wash behind it pulled down, a card at 1.0
+    /// becomes the brightest thing on the screen by a margin and the fan reads
+    /// as a row of light boxes rather than as paper. Half a step down still
+    /// reads as a white card and leaves the hub — the one thing that is
+    /// supposed to be emitting — somewhere to be brighter than.
+    func face(isLifted: Bool = false) -> AnyShapeStyle {
+        switch self {
+        case .white: AnyShapeStyle(isLifted ? OrbitPalette.ivory : OrbitPalette.paper)
+        case .black: AnyShapeStyle(Color.black.opacity(0.86))
+        case .system: AnyShapeStyle(.regularMaterial)
+        }
+    }
+
+    /// 卡片底下那行快捷键提示的颜色。
+    var hintColor: Color {
+        switch self {
+        case .white: .black.opacity(0.42)
+        case .black: .white.opacity(0.55)
+        case .system: .secondary
+        }
+    }
+
+    /// 打在卡面上的光有多强 —— 白卡片本来就亮，再加光只会糊掉。
+    ///
+    /// 白面上几乎不加：它已经快到顶了，任何 `plusLighter` 都只是在推高总亮度，
+    /// 换不来一点形体。The dark finish is where this actually models anything.
+    var lightStrength: Double {
+        switch self {
+        case .white: 0.03
+        case .black: 0.24
+        case .system: 0.12
+        }
     }
 }

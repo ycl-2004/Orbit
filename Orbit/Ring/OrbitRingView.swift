@@ -9,7 +9,7 @@ import AppKit
 import SwiftUI
 
 struct OrbitRingView: View {
-    @ObservedObject var model: OrbitRingViewModel
+    let model: OrbitRingViewModel
 
     @State private var hasAppeared = false
 
@@ -36,7 +36,9 @@ struct OrbitRingView: View {
     /// card still travelling after the window is due to go, and a cancel has to
     /// feel immediate.
     private func deployDelay(for index: Int) -> Double {
-        model.opensInstantly || model.isCollapsing ? 0 : Double(index) * 0.028
+        model.opensInstantly || model.isCollapsing
+            ? 0
+            : OrbitPreferences.deployDelay(forCard: index, of: model.apps.count)
     }
 
     /// Two equal halves rather than an HStack sized by its contents. The ring
@@ -54,7 +56,10 @@ struct OrbitRingView: View {
                     .frame(width: model.columnWidth)
                     .opacity(deployProgress)
                     .animation(
-                        model.deployAnimation(.easeOut(duration: 0.2).delay(model.isCollapsing ? 0 : 0.06)),
+                        model.deployAnimation(
+                            OrbitPreferences.deployPanelFade
+                                .delay(model.isCollapsing ? 0 : OrbitPreferences.deployPanelDelay)
+                        ),
                         value: deployProgress
                     )
             }
@@ -77,7 +82,7 @@ struct OrbitRingView: View {
                 .position(hub)
                 .opacity(deployProgress)
                 .animation(
-                    model.deployAnimation(.easeOut(duration: 0.28)),
+                    model.deployAnimation(OrbitPreferences.deployBackdropFade),
                     value: deployProgress
                 )
                 .zIndex(-2)
@@ -100,7 +105,7 @@ struct OrbitRingView: View {
                 )
                 .position(hub)
                 .animation(
-                    model.deployAnimation(.spring(response: 0.4, dampingFraction: 0.82)),
+                    model.deployAnimation(OrbitPreferences.deployTrailSpring),
                     value: deployProgress
                 )
                 .zIndex(-1)
@@ -137,13 +142,13 @@ struct OrbitRingView: View {
                     },
                     onDragEnded: { model.finishAppDrag(app) }
                 )
+                .equatable()
                 // 卡片是从中心甩出去的，收的时候原路收回去。
                 .position(deployed(basePosition, from: hub))
                 .scaleEffect(0.55 + 0.45 * deployProgress)
                 .opacity(deployProgress)
                 .animation(
-                    model.deployAnimation(.spring(response: 0.42, dampingFraction: 0.8)
-                            .delay(deployDelay(for: index))),
+                    model.deployAnimation(OrbitPreferences.deployCardSpring.delay(deployDelay(for: index))),
                     value: deployProgress
                 )
                 // A lifted card must never slide underneath its neighbours.
@@ -166,7 +171,7 @@ struct OrbitRingView: View {
             .scaleEffect(0.7 + 0.3 * deployProgress)
             .opacity(deployProgress)
             .animation(
-                model.deployAnimation(.spring(response: 0.3, dampingFraction: 0.85)),
+                model.deployAnimation(OrbitPreferences.deployHubSpring),
                 value: deployProgress
             )
             .zIndex(3)

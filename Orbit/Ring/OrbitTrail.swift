@@ -41,14 +41,8 @@ struct OrbitTrail: View {
 
     @Environment(\.colorScheme) private var colorScheme
 
-    private var sweep: Double {
-        min(max(arc.upperBound - arc.lowerBound, 0), 2 * .pi)
-    }
-
     private var track: some Shape {
-        Circle()
-            .trim(from: 0, to: sweep / (2 * .pi))
-            .rotation(.radians(arc.lowerBound))
+        RingArc(range: arc).track
     }
 
     /// 暗底上略微补一点，但始终让卡片和选中落点先被看见。
@@ -106,17 +100,6 @@ struct OrbitTrail: View {
     }
 
     private var taper: some View {
-        AngularGradient(
-            stops: [
-                .init(color: .clear, location: 0),
-                .init(color: .white, location: 0.14),
-                .init(color: .white, location: 0.86),
-                .init(color: .clear, location: 1)
-            ],
-            center: .center,
-            startAngle: .radians(arc.lowerBound),
-            endAngle: .radians(arc.upperBound)
-        )
-        .frame(width: radius * 2 + 8, height: radius * 2 + 8)
+        RingArc(range: arc).taper(fade: 0.14, size: radius * 2 + 8)
     }
 }
