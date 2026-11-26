@@ -1,0 +1,2 @@
+/* Shown in the macOS Automation prompt the first time Orbit falls back to Apple Events. */
+"NSAppleEventsUsageDescription" = "Orbit uzas Apple Events por ŝanĝi ĝuste al la fenestro, kiun vi elektas, en aplikaĵoj kiel Chrome, kies fenestrojn la alirebleco ne vidas.";

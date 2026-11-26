@@ -170,15 +170,22 @@ enum OrbitPreferences {
         NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     }
 
+    /// 被 UI 测试拉起来的时候为真：UI 测试启动 Orbit 时带上 `-OrbitUITesting`。
+    ///
+    /// The app boots for real — that is what the UI test checks — but raises no
+    /// Accessibility prompt and no welcome window, and keeps its settings out of
+    /// the developer's own.
+    static let isUITesting = ProcessInfo.processInfo.arguments.contains("-OrbitUITesting")
+
     /// 设置存放的域。测试时换成一个专用域，并在第一次用到时清空，每次都从默认值开始。
-    static let storeName = isHostingUnitTests
-        ? "app.orbit.local.unit-tests"
+    static let storeName = isHostingUnitTests || isUITesting
+        ? "app.orbit.local.tests"
         : (Bundle.main.bundleIdentifier ?? "app.orbit.local")
 
     /// Internal so the tests can pin and inspect raw values in the same store
     /// the app reads.
     static let store: UserDefaults = {
-        guard isHostingUnitTests, let suite = UserDefaults(suiteName: storeName) else {
+        guard isHostingUnitTests || isUITesting, let suite = UserDefaults(suiteName: storeName) else {
             return .standard
         }
         suite.removePersistentDomain(forName: storeName)

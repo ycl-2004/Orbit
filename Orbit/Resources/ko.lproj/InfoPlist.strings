@@ -1,0 +1,2 @@
+/* Shown in the macOS Automation prompt the first time Orbit falls back to Apple Events. */
+"NSAppleEventsUsageDescription" = "Orbit은 Apple Events를 사용해, Chrome처럼 손쉬운 사용에서 윈도우가 보이지 않는 앱에서도 선택한 윈도우로 정확히 전환합니다.";

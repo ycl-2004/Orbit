@@ -19,24 +19,36 @@ final class OrbitUITests: XCTestCase {
     @MainActor
     func testStaysAliveAsAMenuBarAccessory() throws {
         let app = XCUIApplication()
+        // 照常启动，但不弹授权框和欢迎页，设置也写进测试专用的域。
+        app.launchArguments += ["-OrbitUITesting"]
         app.launch()
 
-        // Accessory 应用可能停在前台也可能停在后台，取决于欢迎窗口是否弹出，
-        // 所以这里只断言"没有退出"，不断言具体是哪一种运行状态。
-        XCTAssertTrue(
-            app.wait(for: .runningForeground, timeout: 10) || app.state == .runningBackground,
-            "Orbit should still be running after launch, but its state was \(app.state.rawValue)."
+        // 前台还是后台都算启动成功：accessory 应用通常停在后台。等到其中之一为止，
+        // 而不是死等某一种状态把超时耗满。
+        let running = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in
+                app.state == .runningForeground || app.state == .runningBackground
+            },
+            object: nil
+        )
+        XCTAssertEqual(
+            XCTWaiter().wait(for: [running], timeout: 10),
+            .completed,
+            "Orbit should be running after launch, but its state was \(app.state.rawValue)."
         )
 
-        // 给事件监听和菜单栏图标一点安置时间，再确认它没有随后崩掉。
-        Thread.sleep(forTimeInterval: 1)
-        XCTAssertNotEqual(app.state, .notRunning, "Orbit exited shortly after launching.")
-    }
+        // 事件监听和菜单栏图标装好之后，它不能随后崩掉。
+        let exited = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in app.state == .notRunning },
+            object: nil
+        )
+        exited.isInverted = true
+        XCTAssertEqual(
+            XCTWaiter().wait(for: [exited], timeout: 2),
+            .completed,
+            "Orbit exited shortly after launching."
+        )
 
-    @MainActor
-    func testLaunchPerformance() throws {
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+        app.terminate()
     }
 }

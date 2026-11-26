@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### License
+
+- Orbit is now free and open-source software under GPL-3.0. Anyone may use, modify and redistribute it, provided the source of what they distribute stays under the same license. The Orbit name and logo are not part of the license. See `docs/decisions/ADR-009-gpl-3-licensing.md`.
+
 ### Fixed
 
 - Pressing Escape and then releasing the trigger during the 0.2-second collapse no longer switches to the app that was just cancelled. Enter, a hub click and arrow keys are ignored while the ring collapses as well.
@@ -21,7 +25,9 @@
 - Two running instances of the same app produce one card instead of two cards with the same identity.
 - A pointer at the very top edge of a display now opens the ring on that display.
 - Orbit no longer shows a Dock icon for a moment at launch.
-- Unit tests run against their own settings store and skip the app's launch work, so a test run no longer reads or changes the developer's own Orbit settings.
+- VoiceOver now reads the preview-size and hold-time sliders by name and value instead of as unnamed sliders.
+- The macOS Automation prompt explains Orbit's Apple Events fallback in all 11 bundled languages instead of English only.
+- Unit tests run against their own settings store and skip the app's launch work, so a test run no longer reads or changes the developer's own Orbit settings. The UI test launches Orbit in a test mode with the same isolated settings and without the Accessibility prompt or welcome window, waits for the app's state instead of a fixed ten seconds, and the launch-performance test, which had no baseline and could not fail, is removed.
 
 ### Changed
 

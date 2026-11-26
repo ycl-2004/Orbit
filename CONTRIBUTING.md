@@ -5,10 +5,12 @@ most valuable contributions are usually precise bug reports and focused fixes.
 
 ## Before you start
 
-**Open an issue first for anything beyond a small fix.** Orbit is source-available
-rather than permissively open source — see [LICENSE](LICENSE) — so a large PR
-that was never discussed may not be mergeable, and neither of us wants that.
+**Open an issue first for anything beyond a small fix.** A large PR that was
+never discussed may not fit where Orbit is going, and neither of us wants that.
 Bug fixes, documentation, and localization corrections are always welcome.
+
+Orbit is licensed under [GPL-3.0](LICENSE). Read
+[License of contributions](#license-of-contributions) before you send code.
 
 Good bug reports include:
 
@@ -124,9 +126,9 @@ commercial terms.
 This is what allows Orbit to be licensed commercially later without having to
 track down every past contributor.
 
-Your contribution is distributed to users under [LICENSE](LICENSE), and you keep
-the copyright in what you wrote. Submitting a contribution does not grant you
-permission to create or distribute a rebranded or commercial Orbit build.
+Your contribution is distributed to users under GPL-3.0, the project's
+[LICENSE](LICENSE), and you keep the copyright in what you wrote. The license
+covers the code, not the Orbit name or logo.
 
 If you are not comfortable granting that license, say so in the issue before you
 write the code — a bug report we fix ourselves is worth more than a PR neither

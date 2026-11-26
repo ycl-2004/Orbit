@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-009](ADR-009-gpl-3-licensing.md) on 2026-11-26. Kept for the reasoning behind the contributor license grant, which ADR-009 retains.
 
 ## Date
 

@@ -1,0 +1,2 @@
+/* Shown in the macOS Automation prompt the first time Orbit falls back to Apple Events. */
+"NSAppleEventsUsageDescription" = "Orbit 通过 Apple 事件，在 Chrome 这类辅助功能看不到窗口的应用里，切换到你选中的那一个窗口。";

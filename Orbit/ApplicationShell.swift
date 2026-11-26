@@ -46,6 +46,9 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
         AppActivationHistory.shared.start()
         observeSummonRequests()
         resumeEventTapIfPermitted()
+        // UI 测试照常启动，但不弹系统授权框和欢迎页 —— 那两个窗口会挡住测试，也会打断
+        // 正在用这台机器的人。
+        guard !OrbitPreferences.isUITesting else { return }
         requestAccessibilityIfNeeded()
         presentWelcomeIfNeeded()
     }

@@ -165,6 +165,13 @@ private struct GeneralSettingsPane: View {
 private struct WindowPreviewSettingsSection: View {
     @ObservedObject var model: SettingsModel
 
+    private var previewScaleText: String {
+        String(
+            format: NSLocalizedString("prefs.preview.sizeValue", comment: "Percent"),
+            Int((model.previewScale * 100).rounded())
+        )
+    }
+
     var body: some View {
         Section {
             Toggle("prefs.preview.enabled", isOn: $model.windowPreviewEnabled)
@@ -172,13 +179,16 @@ private struct WindowPreviewSettingsSection: View {
 
             HStack(spacing: 12) {
                 Text("prefs.preview.size")
+                    .accessibilityHidden(true)
                 Slider(value: $model.previewScale, in: OrbitPreferences.previewScaleRange, step: 0.05)
-                Text(String(
-                    format: NSLocalizedString("prefs.preview.sizeValue", comment: "Percent"),
-                    Int((model.previewScale * 100).rounded())
-                ))
+                    // 标签和数值是旁边两段独立的文字；不并进滑块，VoiceOver 只会念出
+                    // 一个没有名字的「滑块」。
+                    .accessibilityLabel(Text("prefs.preview.size"))
+                    .accessibilityValue(Text(previewScaleText))
+                Text(previewScaleText)
                 .frame(width: 58, alignment: .trailing)
                 .monospacedDigit()
+                .accessibilityHidden(true)
             }
             // 预览不显示时，它有多大不是一个还活着的偏好。
             .disabled(!model.windowPreviewEnabled)
@@ -237,6 +247,13 @@ private struct AccessibilityStatusRow: View {
 private struct ShortcutSettingsPane: View {
     @ObservedObject var model: SettingsModel
 
+    private var holdTimeText: String {
+        String(
+            format: NSLocalizedString("prefs.trigger.holdTimeValue", comment: "Milliseconds"),
+            Int(model.summonHoldDuration)
+        )
+    }
+
     var body: some View {
         Form {
             Section {
@@ -258,13 +275,14 @@ private struct ShortcutSettingsPane: View {
 
                 HStack(spacing: 12) {
                     Text("prefs.trigger.holdTime")
+                        .accessibilityHidden(true)
                     Slider(value: $model.summonHoldDuration, in: OrbitPreferences.summonHoldRange, step: 10)
-                    Text(String(
-                        format: NSLocalizedString("prefs.trigger.holdTimeValue", comment: "Milliseconds"),
-                        Int(model.summonHoldDuration)
-                    ))
+                        .accessibilityLabel(Text("prefs.trigger.holdTime"))
+                        .accessibilityValue(Text(holdTimeText))
+                    Text(holdTimeText)
                     .frame(width: 58, alignment: .trailing)
                     .monospacedDigit()
+                    .accessibilityHidden(true)
                 }
 
                 Toggle("prefs.trigger.letterKeys", isOn: $model.letterShortcutsEnabled)

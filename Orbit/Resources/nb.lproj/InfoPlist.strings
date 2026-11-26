@@ -1,0 +1,2 @@
+/* Shown in the macOS Automation prompt the first time Orbit falls back to Apple Events. */
+"NSAppleEventsUsageDescription" = "Orbit bruker Apple Events til å bytte til nøyaktig det vinduet du velger, i apper som Chrome der vinduene ikke er synlige for Tilgjengelighet.";

@@ -14,7 +14,7 @@
   <a href="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml"><img src="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/macOS-14.0%2B-111111?logo=apple&logoColor=white" alt="macOS 14.0 or later">
   <img src="https://img.shields.io/badge/Swift-SwiftUI%20%C2%B7%20AppKit-F05138?logo=swift&logoColor=white" alt="Built with SwiftUI and AppKit">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-source--available%20%7C%20personal%20use-111111" alt="Source-available for personal use"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-111111" alt="GPL-3.0 license"></a>
 </p>
 
 <p align="center">
@@ -45,11 +45,10 @@ cycling, no window hunting. Orbit is a menu bar app built in SwiftUI and AppKit,
 with no third-party dependencies and no network access — everything stays
 on-device.
 
-> **Source-available, not open source.** Orbit's source is public for transparency,
-> review, issue discussion, and personal reference. The official compiled app is
-> free for personal use — including on your work machine. Deploying it across an
-> organization, copying or modifying the source, redistributing, rebranding, or
-> selling requires written permission. See [LICENSE](LICENSE).
+> **Free and open source.** Orbit is licensed under the [GNU General Public
+> License v3.0](LICENSE): use it anywhere, read and change the source, and share
+> your changes, as long as what you distribute stays under the same license. The
+> Orbit name and logo are not part of that grant — see [License](#license).
 
 ## Quick start
 
@@ -156,9 +155,8 @@ Orbit version are the most useful thing you can send.
 
 - Read **[CONTRIBUTING.md](CONTRIBUTING.md)** for the build, test, and PR conventions.
 - New here? Start with a **[good first issue](https://github.com/ycl-2004/Orbit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)**.
-- Please open an issue before a large change. Orbit is source-available rather than
-  permissively open source, so proposed code contributions need maintainer review
-  before they can be accepted — see [LICENSE](LICENSE).
+- Please open an issue before a large change, so the approach is agreed before you
+  spend time on it. Contributions are accepted under the project's GPL-3.0 license.
 
 ## FAQ
 
@@ -316,32 +314,38 @@ gesture-first workflow. This repository provides:
 
 ## Credits
 
-Orbit's core idea — hold a modifier and your running apps appear in a ring
-around the cursor — was inspired by
-[yuzeguitarist/Orbit](https://github.com/yuzeguitarist/Orbit) by Yuze Pan
-(潘禹泽). I came across that project in 2026 and liked the concept enough to
-want a version shaped around my own habits.
+Orbit's core idea — hold a modifier and your running apps fan out in a ring
+around the cursor — was inspired by [yuzeguitarist/Orbit](https://github.com/yuzeguitarist/Orbit)
+by Yuze Pan (潘禹泽).
 
-I asked the author before starting. They were clear that their code is not open
-for reuse, and equally clear that they welcomed an independent take on the idea.
-This project was built on exactly those terms: a separate implementation written
-from scratch, sharing the concept and not the source. Thanks to Yuze Pan for the
-idea and for the generous answer.
+Before writing any code, I asked the author (August 2026) whether I could modify
+their project or build something similar from its idea. Their source isn't fully
+open, so modifying it wasn't an option, but they were happy for me to make a
+similar app of my own. This repository is that app: written from scratch,
+sharing the concept and none of the source. It is not affiliated with or
+endorsed by the original project. Thank you, Yuze Pan, for the idea and the
+generous answer.
 
-## License and commercial use
+## License
 
-Orbit uses a source-available license rather than an OSI-approved open-source
-license:
+Copyright (C) 2026 ycl-2004
 
-- The official compiled app is free for **personal use**, on any machine you personally use — a machine your employer gave you included. Using Orbit while doing your job is fine.
-- **Organizational deployment** — installing or managing Orbit across a company's or institution's machines — needs a separate written license, whether or not that organization is for-profit.
-- The source is available for viewing and reference.
-- Copying, modifying, redistributing, sublicensing, selling, rebranding, or distributing a derivative work of the source requires written permission.
-- The Orbit name, logo, and Orbit's own screenshots and artwork are not granted for rebranded or competing distributions.
+Orbit is free software: you can redistribute it and/or modify it under the terms
+of version 3 of the GNU General Public License as published by the Free Software
+Foundation. It is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See [LICENSE](LICENSE) for the full text.
 
-See the complete terms in [LICENSE](LICENSE). For commercial licensing or
-redistribution requests, contact the copyright holder through the GitHub profile
-associated with this repository.
+In short:
+
+- Use Orbit anywhere, personally or at work, for free.
+- Read, modify and build the source.
+- If you distribute Orbit or a modified version of it, you must make its source
+  available under GPL-3.0 as well.
+
+**Name and logo.** The license covers the code, not the Orbit name or logo. A
+modified build you distribute should carry its own name and icon, so people can
+tell it apart from the official release.
 
 ## Links
 

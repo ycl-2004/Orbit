@@ -14,7 +14,7 @@
   <a href="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml"><img src="https://github.com/ycl-2004/Orbit/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/macOS-14.0%2B-111111?logo=apple&logoColor=white" alt="需要 macOS 14.0 或更高版本">
   <img src="https://img.shields.io/badge/Swift-SwiftUI%20%C2%B7%20AppKit-F05138?logo=swift&logoColor=white" alt="使用 SwiftUI 與 AppKit 建構">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-source--available%20%7C%20personal%20use-111111" alt="可檢視原始碼，個人使用"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-111111" alt="GPL-3.0 授權"></a>
 </p>
 
 <p align="center">
@@ -43,10 +43,9 @@
 不用掃列表，不用連按 Command-Tab，也不用滿屏找視窗。Orbit 是一個用 SwiftUI 和
 AppKit 寫的選單欄應用，沒有任何第三方依賴，也不聯網——所有處理都在本機完成。
 
-> **可檢視原始碼，但不是開放原始碼專案。** Orbit 公開原始碼是為了方便了解實現、反饋問題、
-> 討論產品和個人參考。官方編譯版供個人免費使用——包括在公司配發的電腦上使用。在組織內
-> 批次部署，以及複製或修改原始碼、再分發、重新命名、銷售，都需要獲得書面許可。
-> 詳見 [LICENSE](LICENSE)。
+> **自由的開放原始碼軟體。** Orbit 採用 [GNU 通用公共授權條款第 3 版](LICENSE)：可以在任何
+> 地方使用，可以閱讀和修改原始碼，也可以分享你的修改，前提是你分發出去的版本同樣採用這份
+> 授權。Orbit 的名稱和 Logo 不在授權範圍內，詳見[授權](#授權)。
 
 ## 快速開始
 
@@ -150,8 +149,7 @@ README 與倉庫內的產品截圖保持同步。
 
 - 建構、測試與 PR 規範見 **[CONTRIBUTING.md](CONTRIBUTING.md)**。
 - 第一次參與？可以從 **[good first issue](https://github.com/ycl-2004/Orbit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)** 開始。
-- 較大的改動請先開 issue 討論。Orbit 屬於可檢視原始碼專案，而不是採用寬鬆開源許可的專案；
-  程式碼貢獻需要先經過維護者確認，詳見 [LICENSE](LICENSE)。
+- 較大的改動請先開 issue 討論，先對齊做法再動手。貢獻的程式碼與本專案一樣採用 GPL-3.0 授權。
 
 ## 常見問題
 
@@ -296,26 +294,29 @@ Orbit 是一個獨立的原生 macOS 專案，圍繞環形、手勢優先的工�
 ## 致謝
 
 Orbit 的核心構想 —— 按住修飾鍵，正在執行的應用便圍著遊標排成一圈 —— 受
-[yuzeguitarist/Orbit](https://github.com/yuzeguitarist/Orbit)（作者 Yuze Pan，
-潘禹澤）啟發。我在 2026 年看到那個專案，很喜歡它的設計理念，想做一個更貼合
-自己使用習慣的版本。
+[yuzeguitarist/Orbit](https://github.com/yuzeguitarist/Orbit)（作者 Yuze Pan，潘禹澤）啟發。
 
-動手之前我聯絡了原作者。對方明確表示程式碼並不完全開源、不可直接修改使用，同時
-也明確歡迎我獨立開發一個類似的作品。本專案正是在這個前提下從零寫成的：共享的
-是理念，不是原始碼。感謝 Yuze Pan 的創意，也感謝他慷慨的答覆。
+動手寫程式之前（2026 年 8 月），我詢問了原作者能否修改其專案，或參考其理念開發
+類似作品。對方表示原始碼並未完全開源，因此不能修改原專案，但很歡迎我開發一個
+類似的作品。本倉庫就是這個作品：從零寫成，共享的是理念，沒有使用任何原始碼。
+本專案與原專案沒有從屬關係，也未獲其背書。感謝 Yuze Pan 的創意與慷慨答覆。
 
-## 許可證與商業使用
+## 授權
 
-Orbit 採用可檢視原始碼的授權方式，而不是 OSI 認可的開放原始碼許可證：
+Copyright (C) 2026 ycl-2004
 
-- 官方編譯版供**個人使用**，可安裝在你個人使用的任意機器上，包括公司配發的電腦。上班時用 Orbit 完全沒問題。
-- **組織內部署**——在公司或機構的機器上批次安裝、統一管理 Orbit——需要單獨的書面授權，無論該組織是否以營利為目的。
-- 原始碼可用於檢視和參考。
-- 複製、修改、再分發、再許可、銷售、重新命名，或分發原始碼的衍生作品，都需要獲得書面許可。
-- Orbit 的名稱、Logo，以及 Orbit 自有的截圖和美術素材，不授權用於重新包裝或競爭性分發。
+Orbit 是自由軟體：你可以依照自由軟體基金會發布的 GNU 通用公共授權條款第 3 版，
+再分發和修改它。發布 Orbit 是希望它有用，但不提供任何擔保，也不擔保適銷性或
+特定用途的適用性。完整條款見 [LICENSE](LICENSE)。
 
-完整條款請見 [LICENSE](LICENSE)。如需商業授權或再分發授權，請通過本倉庫關聯的
-GitHub 個人主頁聯絡版權持有人。
+簡單來說：
+
+- 個人或工作中都可以免費使用 Orbit。
+- 可以閱讀、修改和自行建構原始碼。
+- 分發 Orbit 或其修改版時，必須同樣以 GPL-3.0 提供原始碼。
+
+**名稱與 Logo。** 授權涵蓋的是程式碼，不包括 Orbit 的名稱和 Logo。你分發的修改版
+應使用自己的名稱和圖示，讓人能和官方版本區分開。
 
 ## 連結
 
