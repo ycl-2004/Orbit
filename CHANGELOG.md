@@ -1,6 +1,20 @@
 # Orbit release notes
 
-## Unreleased
+## 1.8.0 — 2026-11-26
+
+### Highlights
+
+- Orbit is now free and open-source software under GPL-3.0.
+- The ring opens about twice as fast, and follows the system **Reduce Motion** setting.
+- Gestures are safer: Escape followed by a quick release no longer switches apps, letting go of the trigger mid-drag no longer leaves the ring stuck on screen, and a card that is quitting can no longer be reopened by accident.
+- Exact-window switching is more reliable: identical windows are no longer confused, native tabs in Ghostty, Terminal and Finder always appear in the preview, and the Apple Events fallback for Chrome works in release builds.
+- Orbit asks for Accessibility on first launch and starts working as soon as it is granted, without a relaunch.
+
+### Upgrading
+
+- This build is ad-hoc signed, so macOS treats it as a new app. After replacing `Orbit.app`, remove the old Orbit entries under **System Settings → Privacy & Security → Accessibility** and **Screen Recording**, then grant them again; restart Orbit after granting Screen Recording.
+- On macOS 15 and later, the first launch is allowed from **System Settings → Privacy & Security → Open Anyway**.
+- Your settings carry over. Settings that Orbit no longer reads are cleaned up on first launch.
 
 ### License
 
@@ -28,7 +42,6 @@
 - Orbit no longer shows a Dock icon for a moment at launch.
 - VoiceOver now reads the preview-size and hold-time sliders by name and value instead of as unnamed sliders.
 - The macOS Automation prompt explains Orbit's Apple Events fallback in all 11 bundled languages instead of English only.
-- Unit tests run against their own settings store and skip the app's launch work, so a test run no longer reads or changes the developer's own Orbit settings. The UI test launches Orbit in a test mode with the same isolated settings and without the Accessibility prompt or welcome window, waits for the app's state instead of a fixed ten seconds, and the launch-performance test, which had no baseline and could not fail, is removed.
 
 ### Changed
 
@@ -36,6 +49,10 @@
 - With **Reduce Motion** on, the ring appears and disappears without the fan animation, a quitting card fades instead of breaking apart, and the hub no longer pulses on selection.
 - Dragging a card redraws only that card: the ring model uses Observation, cards skip redrawing when their own inputs are unchanged, and the hub only updates when the drag crosses into or out of the quit zone. Stored colours are decoded once instead of on every redraw.
 - Keystrokes, clicks and scrolls that have nothing to do with Orbit — no trigger held, no ring open — pass through the event tap without waiting for Orbit's main thread.
+
+### Development
+
+- Unit tests run against their own settings store and skip the app's launch work, so a test run no longer reads or changes the developer's own Orbit settings. The UI test launches Orbit in a test mode with the same isolated settings and without the Accessibility prompt or welcome window, waits for the app's state instead of a fixed ten seconds, and the launch-performance test, which had no baseline and could not fail, is removed.
 - Internal cleanup: the backdrop glow and the trail share one arc definition, the ring card and the Settings preview share one card-finish palette, the card depth tiers are one table, and the preview's glass capsules share one recipe.
 - CI and release builds run on GitHub's `xcode-27` runner with Xcode 27.2, and use `actions/checkout@v7` and `softprops/action-gh-release@v3`; the Node 20 versions no longer run on hosted runners. The metadata check no longer counts tests by hand.
 - `scripts/package_release.sh` takes its default version from the project's `MARKETING_VERSION`.
@@ -44,7 +61,8 @@
 
 ### Validation
 
-- The `OrbitTests` unit target passes with 0 failures, and a universal ad-hoc Release build carries the Apple Events entitlement and no `get-task-allow`.
+- The `OrbitTests` unit target (74 tests) passes with 0 failures, locally and in CI on the `xcode-27` runner.
+- The release artifact is verified as a signed Universal 2 archive before publishing.
 
 ## 1.7.0 — 2026-08-24
 

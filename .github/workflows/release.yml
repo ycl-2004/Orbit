@@ -97,9 +97,20 @@ jobs:
       - name: Verify final release artifact
         run: bash scripts/verify_release.sh dist/Orbit-macOS.zip
 
+      - name: Extract release notes from CHANGELOG
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v v="$VERSION" '$0 ~ "^## " v " " {f=1; next} f && /^## / {exit} f' CHANGELOG.md \
+            > "$RUNNER_TEMP/release-notes.md"
+          [[ -s "$RUNNER_TEMP/release-notes.md" ]] || {
+            echo "CHANGELOG.md has no section for $VERSION" >&2
+            exit 1
+          }
+
       - name: Upload GitHub Release assets
         uses: softprops/action-gh-release@v3
         with:
+          body_path: ${{ runner.temp }}/release-notes.md
           generate_release_notes: true
           files: |
             dist/Orbit-macOS.zip

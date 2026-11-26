@@ -15,7 +15,7 @@ bash scripts/ci_validate.sh
 Build the release archive, then verify its architecture and signature:
 
 ```bash
-bash scripts/package_release.sh 1.7.0
+bash scripts/package_release.sh
 bash scripts/verify_release.sh dist/Orbit-macOS.zip
 ```
 
@@ -26,7 +26,9 @@ architecture-specific filename is not appropriate for this artifact.
 
 GitHub Actions runs the metadata check, a Debug Universal 2 build, and the
 `OrbitTests` unit tests for every push and pull request. A version tag must match the
-Xcode `MARKETING_VERSION`, for example `v1.7.0`.
+Xcode `MARKETING_VERSION`, for example `v1.8.0`. The release page's notes are
+the matching `## <version> —` section of `CHANGELOG.md`, so write that section
+before tagging; the release job fails if it is missing.
 
 Tags matching `v*` use `.github/workflows/release.yml`. With the repository
 secrets `MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD`,
