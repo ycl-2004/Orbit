@@ -10,6 +10,12 @@
 #
 # Usage: scripts/install.sh [Debug|Release]     (default: Release)
 #
+# Set ORBIT_SIGNING_IDENTITY to re-sign the installed app with a fixed
+# identity, for example a free "Apple Development: …" certificate from Xcode.
+# The permissions macOS grants are tied to the signature, so with a fixed
+# identity they survive every rebuild; with the default ad-hoc signature they
+# have to be granted again after each one.
+#
 set -euo pipefail
 
 CONFIGURATION="${1:-Release}"
@@ -34,6 +40,12 @@ sleep 1
 rm -rf "$INSTALLED_APP"
 cp -R "$BUILT_APP" "$INSTALLED_APP"
 xattr -dr com.apple.quarantine "$INSTALLED_APP" 2>/dev/null || true
+if [[ -n "${ORBIT_SIGNING_IDENTITY:-}" ]]; then
+    echo "==> Re-signing with a fixed identity"
+    codesign --force --options runtime \
+        --entitlements "$PROJECT_DIR/Orbit/Orbit.entitlements" \
+        --sign "$ORBIT_SIGNING_IDENTITY" "$INSTALLED_APP"
+fi
 codesign -v "$INSTALLED_APP"
 
 # Unregister the build product before deleting it, so it does not linger in
@@ -49,6 +61,8 @@ pgrep -x Orbit >/dev/null && echo "==> Running (PID $(pgrep -x Orbit))" || echo 
 echo
 echo "Only copy on disk:"
 find /Applications "$BUILD_DIR" -maxdepth 4 -name "Orbit.app" 2>/dev/null
+[[ -n "${ORBIT_SIGNING_IDENTITY:-}" ]] && exit 0
+
 echo
 echo "The bundle is ad-hoc signed, so its code hash changes on every build and"
 echo "macOS treats it as a new app. If the ring does not open, re-grant:"

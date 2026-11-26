@@ -219,6 +219,41 @@ struct OrbitTests {
         }
     }
 
+    /// 原生标签页（同一组标签的几扇窗位置大小完全一样）不算空白。
+    ///
+    /// 实测：Ghostty 里一个只有一行提示符的标签页亮度标准差是 11.3，低于 12，
+    /// 以前会被当成空壳从预览里丢掉，哪一页被丢取决于它屏幕上恰好有多少字。
+    @Test func nativeTabsAreNeverDroppedAsBlank() {
+        let tabFrame = CGRect(x: 0, y: 34, width: 1133, height: 863)
+        // 5883 是你正看着的那一页（会被藏起来），另外两页在后台。
+        let siblings = WindowPreviewService.tabSiblings(among: [
+            (id: 5883, frame: tabFrame),
+            (id: 8552, frame: tabFrame),
+            (id: 9337, frame: tabFrame),
+            (id: 4000, frame: CGRect(x: 200, y: 200, width: 280, height: 380))
+        ])
+        #expect(siblings == [5883, 8552, 9337])
+
+        func tab(_ id: CGWindowID, variance: Double) -> WindowPreview {
+            WindowPreview(
+                id: id, title: "~/Desktop/temp", frame: tabFrame, image: nil,
+                aspectRatio: 1133.0 / 863.0, scale: 2, contentVariance: variance, isStale: false
+            )
+        }
+        let busy = tab(8552, variance: 46.6)
+        let quiet = tab(9337, variance: 11.3)
+
+        #expect(
+            WindowPreviewService.droppingBlankWindows([busy, quiet], hidCurrentWindow: true, keeping: siblings)
+                .map(\.id) == [8552, 9337]
+        )
+        // 没有标签关系的同一组数值，照旧过滤。
+        #expect(
+            WindowPreviewService.droppingBlankWindows([busy, quiet], hidCurrentWindow: true)
+                .map(\.id) == [8552]
+        )
+    }
+
     /// 阈值必须落在实测出来的那道空档里。
     ///
     /// 8.5 是微信空壳窗的真实读数，25 是这台机器上内容最少的一扇真窗口。把阈值

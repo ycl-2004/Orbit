@@ -14,6 +14,7 @@
 - Quitting an app from the ring keeps the ring's layout and the dimmed backdrop aligned; the remaining cards close up the gap with an animation instead of snapping, and the dispersing fragments fly toward the hub from the card's current position.
 - A window that Accessibility identifies by number is never swapped for a different window that merely shares its title and size, so two identical Terminal windows no longer switch to the wrong one. The Accessibility window search also gives up after half a second on an app that stalls.
 - Releasing before thumbnails finish now avoids windows already measured as blank for every app, not only the one in front.
+- Native tabs — Ghostty, Terminal, Finder and other apps whose tabs are separate windows sharing one frame — are never treated as blank windows. A quiet terminal tab measured just under the blank threshold, so tabs vanished from the preview carousel, and from the release target, depending on how much text happened to be on them.
 - The preview carousel keeps the highlighted window when later capture results drop a window, so the highlight and the switch target agree.
 - The hub's selection pulse now plays; it was written as two animations in the same frame and SwiftUI only ever saw the final state.
 - Release builds declare the Apple Events entitlement, without which hardened runtime rejected the Apple Events fallback for apps such as Chrome without showing the Automation prompt. Release builds no longer carry the debugging `get-task-allow` entitlement.

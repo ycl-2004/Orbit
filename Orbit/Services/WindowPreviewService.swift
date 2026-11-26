@@ -400,6 +400,9 @@ final class WindowPreviewService {
         guard Self.hasScreenRecordingPermission() else { return [] }
 
         let windows: [SCWindow]
+        // 原生标签页（Ghostty、终端、访达……）的每一页都是一扇独立的窗，同一组的
+        // 几扇窗位置和大小一模一样。见 `tabSiblings(among:)`。
+        var tabbed: Set<CGWindowID> = []
         do {
             let preferredRank = Dictionary(
                 uniqueKeysWithValues: preferredWindowIDs.enumerated().map { ($0.element, $0.offset) }
@@ -407,6 +410,12 @@ final class WindowPreviewService {
             let content = try await SCShareableContent.excludingDesktopWindows(
                 true,
                 onScreenWindowsOnly: false
+            )
+            // 包括被藏起来的当前窗：你正看着的那一页，也是其余几页的兄弟。
+            tabbed = Self.tabSiblings(
+                among: content.windows
+                    .filter { $0.owningApplication?.processID == pid && $0.windowLayer == 0 }
+                    .map { (id: $0.windowID, frame: $0.frame) }
             )
             windows = content.windows
                 .filter { $0.owningApplication?.processID == pid }
@@ -503,22 +512,23 @@ final class WindowPreviewService {
                 )
             )
 
-            if variance >= Self.blankVarianceThreshold {
+            let isTab = tabbed.contains(window.windowID)
+            if variance >= Self.blankVarianceThreshold || isTab {
                 windowsWithContent += 1
             }
 
             // 只有真拿到图才谈得上"它画了什么"。截图失败时 variance 是
             // `greatestFiniteMagnitude`，那是"不知道"，不是"有内容"。
             if image != nil {
-                recordBlankness(variance < Self.blankVarianceThreshold, for: window.windowID)
+                recordBlankness(variance < Self.blankVarianceThreshold && !isTab, for: window.windowID)
             }
 
             // 交出的每一份中间结果都过同一道空白过滤，面板和松手目标才不会先看到
             // 一扇随后就会被丢掉的辅助窗。
-            onPartial?(Self.droppingBlankWindows(previews, hidCurrentWindow: hidden != nil))
+            onPartial?(Self.droppingBlankWindows(previews, hidCurrentWindow: hidden != nil, keeping: tabbed))
         }
 
-        return Self.droppingBlankWindows(previews, hidCurrentWindow: hidden != nil)
+        return Self.droppingBlankWindows(previews, hidCurrentWindow: hidden != nil, keeping: tabbed)
     }
 
     /// Apps keep windows that are titled and normal-layered but render as a
@@ -536,13 +546,44 @@ final class WindowPreviewService {
     /// 也跟着落到那扇壳上，切过去等于什么都没发生。宁可空着。
     ///
     /// Internal for the unit tests; pure, so `nonisolated` is safe.
+    ///
+    /// - Parameter tabs: 原生标签页。它们永远不算空白，见 `tabSiblings(among:)`。
     nonisolated static func droppingBlankWindows(
         _ previews: [WindowPreview],
-        hidCurrentWindow: Bool
+        hidCurrentWindow: Bool,
+        keeping tabs: Set<CGWindowID> = []
     ) -> [WindowPreview] {
-        let withContent = previews.filter { $0.contentVariance >= blankVarianceThreshold }
+        let withContent = previews.filter {
+            $0.contentVariance >= blankVarianceThreshold || tabs.contains($0.id)
+        }
         guard withContent.isEmpty else { return withContent }
         return hidCurrentWindow ? [] : previews
+    }
+
+    /// 跟同一个应用的另一扇窗重合在同一位置、同一大小的窗：原生标签页。
+    ///
+    /// Every tab in a native tab group — Ghostty, Terminal, Finder, TextEdit — is
+    /// a window of its own, and the tabs of one group share one frame exactly.
+    /// They must never go through the blank filter: a terminal tab holding one
+    /// prompt on a plain background measures about 11, under the threshold that
+    /// was set for WeChat's empty 280x380 shell, so quiet tabs disappeared from
+    /// the carousel — and once remembered as blank, from the release target as
+    /// well — depending on how much text happened to be on them. A shell window
+    /// that draws nothing does not sit exactly on top of the app's real window,
+    /// which is what keeps the two apart.
+    ///
+    /// Internal for the unit tests; pure, so `nonisolated` is safe.
+    nonisolated static func tabSiblings(
+        among windows: [(id: CGWindowID, frame: CGRect)]
+    ) -> Set<CGWindowID> {
+        var siblings: Set<CGWindowID> = []
+        for (index, window) in windows.enumerated() {
+            for other in windows[(index + 1)...] where other.frame.matches(window.frame) {
+                siblings.insert(window.id)
+                siblings.insert(other.id)
+            }
+        }
+        return siblings
     }
 
     /// 亮度标准差低于这个数，就当这扇窗没画东西。
@@ -696,7 +737,7 @@ extension CGRect {
     /// Same window, allowing for the rounding that separates what
     /// ScreenCaptureKit reports from what Accessibility reports.
     /// Internal for the unit tests.
-    func matches(_ other: CGRect) -> Bool {
+    nonisolated func matches(_ other: CGRect) -> Bool {
         let tolerance: CGFloat = 2
         return abs(minX - other.minX) <= tolerance
             && abs(minY - other.minY) <= tolerance

@@ -58,7 +58,11 @@ To try your build the way a user would run it, use `scripts/install.sh`. It
 installs to `/Applications` and removes the build product, because macOS grants
 Accessibility and Screen Recording **per app path** — a copy left in `Build/`
 registers as a second Orbit in System Settings and never inherits the
-permissions you already granted.
+permissions you already granted. Builds are ad-hoc signed, so each rebuild is a
+new app to macOS and the permissions have to be granted again; set
+`ORBIT_SIGNING_IDENTITY` to your own "Apple Development" certificate and the
+script re-signs the installed app with it, which keeps the permissions across
+rebuilds.
 
 ## Manual verification
 
