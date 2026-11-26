@@ -45,9 +45,22 @@ enum AppLanguage {
     /// 「系统设置 › 通用 › 语言与地区 › 应用程序」用的是同一个机制，但它写的可能是
     /// `en-CA`、`zh-Hans-US` 这种带地区的完整标签。直接拿去比对会一个都对不上，
     /// 下拉就会显示成"跟随系统"，而实际上并不是。
+    ///
+    /// 标签不一定写明书写系统：`zh-TW`、`zh-HK` 只说了地区。只按前缀比，它们
+    /// 一个都认不出来。交给 `Locale.Language` 按 CLDR 补全成 `zh-Hant-TW` 这样的
+    /// 完整形式之后再比。
     static func normalize(_ raw: String?) -> String? {
         guard let raw else { return nil }
         if supported.contains(raw) { return raw }
-        return supported.first { raw.hasPrefix($0) }
+
+        let language = Locale.Language(identifier: Locale.Language(identifier: raw).maximalIdentifier)
+        guard var code = language.languageCode?.identifier else { return nil }
+        // `no` 是挪威语的总称，`Locale` 补全时原样保留它；Orbit 做的是书面挪威语
+        // 里通行的那一种（Bokmål，`nb`），所以这一个映射只能手写。
+        if code == "no" { code = "nb" }
+        if let script = language.script?.identifier, supported.contains("\(code)-\(script)") {
+            return "\(code)-\(script)"
+        }
+        return supported.contains(code) ? code : nil
     }
 }

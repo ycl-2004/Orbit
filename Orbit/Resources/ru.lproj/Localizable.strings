@@ -149,7 +149,7 @@
 "onboarding.start" = "Начать";
 "onboarding.showOnLaunch" = "Показывать эту страницу при запуске";
 "onboarding.kicker" = "Более спокойный способ работать с Mac.";
-"onboarding.step.hold" = "Зажмите Option";
+"onboarding.step.hold" = "Зажмите %@";
 "onboarding.step.choose" = "Выберите приложение";
 "onboarding.step.release" = "Отпустите для переключения";
 "onboarding.trigger.note" = "Option — клавиша запуска по умолчанию";

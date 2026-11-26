@@ -149,7 +149,7 @@
 "onboarding.start" = "Kom i gang";
 "onboarding.showOnLaunch" = "Vis denne side ved start";
 "onboarding.kicker" = "En roligere måde at bevæge sig gennem din Mac på.";
-"onboarding.step.hold" = "Hold Option";
+"onboarding.step.hold" = "Hold %@";
 "onboarding.step.choose" = "Vælg en app";
 "onboarding.step.release" = "Slip for at skifte";
 "onboarding.trigger.note" = "Option er standardtasten";

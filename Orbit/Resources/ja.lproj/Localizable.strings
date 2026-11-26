@@ -149,7 +149,7 @@
 "onboarding.start" = "はじめる";
 "onboarding.showOnLaunch" = "起動時にこのページを表示";
 "onboarding.kicker" = "Mac の操作を、もっと落ち着いて。";
-"onboarding.step.hold" = "Option を押す";
+"onboarding.step.hold" = "%@ を押す";
 "onboarding.step.choose" = "アプリを選ぶ";
 "onboarding.step.release" = "離して切り替え";
 "onboarding.trigger.note" = "Option が標準の起動キーです";

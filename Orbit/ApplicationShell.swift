@@ -13,7 +13,8 @@ struct OrbitApplication: App {
 
     var body: some Scene {
         // Orbit 的实际界面全部由 AppDelegate 用 AppKit 窗口驱动。这里保留一个
-        // Settings 场景，只是为了让系统的「设置…」菜单项和 ⌘, 有地方可去。
+        // Settings 场景，只是为了让系统的「设置…」菜单项和 ⌘, 有地方可去；它和
+        // 菜单栏打开的设置窗口共用同一个 `SettingsModel.shared`。
         Settings {
             SettingsView()
         }
@@ -33,6 +34,10 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     // MARK: - 生命周期
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 单元测试把 Orbit 当宿主拉起来时，什么都不装：没有事件 tap、没有授权框、
+        // 没有欢迎页，也不去动设置。
+        guard !OrbitPreferences.isHostingUnitTests else { return }
+
         // 必须排在最前：后面每一步都会读设置，而升级上来的机器此刻还只有旧键。
         OrbitPreferences.migrateStoredPreferences()
 
@@ -45,10 +50,12 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
         AppActivationHistory.shared.start()
         observeSummonRequests()
         resumeEventTapIfPermitted()
+        requestAccessibilityIfNeeded()
         presentWelcomeIfNeeded()
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        guard !OrbitPreferences.isHostingUnitTests else { return }
         // 用户可能刚在"系统设置"里授予了辅助功能权限。回到前台时重试一次，
         // 这样不用重启 Orbit 快捷键就能生效。
         resumeEventTapIfPermitted()
@@ -82,10 +89,22 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
         AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 0.4)
     }
 
-    /// 只有拿到辅助功能权限时才装事件监听；没权限时反复调用也无副作用。
+    /// 有权限就装上（或修好）事件监听；没权限时让监听器等权限，反复调用也无副作用。
     private func resumeEventTapIfPermitted() {
-        guard TriggerMonitor.accessibilityIsTrusted() else { return }
         TriggerMonitor.shared.beginMonitoring()
+    }
+
+    /// 没有辅助功能权限时，让系统弹出授权框。
+    ///
+    /// Nothing asked before: a new user held the trigger, nothing happened,
+    /// and the only clue was a line in the menu bar menu. The system prompt
+    /// also puts Orbit into the Accessibility list, so granting is one switch
+    /// rather than a hunt through "+". `TriggerMonitor` picks the permission
+    /// up on its own once it is given.
+    private func requestAccessibilityIfNeeded() {
+        guard !TriggerMonitor.accessibilityIsTrusted() else { return }
+        let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(options)
     }
 
     private func presentWelcomeIfNeeded() {

@@ -16,8 +16,37 @@ import SwiftUI
 /// `.onChange` handlers on the form.
 @MainActor
 final class SettingsModel: ObservableObject {
+    static let shared = SettingsModel()
+
     /// 从 `OrbitPreferences` 回填时置位，用来阻止 `didSet` 把刚读到的值又写回去。
     private var isReloading = false
+
+    private var activationObserver: NSObjectProtocol?
+
+    /// Permissions and the login item are changed in System Settings, and the
+    /// settings window stays open on screen while that happens. Re-reading
+    /// them whenever Orbit comes back to the front is what lets "Grant access"
+    /// turn into "Granted" without closing and reopening the window.
+    private init() {
+        activationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            MainActor.assumeIsolated {
+                SettingsModel.shared.refreshSystemState()
+            }
+        }
+    }
+
+    /// 只重读系统那边会变的东西：权限和登录项。
+    func refreshSystemState() {
+        syncing {
+            launchAtLogin = LoginItemService.reload()
+            hasAccessibility = TriggerMonitor.accessibilityIsTrusted()
+            hasScreenRecording = WindowPreviewService.hasScreenRecordingPermission()
+        }
+    }
 
     // MARK: - 触发
 
@@ -196,12 +225,10 @@ final class SettingsModel: ObservableObject {
     @Published var launchAtLogin: Bool = LoginItemService.isEnabled {
         didSet {
             writeThrough {
-                do {
-                    try LoginItemService.apply(enabled: launchAtLogin)
-                } catch {
-                    // launchd 拒绝了这次改动：把开关拨回它真实的状态。
-                    syncing { launchAtLogin = LoginItemService.reload() }
-                }
+                // launchd 拒绝了这次改动，或者接受了但还要用户批准：开关都要停在
+                // 它真实的状态上，而不是停在用户刚拨到的位置。
+                try? LoginItemService.apply(enabled: launchAtLogin)
+                syncing { launchAtLogin = LoginItemService.reload() }
             }
         }
     }
@@ -236,10 +263,8 @@ final class SettingsModel: ObservableObject {
             ringOpeningBehavior = OrbitPreferences.ringOpeningBehavior
             instantRingOpening = OrbitPreferences.instantRingOpening
             windowPreviewEnabled = OrbitPreferences.windowPreviewEnabled
-            launchAtLogin = LoginItemService.reload()
-            hasAccessibility = TriggerMonitor.accessibilityIsTrusted()
-            hasScreenRecording = WindowPreviewService.hasScreenRecordingPermission()
         }
+        refreshSystemState()
     }
 
     /// 可以作为"取消选择键"的候选：不能跟触发键是同一个。

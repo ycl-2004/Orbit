@@ -5,5 +5,8 @@
     <!-- 禁用沙盒以允许终止其他应用 -->
     <key>com.apple.security.app-sandbox</key>
     <false/>
+    <!-- Hardened Runtime 下发 Apple Events 必须声明这一项，否则给 Chrome 等应用的窗口切换兜底会被系统直接拒绝，连授权框都不弹 -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
 </dict>
 </plist>

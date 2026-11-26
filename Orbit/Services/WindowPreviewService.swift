@@ -261,13 +261,25 @@ final class WindowPreviewService {
         var titleOnly: AXUIElement?
         var frameOnly: AXUIElement?
         var everyWindowNamedItsID = true
+        // Each AX call is capped by the process-wide timeout, but a loop of them
+        // is not: an app that answers the window list and then stalls would cost
+        // that timeout several times per window, on the thread the event tap
+        // shares. Past the budget, give up and let the next stage try.
+        let deadline = Date().addingTimeInterval(OrbitPreferences.axWindowSearchBudget)
 
         for window in windows {
+            guard Date() < deadline else {
+                everyWindowNamedItsID = false
+                break
+            }
+
             if let id = axWindowID(of: window) {
                 if id == target.id { return window }
-            } else {
-                everyWindowNamedItsID = false
+                // 窗口号对不上就是确定的「不是它」。标题和尺寸再像也不能拿它顶替：
+                // 两个同名同尺寸的终端窗口，原来会在这里切到另一扇，还报成功。
+                continue
             }
+            everyWindowNamedItsID = false
 
             let titleAgrees = titles(axTitle(of: window), agreeWith: target.title)
             let frameAgrees = frame(of: window).map { $0.matches(target.frame) } == true
@@ -445,7 +457,8 @@ final class WindowPreviewService {
                   previews.count < OrbitPreferences.maxPreviewCaptures else { break }
 
             let fresh = await Self.capture(window, width: captureWidth, scale: scale)
-            if let fresh {
+            // 环关掉时缓存已经清空了；被取消的这一轮截回来的图不能再塞回去。
+            if let fresh, !Task.isCancelled {
                 remember(fresh, for: window.windowID)
             }
             let image = fresh ?? cache[window.windowID]
@@ -631,11 +644,14 @@ final class WindowPreviewService {
     /// filter *can* reach those windows, at the cost of spinning up a stream,
     /// so it is the fallback rather than the default.
     ///
-    /// `nonisolated` on purpose: this runs off the main actor so that
+    /// `@concurrent` on purpose: this runs off the main actor so that
     /// `trimmingTransparentEdges`, which walks every pixel of the captured frame,
-    /// never lands on the thread the event tap's callback shares. `scale` is
-    /// passed in because `NSScreen` may only be read from the main actor.
-    nonisolated private static func capture(
+    /// never lands on the thread the event tap's callback shares. Plain
+    /// `nonisolated` is not enough here — with approachable concurrency a
+    /// nonisolated async function runs on its caller's actor, which is the main
+    /// one. `scale` is passed in because `NSScreen` may only be read from the
+    /// main actor.
+    @concurrent nonisolated private static func capture(
         _ window: SCWindow,
         width: Int,
         scale: CGFloat

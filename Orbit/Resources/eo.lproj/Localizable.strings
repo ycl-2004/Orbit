@@ -149,7 +149,7 @@
 "onboarding.start" = "Komenci";
 "onboarding.showOnLaunch" = "Montri ĉi tiun paĝon ĉe lanĉo";
 "onboarding.kicker" = "Pli trankvila maniero navigi vian Mac.";
-"onboarding.step.hold" = "Tenu Option";
+"onboarding.step.hold" = "Tenu %@";
 "onboarding.step.choose" = "Elektu aplikaĵon";
 "onboarding.step.release" = "Lasu por ŝanĝi";
 "onboarding.trigger.note" = "Option estas la defaŭlta klavo";

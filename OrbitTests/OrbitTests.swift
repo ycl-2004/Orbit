@@ -30,7 +30,7 @@ struct OrbitTests {
 
     /// 环上有没有 Orbit 那张卡，是一个用户偏好。
     ///
-    /// 测试宿主就是 Orbit 本体，`UserDefaults.standard` 因此正是开发者自己那一份：
+    /// 测试宿主就是 Orbit 本体，`OrbitPreferences.store` 因此正是开发者自己那一份：
     /// 谁在设置里把 Orbit 卡关掉，`OrbitRingViewModel` 就会在 init 里把它从
     /// `apps` 里滤掉，于是一个只放了这张卡的环变成空环。A test that builds such a
     /// ring without pinning the setting passes on a default machine and fails on
@@ -42,12 +42,12 @@ struct OrbitTests {
     @MainActor
     private func withOrbitCard<T>(shown: Bool, _ body: () -> T) -> T {
         let key = "showOrbitCard"
-        let previous = UserDefaults.standard.object(forKey: key)
+        let previous = OrbitPreferences.store.object(forKey: key)
         defer {
             if let previous {
-                UserDefaults.standard.set(previous, forKey: key)
+                OrbitPreferences.store.set(previous, forKey: key)
             } else {
-                UserDefaults.standard.removeObject(forKey: key)
+                OrbitPreferences.store.removeObject(forKey: key)
             }
         }
         OrbitPreferences.showOrbitCard = shown
@@ -229,9 +229,9 @@ struct OrbitTests {
 
     /// 默认开启：`defaults.bool(forKey:)` 对没写过的键返回 false，正好是反的。
     @Test func windowlessAppsAreHiddenByDefault() {
-        let previous = UserDefaults.standard.object(forKey: "hideWindowlessApps")
-        UserDefaults.standard.removeObject(forKey: "hideWindowlessApps")
-        defer { UserDefaults.standard.set(previous, forKey: "hideWindowlessApps") }
+        let previous = OrbitPreferences.store.object(forKey: "hideWindowlessApps")
+        OrbitPreferences.store.removeObject(forKey: "hideWindowlessApps")
+        defer { OrbitPreferences.store.set(previous, forKey: "hideWindowlessApps") }
 
         #expect(OrbitPreferences.hideWindowlessApps)
     }
@@ -255,6 +255,11 @@ struct OrbitTests {
         #expect(AppLanguage.normalize("zh-Hant") == "zh-Hant")
         #expect(AppLanguage.normalize("zh-Hant-TW") == "zh-Hant")
         #expect(AppLanguage.normalize("en-CA") == "en")
+        // 只写了地区、没写书写系统的标签，以及挪威语的总称。
+        #expect(AppLanguage.normalize("zh-TW") == "zh-Hant")
+        #expect(AppLanguage.normalize("zh-HK") == "zh-Hant")
+        #expect(AppLanguage.normalize("zh-CN") == "zh-Hans")
+        #expect(AppLanguage.normalize("no") == "nb")
         #expect(AppLanguage.normalize(nil) == nil)
         // 没做的语言不该被硬凑到某个做了的上面去。
         #expect(AppLanguage.normalize("sv") == nil)
@@ -315,7 +320,7 @@ struct OrbitTests {
     }
 
     @Test @MainActor func openingBehaviorDefaultsToCancelAndKeepsQuickSwitchSelectable() {
-        let defaults = UserDefaults.standard
+        let defaults = OrbitPreferences.store
         let previous = defaults.object(forKey: "ringOpeningBehavior")
         defer {
             if let previous {
@@ -333,7 +338,7 @@ struct OrbitTests {
     }
 
     @Test func instantRingOpeningDefaultsToAnimatedAndPersists() {
-        let defaults = UserDefaults.standard
+        let defaults = OrbitPreferences.store
         let previous = defaults.object(forKey: "instantRingOpening")
         defer {
             if let previous {
@@ -531,6 +536,90 @@ struct OrbitTests {
         #expect(model.centerMode == .cancel)
     }
 
+    /// 按 Esc 之后环还要收 0.2 秒才撤。这期间松开触发键、按回车、点中心，都不能
+    /// 把刚取消掉的那个应用切过去，也不能再触发一次取消。
+    @Test @MainActor func nothingActsOnTheRingWhileItCollapses() {
+        let model = OrbitRingViewModel(
+            apps: [listed("com.a", "Alpha"), listed("com.b", "Beta")],
+            showsPreview: false,
+            preselecting: "com.a"
+        )
+        var activated = false
+        var cancels = 0
+        model.onActivate = { _, _ in activated = true }
+        model.onCancel = { cancels += 1 }
+
+        model.beginCollapse()
+        model.triggerReleased()
+        model.confirmSelection()
+        model.confirmFromHub()
+        model.cancel()
+        model.moveSelection(step: 1)
+
+        #expect(!activated)
+        #expect(cancels == 0)
+        #expect(model.selectedID == "com.a")
+    }
+
+    /// 拖着卡片时松开触发键：那次松开要被记住，卡片一放下环就关，而且不切换。
+    /// 以前这次松开直接丢了，环停在屏幕上，只能点中心关掉。
+    @Test @MainActor func releasingTheTriggerMidDragClosesTheRingOnceTheCardIsDropped() {
+        let alpha = listed("com.a", "Alpha")
+        let model = OrbitRingViewModel(apps: [alpha, listed("com.b", "Beta")], showsPreview: false)
+        var activated = false
+        var didCancel = false
+        model.onActivate = { _, _ in activated = true }
+        model.onCancel = { didCancel = true }
+
+        model.beginAppDrag(alpha)
+        model.updateAppDrag(alpha, offset: CGSize(width: 20, height: 0), overCenter: false)
+        model.triggerReleased()
+        #expect(!didCancel)
+
+        model.finishAppDrag(alpha)
+        #expect(didCancel)
+        #expect(!activated)
+    }
+
+    /// 正在消散的卡片不能再被选中：松手会把一个正在退出的应用重新拉起来。
+    @Test @MainActor func departingCardsCannotBeSelected() {
+        let model = OrbitRingViewModel(
+            apps: [listed("com.a", "Alpha"), listed("com.b", "Beta"), listed("com.c", "Gamma")],
+            showsPreview: false
+        )
+        model.beginDeparture(of: ["com.a"])
+
+        // 从空选中进来，跳过第一张。
+        model.moveSelection(step: 1)
+        #expect(model.selectedID == "com.b")
+
+        // 往回走，绕过它。
+        model.moveSelection(step: -1)
+        #expect(model.selectedID == "com.c")
+
+        model.select(number: "1")
+        #expect(model.selectedID == "com.c")
+
+        model.select(model.apps[0])
+        #expect(model.selectedID == "com.c")
+    }
+
+    /// 同一个应用开了两个实例，环上只给一张卡，留排在前面的那个。
+    @Test func twoInstancesOfOneAppGetOneCard() {
+        let targets = RunningAppCatalog.switchTargets(
+            rankedApps: [
+                listed("com.a", "Alpha", processIdentifier: 10),
+                listed("com.b", "Beta"),
+                listed("com.a", "Alpha", processIdentifier: 11)
+            ],
+            currentApp: nil,
+            limit: 12,
+            order: .recent
+        )
+        #expect(targets.map(\.id) == ["com.a", "com.b"])
+        #expect(targets.first?.processIdentifier == 10)
+    }
+
     @Test @MainActor func orbitCardCanBeShownOrHiddenFromTheRing() {
         withOrbitCard(shown: true) {
             let shown = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
@@ -708,17 +797,17 @@ struct OrbitTests {
 
     /// 触发键设成 `.none` 会让环再也唤不出来，所以它连存都不该存得住。
     @Test @MainActor func summonKeyAlwaysHasAValue() {
-        let previous = UserDefaults.standard.object(forKey: "summonKey")
-        defer { UserDefaults.standard.set(previous, forKey: "summonKey") }
+        let previous = OrbitPreferences.store.object(forKey: "summonKey")
+        defer { OrbitPreferences.store.set(previous, forKey: "summonKey") }
 
-        UserDefaults.standard.set(ShortcutKey.none.rawValue, forKey: "summonKey")
+        OrbitPreferences.store.set(ShortcutKey.none.rawValue, forKey: "summonKey")
 
         #expect(OrbitPreferences.summonKey != .none)
         #expect(!ShortcutKey.usableForSummon.contains(.none))
 
         OrbitPreferences.summonKey = .none
         #expect(
-            UserDefaults.standard.string(forKey: "summonKey") == ShortcutKey.alternate.rawValue
+            OrbitPreferences.store.string(forKey: "summonKey") == ShortcutKey.alternate.rawValue
         )
     }
 
@@ -1366,6 +1455,10 @@ struct OrbitTests {
         #expect(script.contains(#"application id "com.google.Chrome""#))
         #expect(script.contains(#"A \"B\" C"#))
         #expect(script.contains("with timeout of"))
+        // 空名字的窗口什么都不匹配；每个标题都以空串开头，不挡会误中无名窗口。
+        #expect(script.contains(#"(n is not "")"#))
+        // 脚本不自己激活应用：要不要激活由调用方在确认这次切换仍是当前这次后决定。
+        #expect(!script.contains("activate"))
     }
 
 }

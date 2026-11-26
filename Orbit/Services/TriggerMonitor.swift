@@ -36,9 +36,7 @@ private func orbitEventTapCallback(
         case .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel:
             service.abandonPendingSummon()
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
-            if let tap = service.eventTap {
-                CGEvent.tapEnable(tap: tap, enable: true)
-            }
+            service.recoverDisabledTap()
         default:
             break
         }
@@ -96,9 +94,24 @@ final class TriggerMonitor {
         AXIsProcessTrusted()
     }
 
+    /// 装上事件 tap；已经装着且还活着就什么都不做。没有权限时改为等权限。
+    ///
+    /// A tap that macOS switched off — Accessibility revoked, then granted
+    /// again — stays off for good, and re-enabling it does nothing. It used to
+    /// count as "listening" all the same, so the menu showed the permission as
+    /// granted while the trigger stayed dead until a relaunch. Such a tap is
+    /// torn down and built again.
     func beginMonitoring() {
-        guard !listening else { return }
-        guard Self.accessibilityIsTrusted() else { return }
+        guard Self.accessibilityIsTrusted() else {
+            waitForAccessibility()
+            return
+        }
+        stopWaitingForAccessibility()
+
+        if listening {
+            if let eventTap, CGEvent.tapIsEnabled(tap: eventTap) { return }
+            endMonitoring()
+        }
 
         // 鼠标和滚轮只用来"撤销一次待发的召唤"，从不被吞掉。刻意不订阅
         // mouseMoved/mouseDragged：按住 ⌥ 光是移动鼠标仍然是一次合法的召唤，
@@ -146,6 +159,50 @@ final class TriggerMonitor {
         runLoopSource = nil
         eventTap = nil
         listening = false
+    }
+
+    /// 系统把 tap 停掉了（回调太慢，或者权限被收回）。
+    ///
+    /// With the permission still in place the tap is switched back on. Any
+    /// modifier change that happened while it was off was never delivered, so
+    /// the live modifier state is replayed once — otherwise a trigger released
+    /// in that gap would leave the ring waiting for a release that already
+    /// happened. Without the permission the tap is dropped, and Orbit waits for
+    /// the permission to come back.
+    fileprivate func recoverDisabledTap() {
+        guard Self.accessibilityIsTrusted(), let eventTap else {
+            endMonitoring()
+            waitForAccessibility()
+            return
+        }
+        CGEvent.tapEnable(tap: eventTap, enable: true)
+        handleFlagsChanged(CGEventSource.flagsState(.combinedSessionState))
+    }
+
+    /// 没有辅助功能权限时，隔一会儿看一眼；权限一到就把 tap 装上。
+    ///
+    /// The person granting the permission is in System Settings, not in Orbit,
+    /// so Orbit gets no activation to react to. Checking on a slow timer means
+    /// the trigger starts working the moment the switch is flipped, without a
+    /// relaunch or a click on the menu bar icon first.
+    private var accessibilityWait: Timer?
+
+    private func waitForAccessibility() {
+        guard accessibilityWait == nil else { return }
+        accessibilityWait = Timer.scheduledTimer(
+            withTimeInterval: OrbitPreferences.accessibilityPollInterval,
+            repeats: true
+        ) { _ in
+            MainActor.assumeIsolated {
+                guard Self.accessibilityIsTrusted() else { return }
+                TriggerMonitor.shared.beginMonitoring()
+            }
+        }
+    }
+
+    private func stopWaitingForAccessibility() {
+        accessibilityWait?.invalidate()
+        accessibilityWait = nil
     }
 
     fileprivate func handleFlagsChanged(_ flags: CGEventFlags) {

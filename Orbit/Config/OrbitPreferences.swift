@@ -153,7 +153,30 @@ enum OrbitPreferences {
         var drawsGround: Bool { self == .dusk }
     }
 
-    private static let defaults = UserDefaults.standard
+    /// 被单元测试当宿主拉起来的时候为真。
+    ///
+    /// The unit tests run inside Orbit itself. Without this, every test run
+    /// installed the event tap, raised the welcome window and read and wrote
+    /// the developer's own settings.
+    static let isHostingUnitTests =
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
+    /// 设置存放的域。测试时换成一个专用域，并在第一次用到时清空，每次都从默认值开始。
+    static let storeName = isHostingUnitTests
+        ? "app.orbit.local.unit-tests"
+        : (Bundle.main.bundleIdentifier ?? "app.orbit.local")
+
+    /// Internal so the tests can pin and inspect raw values in the same store
+    /// the app reads.
+    static let store: UserDefaults = {
+        guard isHostingUnitTests, let suite = UserDefaults(suiteName: storeName) else {
+            return .standard
+        }
+        suite.removePersistentDomain(forName: storeName)
+        return suite
+    }()
+
+    private static var defaults: UserDefaults { store }
 
     /// `defaults write app.orbit.local scrimStyle dusk|blurOnly|none`
     static var scrimStyle: ScrimStyle {
@@ -330,8 +353,7 @@ enum OrbitPreferences {
     /// 于是下拉里显示的是某个具体语言而不是"跟随系统"。
     static var appLanguage: String? {
         get {
-            guard let identifier = Bundle.main.bundleIdentifier,
-                  let domain = defaults.persistentDomain(forName: identifier),
+            guard let domain = defaults.persistentDomain(forName: storeName),
                   let languages = domain["AppleLanguages"] as? [String] else {
                 return nil
             }
@@ -755,6 +777,16 @@ enum OrbitPreferences {
     /// longer what the person is doing, and activating an app then is an
     /// interruption rather than a completion.
     static let maximumSwitchFallbackDelay: TimeInterval = 3
+
+    /// 在一个应用的辅助功能窗口列表里找目标窗，最多花多久。
+    ///
+    /// The search runs on the main thread, which the event tap shares. A
+    /// healthy app answers the whole walk in a few milliseconds; past this, the
+    /// app is stalling and the next switch stage is the better bet.
+    static let axWindowSearchBudget: TimeInterval = 0.5
+
+    /// 等辅助功能权限时多久看一次。一次检查几乎不花什么，慢一点只是为了不吵。
+    static let accessibilityPollInterval: TimeInterval = 1.5
 
     /// 切换发出之后，隔多久回头问一次窗口服务「落在那扇窗上了吗」。
     ///

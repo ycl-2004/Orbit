@@ -149,7 +149,7 @@
 "onboarding.start" = "Loslegen";
 "onboarding.showOnLaunch" = "Diese Seite beim Start zeigen";
 "onboarding.kicker" = "Ruhiger durch deinen Mac navigieren.";
-"onboarding.step.hold" = "Option halten";
+"onboarding.step.hold" = "%@ halten";
 "onboarding.step.choose" = "App auswählen";
 "onboarding.step.release" = "Zum Wechseln loslassen";
 "onboarding.trigger.note" = "Option ist die Standardtaste";

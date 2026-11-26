@@ -149,7 +149,7 @@
 "onboarding.start" = "Get Started";
 "onboarding.showOnLaunch" = "Show this page at launch";
 "onboarding.kicker" = "A calmer way to move through your Mac.";
-"onboarding.step.hold" = "Hold Option";
+"onboarding.step.hold" = "Hold %@";
 "onboarding.step.choose" = "Choose an app";
 "onboarding.step.release" = "Release to switch";
 "onboarding.trigger.note" = "Option is the default trigger key";

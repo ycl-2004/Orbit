@@ -47,6 +47,8 @@ private struct WelcomeView: View {
     /// 镜像 `OrbitPreferences.showWelcomeOnLaunch`，让复选框自己有状态可画。
     @State private var showOnLaunch = OrbitPreferences.showWelcomeOnLaunch
 
+    private var summonKey: ShortcutKey { OrbitPreferences.summonKey }
+
     var body: some View {
         ZStack {
             Color(nsColor: .windowBackgroundColor)
@@ -77,18 +79,30 @@ private struct WelcomeView: View {
                     .lineSpacing(3)
                     .padding(.top, 16)
 
+                // 第一步写的是此刻真正的触发键，不是默认的 Option —— 改过触发键的人
+                // 照着欢迎页按 Option，什么都不会发生。
                 HStack(spacing: 8) {
-                    WelcomeStep(number: "01", title: "onboarding.step.hold", icon: "option")
-                    WelcomeStep(number: "02", title: "onboarding.step.choose", icon: "cursorarrow.rays")
-                    WelcomeStep(number: "03", title: "onboarding.step.release", icon: "arrow.up.right")
+                    WelcomeStep(
+                        number: "01",
+                        title: Text(String(
+                            format: NSLocalizedString("onboarding.step.hold", comment: "Welcome step: hold the trigger key"),
+                            summonKey.localizedTitle
+                        )),
+                        icon: summonKey.symbolName
+                    )
+                    WelcomeStep(number: "02", title: Text("onboarding.step.choose"), icon: "cursorarrow.rays")
+                    WelcomeStep(number: "03", title: Text("onboarding.step.release"), icon: "arrow.up.right")
                 }
                 .padding(.top, 24)
 
                 HStack(spacing: 8) {
-                    KeycapView(text: "⌥")
-                    Text("onboarding.trigger.note")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.secondary)
+                    KeycapView(text: summonKey.glyph)
+                    // 「Option 是默认触发键」只在触发键还是 Option 时才是有用的提示。
+                    if summonKey == .alternate {
+                        Text("onboarding.trigger.note")
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .padding(.top, 20)
 
@@ -203,7 +217,7 @@ private struct WelcomeOrbitNode: View {
 
 private struct WelcomeStep: View {
     let number: String
-    let title: LocalizedStringKey
+    let title: Text
     let icon: String
 
     var body: some View {
@@ -230,7 +244,7 @@ private struct WelcomeStep: View {
                     .offset(x: 5, y: -3)
             }
 
-            Text(title)
+            title
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .foregroundStyle(.primary)
         }

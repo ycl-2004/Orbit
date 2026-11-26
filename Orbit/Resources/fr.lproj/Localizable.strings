@@ -149,7 +149,7 @@
 "onboarding.start" = "C'est parti";
 "onboarding.showOnLaunch" = "Afficher cette page au démarrage";
 "onboarding.kicker" = "Une façon plus sereine de parcourir votre Mac.";
-"onboarding.step.hold" = "Maintenir Option";
+"onboarding.step.hold" = "Maintenir %@";
 "onboarding.step.choose" = "Choisir une app";
 "onboarding.step.release" = "Relâcher pour basculer";
 "onboarding.trigger.note" = "Option est la touche de déclenchement";

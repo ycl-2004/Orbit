@@ -114,8 +114,19 @@ final class RunningAppCatalog {
         order: RingOrder
     ) -> [AppRecord] {
         guard limit > 0 else { return [] }
-        let recentTargets = Array(([currentApp].compactMap { $0 } + rankedApps).prefix(limit))
+        let recentTargets = Array(uniqueByIdentity([currentApp].compactMap { $0 } + rankedApps).prefix(limit))
         return arranged(recentTargets, by: order)
+    }
+
+    /// 同一个应用开了好几个实例时，只给一张卡（保留排在前面的那个）。
+    ///
+    /// A card's identity is its bundle ID — activation history and the window
+    /// memory are keyed by it — so two instances of one app made two cards with
+    /// the same identity. SwiftUI's `ForEach` then saw duplicate IDs, and
+    /// selecting either card highlighted and switched to the first.
+    static func uniqueByIdentity(_ apps: [AppRecord]) -> [AppRecord] {
+        var seen = Set<String>()
+        return apps.filter { seen.insert($0.id).inserted }
     }
 
     /// Keeps the highest-priority switch destination as the stable first target

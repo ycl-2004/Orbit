@@ -70,6 +70,17 @@ enum ShortcutKey: CaseIterable, Identifiable, Equatable {
         }
     }
 
+    /// 同一个键的 SF Symbol，欢迎页用它画第一步的图标。
+    var symbolName: String {
+        switch self {
+        case .alternate: "option"
+        case .command: "command"
+        case .control: "control"
+        case .shift: "shift"
+        case .none: "keyboard"
+        }
+    }
+
     var localizedTitle: String {
         let key = switch self {
         case .alternate: "triggerKey.option"

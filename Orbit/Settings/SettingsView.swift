@@ -42,7 +42,9 @@ final class SettingsWindowController: NSWindowController {
 struct SettingsView: View {
     static let preferredSize = CGSize(width: 600, height: 500)
 
-    @StateObject private var model = SettingsModel()
+    /// 两个设置入口（菜单栏的窗口和系统的「设置…」场景）共用这一份状态。各建一份
+    /// 的话，一边改了另一边还拿着旧值，下次改别的项就会把它写回去。
+    @ObservedObject private var model = SettingsModel.shared
     @State private var selectedTab = SettingsTab.general
 
     var body: some View {

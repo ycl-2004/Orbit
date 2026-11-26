@@ -19,7 +19,9 @@ struct CardScatterModifier: ViewModifier {
 
     private struct Shard {
         let start: CGPoint
-        let angle: Double
+        /// 偏离飞行主方向多少弧度。主方向在绘制时才读 `targetAngle`：卡片唤出后
+        /// 可能补位换了角度，碎片得朝它现在的中心飞，而不是朝它出生时的。
+        let spread: Double
         /// 射程倍率，决定这一片最终飞多远。
         let reach: CGFloat
         /// 加速度指数的增量：越大起步越慢、末段越急，碎片之间的错落全部来自它。
@@ -41,7 +43,13 @@ struct CardScatterModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .opacity(cardOpacity)
-            .background(fragmentLayer)
+            // 只在真的在消散时才挂上碎片层：环上每张卡片常驻一套 GeometryReader
+            // 和 Canvas，开环时白白多出十几层。
+            .background {
+                if progress > 0 {
+                    fragmentLayer
+                }
+            }
             .blur(radius: CGFloat(progress) * Timing.blurRadius)
     }
 
@@ -72,9 +80,10 @@ struct CardScatterModifier: ViewModifier {
     private func paint(_ shard: Shard, in context: inout GraphicsContext) {
         let pull = pow(progress, 1 + shard.drag)
         let distance = shard.reach * Timing.travelDistance * CGFloat(pull)
+        let angle = targetAngle + shard.spread
         let center = CGPoint(
-            x: shard.start.x + cos(shard.angle) * distance,
-            y: shard.start.y + sin(shard.angle) * distance
+            x: shard.start.x + cos(angle) * distance,
+            y: shard.start.y + sin(angle) * distance
         )
 
         let edge = shard.size * (1 - Timing.shrinkRate * CGFloat(pull))
@@ -105,7 +114,7 @@ struct CardScatterModifier: ViewModifier {
                     x: sample.value(for: size.width, axis: 2),
                     y: sample.value(for: size.height, axis: 3)
                 ),
-                angle: targetAngle + sample.inRange(-0.42 ... 0.42, axis: 5),
+                spread: sample.inRange(-0.42 ... 0.42, axis: 5),
                 reach: sample.inRange(0.65 ... 1.25, axis: 7),
                 drag: sample.inRange(0 ... 0.9, axis: 11),
                 size: CGFloat(sample.inRange(1.5 ... 5.5, axis: 13)),

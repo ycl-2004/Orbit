@@ -149,7 +149,7 @@
 "onboarding.start" = "上手试试";
 "onboarding.showOnLaunch" = "启动时显示这一页";
 "onboarding.kicker" = "更从容地穿梭于 Mac 之间。";
-"onboarding.step.hold" = "按住 Option";
+"onboarding.step.hold" = "按住 %@";
 "onboarding.step.choose" = "选择应用";
 "onboarding.step.release" = "松手切换";
 "onboarding.trigger.note" = "默认使用 Option 作为触发键";

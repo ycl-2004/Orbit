@@ -26,6 +26,14 @@ private let scriptedWindowFocusLogger = Logger(
 )
 
 enum ScriptedWindowFocus {
+    /// One script at a time. `NSAppleScript` is not documented as thread-safe,
+    /// and two quick switches used to run their scripts side by side on the
+    /// global queue.
+    private static let scriptQueue = DispatchQueue(
+        label: "app.orbit.scripted-window-focus",
+        qos: .userInitiated
+    )
+
     /// Asks the app itself, over Apple Events, to bring the window named
     /// `target.title` to the front.
     ///
@@ -35,9 +43,16 @@ enum ScriptedWindowFocus {
     /// its own 2-second timeout so an unresponsive app cannot pin the
     /// background worker for the default two minutes either.
     ///
+    /// The script only reorders the app's own windows; it never activates the
+    /// app. The first Apple Event to an app can sit behind the Automation
+    /// dialog for as long as that stays on screen, and an `activate` inside the
+    /// script used to fire the moment it was answered — pulling the screen
+    /// away even when the user had long since moved on. Activation is the
+    /// caller's decision, made only if the switch is still current.
+    ///
     /// - Parameter completion: Called on the main queue with whether the app
-    ///   reported a window switched. On false the caller should activate the
-    ///   app the ordinary way.
+    ///   reported a window switched. On true the caller activates the app; on
+    ///   false it falls back to activating it the ordinary way.
     static func focus(
         _ target: WindowTarget,
         bundleIdentifier: String,
@@ -49,7 +64,7 @@ enum ScriptedWindowFocus {
         }
 
         let source = script(bundleIdentifier: bundleIdentifier, title: target.title)
-        DispatchQueue.global(qos: .userInitiated).async {
+        scriptQueue.async {
             var error: NSDictionary?
             let result = NSAppleScript(source: source)?.executeAndReturnError(&error)
             // Apps without a scripting dictionary, a declined Automation
@@ -63,7 +78,9 @@ enum ScriptedWindowFocus {
     /// The AppleScript sent to the app. Matching mirrors
     /// `WindowPreviewService.titles(_:agreeWith:)`: exact or prefix in either
     /// direction, because the scripting `name` and the captured title come
-    /// from different sides of the app and only agree up to decoration.
+    /// from different sides of the app and only agree up to decoration — and,
+    /// like it, an empty name agrees with nothing. Every title starts with the
+    /// empty string, so without that guard any untitled window would match.
     static func script(bundleIdentifier: String, title: String) -> String {
         let escapedTitle = escaped(title)
         // Per-window `try`: asking `name of w` can throw on half-closed
@@ -75,7 +92,7 @@ enum ScriptedWindowFocus {
                 repeat with w in windows
                     try
                         set n to name of w
-                        if (n is "\(escapedTitle)") or (n starts with "\(escapedTitle)") or ("\(escapedTitle)" starts with n) then
+                        if (n is not "") and ((n is "\(escapedTitle)") or (n starts with "\(escapedTitle)") or ("\(escapedTitle)" starts with n)) then
                             set matchedWindow to w
                             exit repeat
                         end if
@@ -86,7 +103,6 @@ enum ScriptedWindowFocus {
                         set minimized of matchedWindow to false
                     end try
                     set index of matchedWindow to 1
-                    activate
                 end if
             end tell
         end timeout

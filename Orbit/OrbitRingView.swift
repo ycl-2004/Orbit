@@ -32,8 +32,11 @@ final class OrbitRingViewModel: ObservableObject {
     @Published var draggedAppID: String?
     @Published var dragOffset: CGSize = .zero
     @Published var dragOverCenter = false
-    @Published var vanishingAppID: String?
-    @Published private(set) var bulkVanishingAppIDs: Set<String> = []
+    /// 正在退出、消散动画还没放完的卡片。
+    ///
+    /// They can no longer be selected: releasing the trigger on one would hand
+    /// `bringToFront` an app that is on its way out, and that relaunches it.
+    @Published private(set) var departingAppIDs: Set<String> = []
     @Published var fileDropPhase: DropLifecycle = .resting
     @Published var fileTrashReady = false
     /// 上一次拖放没做成，中心正在把这件事说出来。
@@ -59,9 +62,15 @@ final class OrbitRingViewModel: ObservableObject {
     private var fileTrashTask: DispatchWorkItem?
     private var dragExitTask: DispatchWorkItem?
     private var fileFailureTask: DispatchWorkItem?
-    /// A trigger release can arrive while the dropped URLs are still being
-    /// read. Defer dismissal until that asynchronous file operation finishes.
-    private var dismissAfterFileDrop = false
+    /// 触发键松开（或按了 Esc）时，环正被一个手势占着：先记下来，手势落地再关。
+    ///
+    /// A card being dragged and a file drop in flight both own the ring until
+    /// they come to rest. A release that arrives in the middle used to be
+    /// either dropped — the trigger-up event is one-shot, so the ring stayed
+    /// on screen with nothing left to close it — or remembered by only one of
+    /// several timers, and lost when another drag cancelled that timer. One
+    /// flag, checked every time a gesture comes to rest, covers all of them.
+    private var dismissalPending = false
     /// Cursor position that hover must move away from before it can select.
     /// This starts at the moment the ring opens, so the card underneath the
     /// pointer does not become selected just because the panel appeared there.
@@ -69,6 +78,7 @@ final class OrbitRingViewModel: ObservableObject {
     /// Where the selection stood when it was cleared, so arrowing again picks
     /// up from there instead of starting over.
     private var resumeIndex: Int?
+    private var bulkCleanupAttemptedIDs: Set<String> = []
     private var bulkCleanupPendingIDs: Set<String> = []
     private var bulkCleanupSucceededIDs: Set<String> = []
 
@@ -78,6 +88,14 @@ final class OrbitRingViewModel: ObservableObject {
     /// Captured once per showing so changing Settings cannot alter a ring that
     /// is already on screen.
     let opensInstantly: Bool
+    /// 环按多少张卡排版。唤出时定下，之后退出了几个应用也不变。
+    ///
+    /// The panel and the scrim are sized once, when the ring opens. Deriving the
+    /// radius, the angular step and the fan's recentring from the live card
+    /// count meant quitting an app from the ring moved the hub away from the
+    /// spot the scrim was lit for. Keeping the layout and letting the remaining
+    /// cards close up the gap leaves both windows agreeing on where things are.
+    let layoutCount: Int
 
     /// 圆环这一次要出现在哪块屏幕上。
     ///
@@ -121,11 +139,14 @@ final class OrbitRingViewModel: ObservableObject {
 
         let sourceApps = OrbitPreferences.showOrbitCard ? apps : apps.filter { !$0.isOrbit }
         let limited = Array(sourceApps.prefix(OrbitPreferences.maxVisibleApps))
+        let ringApps: [AppRecord]
         if let orbit = sourceApps.first(where: { $0.isOrbit }), !limited.contains(where: { $0.isOrbit }), !limited.isEmpty {
-            self.apps = Array(limited.dropLast()) + [orbit]
+            ringApps = Array(limited.dropLast()) + [orbit]
         } else {
-            self.apps = limited
+            ringApps = limited
         }
+        self.apps = ringApps
+        self.layoutCount = ringApps.count
         self.showsPreview = showsPreview
             ?? OrbitPreferences.windowPreviewEnabled
         self.opensInstantly = OrbitPreferences.instantRingOpening
@@ -162,7 +183,8 @@ final class OrbitRingViewModel: ObservableObject {
     /// agree, or releasing the trigger would do something different depending on
     /// which of the two put the highlight there.
     var entryCardID: String? {
-        (apps.first(where: { !$0.isOrbit }) ?? apps.first)?.id
+        let candidates = apps.filter { isSelectable($0) }
+        return (candidates.first(where: { !$0.isOrbit }) ?? candidates.first)?.id
     }
 
     var centerMode: OrbitCenterMode {
@@ -185,11 +207,11 @@ final class OrbitRingViewModel: ObservableObject {
     }
 
     var ringRadius: CGFloat {
-        OrbitPreferences.ringRadius(cardCount: apps.count)
+        OrbitPreferences.ringRadius(cardCount: layoutCount)
     }
 
     var canvasSize: CGFloat {
-        OrbitPreferences.ringCanvasSize(cardCount: apps.count)
+        OrbitPreferences.ringCanvasSize(cardCount: layoutCount)
     }
 
     /// The highest-value recent destination is the ring's spatial anchor: index
@@ -202,7 +224,7 @@ final class OrbitRingViewModel: ObservableObject {
     /// stays identical with and without Window Preview, so repeated keyboard
     /// steps build one spatial memory instead of mirroring the sequence.
     func angle(for index: Int) -> Double {
-        let step = OrbitPreferences.ringStep(cardCount: apps.count)
+        let step = OrbitPreferences.ringStep(cardCount: layoutCount)
         return fanStartAngle - step * Double(index)
     }
 
@@ -297,7 +319,7 @@ final class OrbitRingViewModel: ObservableObject {
 
     /// Outer diameter of the band the fan sits on, measured from the cards.
     var backdropDiameter: CGFloat {
-        OrbitPreferences.ringBackdropRadius(cardCount: apps.count) * 2
+        OrbitPreferences.ringBackdropRadius(cardCount: layoutCount) * 2
     }
 
     /// 轨道要盖住的那段角度：正好是首尾两张卡片之间，两端各多留一点。
@@ -307,9 +329,9 @@ final class OrbitRingViewModel: ObservableObject {
     /// ascending range, so the last card supplies the lower bound.
     var backdropArc: ClosedRange<Double> {
         let span = apps.count > 1
-            ? OrbitPreferences.ringStep(cardCount: apps.count) * Double(apps.count - 1)
+            ? OrbitPreferences.ringStep(cardCount: layoutCount) * Double(apps.count - 1)
             : 0
-        let padding = OrbitPreferences.ringTrackEndPadding(cardCount: apps.count)
+        let padding = OrbitPreferences.ringTrackEndPadding(cardCount: layoutCount)
         return (fanStartAngle - span - padding)...(fanStartAngle + padding)
     }
 
@@ -319,7 +341,7 @@ final class OrbitRingViewModel: ObservableObject {
 
     /// 轨道线的半径。
     var orbitTrailRadius: CGFloat {
-        OrbitPreferences.orbitTrailRadius(cardCount: apps.count)
+        OrbitPreferences.orbitTrailRadius(cardCount: layoutCount)
     }
 
     /// 扇面的重心离画布中心有多远。
@@ -335,15 +357,15 @@ final class OrbitRingViewModel: ObservableObject {
     /// way puts the fan dead centre and the hub visibly off to one side, which
     /// trades one lopsided composition for another.
     var fanCentroid: CGSize {
-        guard !apps.isEmpty else { return .zero }
+        guard layoutCount > 0 else { return .zero }
         var sumX = 0.0
         var sumY = 0.0
-        for index in apps.indices {
+        for index in 0 ..< layoutCount {
             let angle = angle(for: index)
             sumX += cos(angle)
             sumY += sin(angle)
         }
-        let count = Double(apps.count)
+        let count = Double(layoutCount)
         return CGSize(
             width: CGFloat(sumX / count) * ringRadius,
             height: CGFloat(sumY / count) * ringRadius
@@ -385,7 +407,7 @@ final class OrbitRingViewModel: ObservableObject {
     var contentBounds: [CGRect] {
         let size = panelSize
         let hub = hubCenterInPanel
-        let fanReach = OrbitPreferences.ringBackdropRadius(cardCount: apps.count)
+        let fanReach = OrbitPreferences.ringBackdropRadius(cardCount: layoutCount)
             + OrbitPreferences.cardScale.height * 0.5
         let fanBounds = CGRect(
             x: hub.x - fanReach,
@@ -427,7 +449,7 @@ final class OrbitRingViewModel: ObservableObject {
     }
 
     func select(_ app: AppRecord) {
-        guard draggedAppID == nil else { return }
+        guard draggedAppID == nil, !isCollapsing, isSelectable(app) else { return }
         hoverAnchor = nil
         resumeIndex = nil
         selectedID = app.id
@@ -507,8 +529,19 @@ final class OrbitRingViewModel: ObservableObject {
     ///
     /// 第一份中间结果一到就切出 `.loading`：面板已经有图可看了，还挂着转圈只是
     /// 让人多等一拍。真正空手而归的情况由 `loadPreviews` 收尾时处理。
+    ///
+    /// 选中的是「那扇窗」而不是「第几张」：最终结果可能比中途的少（空白窗被筛掉），
+    /// 只按下标记，面板高亮的和松手切过去的就会是两扇不同的窗。
     private func publish(_ captured: [WindowPreview]) {
+        let selectedWindowID = previews.indices.contains(selectedWindowIndex)
+            ? previews[selectedWindowIndex].target.id
+            : nil
         previews = Array(captured.prefix(OrbitPreferences.maxVisiblePreviews))
+        if let selectedWindowID, let index = previews.firstIndex(where: { $0.target.id == selectedWindowID }) {
+            selectedWindowIndex = index
+        } else if !previews.indices.contains(selectedWindowIndex) {
+            selectedWindowIndex = 0
+        }
         if !previews.isEmpty {
             previewState = .ready
         }
@@ -526,11 +559,22 @@ final class OrbitRingViewModel: ObservableObject {
             return previews[selectedWindowIndex].target
         }
         guard let selectedApp, !selectedApp.isOrbit else { return nil }
+        // 截图量出来的空白窗（比如微信那扇什么都不画的壳）对每个应用都要躲开，
+        // 不只是当前应用 —— 松手比截图快的时候，这里就是唯一的判断。
+        let knownBlank = WindowPreviewService.shared.knownBlankWindows
         return Self.windowTargetWithoutCapture(
             for: selectedApp,
             currentWindow: currentWindow,
             preferredCurrentAppWindow: preferredCurrentAppWindow,
-            recentWindowIDs: AppActivationHistory.shared.recentWindowIDs(for: selectedApp.id)
+            recentWindowIDs: AppActivationHistory.shared.recentWindowIDs(for: selectedApp.id),
+            lookup: { pid, excluded, preferred in
+                WindowServerInspector.mostRecentOtherWindow(
+                    ownedBy: pid,
+                    excluding: excluded,
+                    preferredIDs: preferred,
+                    knownBlank: knownBlank
+                )
+            }
         )
     }
 
@@ -543,19 +587,14 @@ final class OrbitRingViewModel: ObservableObject {
     /// nil，于是松手快一点，整次切换就退化成普通的应用激活：切到了 Chrome，落在
     /// 它自己记得的那扇窗上，而不是你选的那扇。这个偶发正是它。
     ///
-    /// `nonisolated` 且参数全部传入，纯粹是为了能被单测直接调用。
+    /// `nonisolated` 且参数全部传入（包括去问窗口服务的 `lookup`），纯粹是为了能被
+    /// 单测直接调用。
     nonisolated static func windowTargetWithoutCapture(
         for app: AppRecord,
         currentWindow: CurrentWindow?,
         preferredCurrentAppWindow: WindowTarget?,
         recentWindowIDs: [CGWindowID],
-        lookup: (pid_t, CGWindowID?, [CGWindowID]) -> WindowTarget? = {
-            WindowServerInspector.mostRecentOtherWindow(
-                ownedBy: $0,
-                excluding: $1,
-                preferredIDs: $2
-            )
-        }
+        lookup: (pid_t, CGWindowID?, [CGWindowID]) -> WindowTarget?
     ) -> WindowTarget? {
         // 当前应用那条答案是唤出的一瞬间算好的——那时 Orbit 的面板还没进窗口表，
         // 「你正看着哪一扇」还问得出来。现在再算就晚了，所以直接用它。
@@ -576,19 +615,36 @@ final class OrbitRingViewModel: ObservableObject {
         previewState = .idle
         resumeIndex = nil
         isCollapsing = false
+        dismissalPending = false
+        // A quit that finishes after the ring is gone still runs its completion
+        // against this model. Disconnecting here keeps it from cancelling
+        // whichever ring the controller is showing by then.
+        onCancel = nil
+        onActivate = nil
     }
 
     /// 让卡片沿着来时的路收回中心。调用方负责在动画走完之后撤掉窗口。
+    ///
+    /// From here on the ring only waits to be torn down. The trigger is still
+    /// tracked as held for the length of the collapse, so a release, an Enter
+    /// or a hub click can all still arrive — and with the old selection still
+    /// standing, they used to switch to the app the user had just cancelled.
+    /// Every entry point that acts on the ring checks `isCollapsing` first.
     func beginCollapse() {
         isCollapsing = true
+        dismissalPending = false
+    }
+
+    private func isSelectable(_ app: AppRecord) -> Bool {
+        !departingAppIDs.contains(app.id)
     }
 
     func moveSelection(step: Int) {
-        guard !apps.isEmpty else { return }
+        guard !isCollapsing, apps.contains(where: { isSelectable($0) }) else { return }
 
         // After an explicit deselect, the first arrow press returns to the card
         // that was left, rather than jumping back to the start of the ring.
-        if selectedID == nil, let resumeIndex, apps.indices.contains(resumeIndex) {
+        if selectedID == nil, let resumeIndex, apps.indices.contains(resumeIndex), isSelectable(apps[resumeIndex]) {
             self.resumeIndex = nil
             hoverAnchor = nil
             selectedID = apps[resumeIndex].id
@@ -605,27 +661,36 @@ final class OrbitRingViewModel: ObservableObject {
         }
 
         let currentIndex = selectedID.flatMap { id in apps.firstIndex(where: { $0.id == id }) } ?? 0
-        let nextIndex = (currentIndex + step + apps.count) % apps.count
+        var nextIndex = currentIndex
+        repeat {
+            nextIndex = (nextIndex + step + apps.count) % apps.count
+        } while !isSelectable(apps[nextIndex]) && nextIndex != currentIndex
         selectedID = apps[nextIndex].id
     }
 
     func select(number: String) {
-        guard let number = Int(number), number > 0, number <= apps.count else { return }
+        guard !isCollapsing,
+              let number = Int(number), number > 0, number <= apps.count,
+              isSelectable(apps[number - 1]) else { return }
         selectedID = apps[number - 1].id
     }
 
     func select(letter: String) {
-        guard !apps.isEmpty, let first = letter.first else { return }
+        guard !isCollapsing, !apps.isEmpty, let first = letter.first else { return }
         let startIndex = selectedID.flatMap { id in apps.firstIndex(where: { $0.id == id }) } ?? -1
         let orderedIndices = Array(0 ..< apps.count).map { (startIndex + 1 + $0) % apps.count }
-        guard let match = orderedIndices.first(where: { apps[$0].letterShortcut == Character(String(first).uppercased()) }) else {
+        let wanted = Character(String(first).uppercased())
+        guard let match = orderedIndices.first(where: {
+            isSelectable(apps[$0]) && apps[$0].letterShortcut == wanted
+        }) else {
             return
         }
         selectedID = apps[match].id
     }
 
     func confirmSelection() {
-        guard let selectedApp else {
+        guard !isCollapsing else { return }
+        guard let selectedApp, isSelectable(selectedApp) else {
             onCancel?()
             return
         }
@@ -644,25 +709,37 @@ final class OrbitRingViewModel: ObservableObject {
     /// Clears the highlight so releasing the trigger dismisses the ring
     /// instead of switching apps.
     func deselect() {
-        guard draggedAppID == nil else { return }
+        guard draggedAppID == nil, !isCollapsing else { return }
         resumeIndex = selectedID.flatMap { id in apps.firstIndex(where: { $0.id == id }) }
         selectedID = nil
         hoverAnchor = NSEvent.mouseLocation
     }
 
-    /// 关闭圆环 —— 除非文件拖放还没落地。
+    /// 一张卡片正被拖着，或者一次文件拖放还没落地：这时环归那个手势管。
+    private var gestureOwnsRing: Bool {
+        draggedAppID != nil || fileDropPhase != .resting
+    }
+
+    /// 手势落地之后，兑现它进行期间收到的那次「关」。
+    private func dismissIfPending() {
+        guard dismissalPending, !gestureOwnsRing, !isCollapsing else { return }
+        dismissalPending = false
+        onCancel?()
+    }
+
+    /// 关闭圆环 —— 除非有手势还没落地。
     ///
     /// Dismissing releases the panel and with it this view model, and the
     /// completion handler that finishes a drop holds `self` weakly. So an
     /// Escape pressed in the moment between letting the files go and the URLs
     /// coming back used to make the AirDrop or the move to Trash disappear
     /// without a trace — the files looked dropped and nothing happened. Record
-    /// the intent instead; `handleFileDrop` and the drag-exit reset both close
-    /// the ring once the file work has reached a stable state.
+    /// the intent instead; whichever gesture owns the ring closes it once it
+    /// has reached a stable state.
     func cancel() {
-        guard draggedAppID == nil else { return }
-        guard fileDropPhase == .resting else {
-            dismissAfterFileDrop = true
+        guard !isCollapsing else { return }
+        guard !gestureOwnsRing else {
+            dismissalPending = true
             return
         }
         onCancel?()
@@ -675,14 +752,15 @@ final class OrbitRingViewModel: ObservableObject {
     /// them. Unlike a cancel this is not deferred — switching apps is not what
     /// the user was in the middle of, and `.processing` lasts a few frames.
     func confirmFromHub() {
-        guard draggedAppID == nil, fileDropPhase == .resting else { return }
+        guard !gestureOwnsRing else { return }
         confirmSelection()
     }
 
+    /// 松开触发键。手势进行中松开的，不切换：等手势落地后直接关环。
     func triggerReleased() {
-        guard draggedAppID == nil else { return }
-        guard fileDropPhase == .resting else {
-            dismissAfterFileDrop = true
+        guard !isCollapsing else { return }
+        guard !gestureOwnsRing else {
+            dismissalPending = true
             return
         }
         if selectedID == nil {
@@ -711,6 +789,8 @@ final class OrbitRingViewModel: ObservableObject {
         draggedAppID = nil
         dragOffset = .zero
         dragOverCenter = false
+        // 拖动途中松开了触发键：退出请求照常发出，环在这一刻关掉。
+        defer { dismissIfPending() }
 
         guard shouldQuit else { return }
 
@@ -721,26 +801,47 @@ final class OrbitRingViewModel: ObservableObject {
             return
         }
 
-        vanishingAppID = app.id
+        beginDeparture(of: [app.id])
         app.requestQuit { [weak self] success in
             DispatchQueue.main.async {
                 guard let self else { return }
                 guard success else {
-                    self.vanishingAppID = nil
+                    self.departingAppIDs.remove(app.id)
                     return
                 }
 
                 // 宽限期比消散动画短，所以退出成功之后还要把动画剩下的那一截等完
                 // 再抽走卡片 —— 否则碎片飞到一半，卡片就凭空不见了。
-                let remaining = max(0, OrbitPreferences.dispersionDuration - OrbitPreferences.quitGracePeriod)
-                DispatchQueue.main.asyncAfter(deadline: .now() + remaining) {
-                    self.apps.removeAll { $0.id == app.id }
-                    self.vanishingAppID = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + Self.dispersionRemainder) {
+                    self.finishDeparture(removing: [app.id], settling: [app.id])
                     if self.apps.isEmpty {
                         self.onCancel?()
                     }
                 }
             }
+        }
+    }
+
+    /// 这些卡片开始消散：从现在起不能再被选中。
+    func beginDeparture(of ids: Set<String>) {
+        departingAppIDs.formUnion(ids)
+    }
+
+    /// 退出宽限期结束之后，消散动画还剩多少没放完。
+    private static var dispersionRemainder: TimeInterval {
+        max(0, OrbitPreferences.dispersionDuration - OrbitPreferences.quitGracePeriod)
+    }
+
+    /// 把退出成功的卡片拿下环，剩下的卡片顺着补位。
+    ///
+    /// - Parameters:
+    ///   - departed: Apps that actually quit; their cards leave the ring.
+    ///   - settled: Every app this departure was waiting on, including any
+    ///     that refused to quit — those cards become selectable again.
+    private func finishDeparture(removing departed: Set<String>, settling settled: Set<String>) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+            apps.removeAll { departed.contains($0.id) }
+            departingAppIDs.subtract(settled)
         }
     }
 
@@ -766,9 +867,10 @@ final class OrbitRingViewModel: ObservableObject {
         }
 
         selectedID = nil
-        bulkCleanupPendingIDs = Set(candidates.map(\.id))
+        bulkCleanupAttemptedIDs = Set(candidates.map(\.id))
+        bulkCleanupPendingIDs = bulkCleanupAttemptedIDs
         bulkCleanupSucceededIDs = []
-        bulkVanishingAppIDs = bulkCleanupPendingIDs
+        beginDeparture(of: bulkCleanupAttemptedIDs)
 
         for app in candidates {
             app.requestQuit { [weak self] success in
@@ -787,15 +889,14 @@ final class OrbitRingViewModel: ObservableObject {
         guard bulkCleanupPendingIDs.isEmpty else { return }
 
         let succeededIDs = bulkCleanupSucceededIDs
-        let remaining = max(0, OrbitPreferences.dispersionDuration - OrbitPreferences.quitGracePeriod)
-        DispatchQueue.main.asyncAfter(deadline: .now() + remaining) { [weak self] in
-            guard let self else { return }
-            self.apps.removeAll { succeededIDs.contains($0.id) }
-            self.bulkVanishingAppIDs = []
-            self.bulkCleanupSucceededIDs = []
+        let attemptedIDs = bulkCleanupAttemptedIDs
+        bulkCleanupAttemptedIDs = []
+        bulkCleanupSucceededIDs = []
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.dispersionRemainder) { [weak self] in
             // Do not dismiss after the Orbit cleanup gesture. The trigger key
             // is still held at this point; `triggerReleased()` will close the
             // ring when the user intentionally lets go.
+            self?.finishDeparture(removing: succeededIDs, settling: attemptedIDs)
         }
     }
 
@@ -846,10 +947,7 @@ final class OrbitRingViewModel: ObservableObject {
             guard let self, self.fileDropPhase != .processing else { return }
             self.fileTrashReady = false
             self.fileDropPhase = .resting
-            if self.dismissAfterFileDrop {
-                self.dismissAfterFileDrop = false
-                self.onCancel?()
-            }
+            self.dismissIfPending()
         }
         dragExitTask = task
         DispatchQueue.main.asyncAfter(deadline: .now() + OrbitPreferences.fileDragExitGrace, execute: task)
@@ -859,8 +957,9 @@ final class OrbitRingViewModel: ObservableObject {
     ///
     /// A deferred dismissal is honoured *after* the notice rather than instead
     /// of it: the trigger key having been let go is no reason to close the ring
-    /// on a message nobody got to read.
-    private func reportFileDropFailure(thenDismiss shouldDismiss: Bool) {
+    /// on a message nobody got to read. A new drag that cuts the notice short
+    /// keeps the pending dismissal; that drag honours it when it comes to rest.
+    private func reportFileDropFailure() {
         fileDropFailed = true
         fileFailureTask?.cancel()
 
@@ -868,9 +967,7 @@ final class OrbitRingViewModel: ObservableObject {
             guard let self else { return }
             self.fileFailureTask = nil
             self.fileDropFailed = false
-            if shouldDismiss {
-                self.onCancel?()
-            }
+            self.dismissIfPending()
         }
         fileFailureTask = task
         DispatchQueue.main.asyncAfter(
@@ -917,12 +1014,8 @@ final class OrbitRingViewModel: ObservableObject {
             guard let self else { return }
             self.fileTrashReady = false
             self.fileDropPhase = .resting
-            let shouldDismiss = self.dismissAfterFileDrop
-            self.dismissAfterFileDrop = false
             guard !urls.isEmpty else {
-                if shouldDismiss {
-                    self.onCancel?()
-                }
+                self.dismissIfPending()
                 return
             }
 
@@ -952,16 +1045,14 @@ final class OrbitRingViewModel: ObservableObject {
             }
 
             guard !failed else {
-                self.reportFileDropFailure(thenDismiss: shouldDismiss)
+                self.reportFileDropFailure()
                 return
             }
 
             // Keep the ring visible while the trigger is still held. If the
             // trigger was released during URL loading, close now that the
             // asynchronous file operation has reached a stable state.
-            if shouldDismiss {
-                self.onCancel?()
-            }
+            self.dismissIfPending()
         }
 
         return true
@@ -1168,7 +1259,7 @@ struct OrbitRingView: View {
                     angle: model.angle(for: index),
                     isSelected: model.selectedID == app.id,
                     isDragging: model.draggedAppID == app.id,
-                    isVanishing: model.vanishingAppID == app.id || model.bulkVanishingAppIDs.contains(app.id),
+                    isVanishing: model.departingAppIDs.contains(app.id),
                     dragOffset: model.draggedAppID == app.id ? model.dragOffset : .zero,
                     onSelect: { model.select(app) },
                     onHoverSelect: { model.selectFromHover(app) },
@@ -1933,6 +2024,8 @@ private struct OrbitAppCard: View {
                 scatterProgress = 0
             }
         }
+        // 正在消散的卡片不再接受悬停、点击和拖拽。
+        .allowsHitTesting(!isVanishing)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(app.name))
         .accessibilityHint(Text(isSelected ? "accessibility.selected" : "accessibility.select"))
@@ -2042,7 +2135,10 @@ private struct OrbitCenterControl: View {
     /// at the point the eye actually rests. A beat at the centre ties them
     /// together. It has to be small: this fires on every keypress, and anything
     /// with a visible travel becomes a stutter at speed.
-    @State private var pulse = false
+    ///
+    /// 用关键帧而不是两次 `withAnimation`：在同一拍里先写 `true` 再写 `false`，
+    /// SwiftUI 只看见最后的 `false`，跟原来一样，于是什么都不播。
+    @State private var pulseCount = 0
 
     /// Keep the hub visible so a file drag has an obvious destination. The
     /// state label changes from Cancel/confirm to Share/Trash as the drag
@@ -2071,7 +2167,13 @@ private struct OrbitCenterControl: View {
                                 width: OrbitPreferences.centerRadius * 2,
                                 height: OrbitPreferences.centerRadius * 2
                             )
-                            .scaleEffect(pulse ? 1.06 : 1)
+                            // 鼓起来用弹簧，落回去慢一点，读起来才是"回弹"而不是"抽搐"。
+                            .keyframeAnimator(initialValue: 1.0, trigger: pulseCount) { content, scale in
+                                content.scaleEffect(scale)
+                            } keyframes: { _ in
+                                SpringKeyframe(1.06, duration: 0.09, spring: Spring(response: 0.16, dampingRatio: 0.5))
+                                SpringKeyframe(1.0, duration: 0.3, spring: Spring(response: 0.3, dampingRatio: 0.75))
+                            }
 
                         // 默认状态不戴符号，戴一枚轨道标记。
                         //
@@ -2112,9 +2214,7 @@ private struct OrbitCenterControl: View {
         }
         .onDrop(of: [UTType.fileURL], isTargeted: $isFileTargeted, perform: onDrop)
         .onChange(of: selectionToken) { _, _ in
-            // 鼓起来用弹簧，落回去慢一点，读起来才是"回弹"而不是"抽搐"。
-            withAnimation(.spring(response: 0.16, dampingFraction: 0.5)) { pulse = true }
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.75).delay(0.09)) { pulse = false }
+            pulseCount &+= 1
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(centerLabel))

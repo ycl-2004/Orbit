@@ -1,5 +1,32 @@
 # Orbit release notes
 
+## Unreleased
+
+### Fixed
+
+- Pressing Escape and then releasing the trigger during the 0.2-second collapse no longer switches to the app that was just cancelled. Enter, a hub click and arrow keys are ignored while the ring collapses as well.
+- Releasing the trigger while dragging a card no longer leaves the ring stranded on screen. The release is remembered and the ring closes as soon as the card is dropped, without switching. The same pending close now survives a second file drag that interrupts a failed-drop notice.
+- A card that is dispersing after a quit can no longer be selected by hover, arrows, numbers or letters, so releasing on it cannot relaunch the app that is quitting. Two quits in a row no longer clear each other's state.
+- Quitting an app from the ring keeps the ring's layout and the dimmed backdrop aligned; the remaining cards close up the gap with an animation instead of snapping, and the dispersing fragments fly toward the hub from the card's current position.
+- A window that Accessibility identifies by number is never swapped for a different window that merely shares its title and size, so two identical Terminal windows no longer switch to the wrong one. The Accessibility window search also gives up after half a second on an app that stalls.
+- Releasing before thumbnails finish now avoids windows already measured as blank for every app, not only the one in front.
+- The preview carousel keeps the highlighted window when later capture results drop a window, so the highlight and the switch target agree.
+- The hub's selection pulse now plays; it was written as two animations in the same frame and SwiftUI only ever saw the final state.
+- Release builds declare the Apple Events entitlement, without which hardened runtime rejected the Apple Events fallback for apps such as Chrome without showing the Automation prompt. Release builds no longer carry the debugging `get-task-allow` entitlement.
+- The Apple Events fallback no longer activates the app from inside its script, so answering the Automation dialog late cannot pull the screen away after the switch was superseded. Scripts run one at a time, and an untitled window no longer matches every title.
+- Orbit asks for Accessibility on launch when it is missing and starts listening as soon as it is granted, without a relaunch. A trigger tap that macOS switched off — after Accessibility was revoked and granted again — is rebuilt instead of silently staying dead, and a trigger release missed while the tap was off is replayed.
+- The Welcome page names the configured trigger key instead of always saying Option.
+- Settings opened from the menu bar and from the system Settings command share one state, and the permission and launch-at-login rows refresh when Orbit comes back to the front. Launch at login reports the real state when macOS still needs approval, and opens Login Items so it can be given.
+- Language tags that carry only a region, such as `zh-TW` or `zh-CN`, and the Norwegian `no` tag are recognised.
+- Two running instances of the same app produce one card instead of two cards with the same identity.
+- A pointer at the very top edge of a display now opens the ring on that display.
+- Orbit no longer shows a Dock icon for a moment at launch.
+- Unit tests run against their own settings store and skip the app's launch work, so a test run no longer reads or changes the developer's own Orbit settings.
+
+### Validation
+
+- The test targets contain 69 `OrbitTests` tests and 2 `OrbitUITests` methods; the unit target passes with 0 failures.
+
 ## 1.7.0 — 2026-08-24
 
 ### Added

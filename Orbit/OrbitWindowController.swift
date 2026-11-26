@@ -438,6 +438,12 @@ final class OrbitWindowController: NSObject {
                     return
                 }
                 guard let self else { return }
+                guard self.isCurrent(generation) else {
+                    windowSwitchLogger.notice(
+                        "superseded AppleScript fallback target=\(window.id, privacy: .public)"
+                    )
+                    return
+                }
                 guard switched else {
                     self.perform(
                         .plainActivation,
@@ -448,6 +454,9 @@ final class OrbitWindowController: NSObject {
                     )
                     return
                 }
+                // 脚本只把那扇窗排到应用最前面；把应用带到前台由这里决定，
+                // 而且只在这次切换仍是当前这次时才做。
+                _ = app.bringToFront(raisingAllWindows: false, reopeningWhenWindowless: false)
                 // `set index` 报的成功只覆盖「找到了同名的窗口并重排了一下」。跨
                 // Space 它做不到，而那正是它最常被叫到的场合，所以这里同样要确认。
                 self.verifyLanding(
@@ -668,7 +677,10 @@ final class OrbitWindowController: NSObject {
     }
 
     private func screen(containing location: CGPoint) -> NSScreen? {
-        NSScreen.screens.first(where: { $0.frame.contains(location) }) ?? NSScreen.main
+        // `NSMouseInRect` rather than `contains`: the latter leaves out the
+        // frame's top edge, which is exactly where a pointer pinned against the
+        // top of a display sits — and that display then lost to `NSScreen.main`.
+        NSScreen.screens.first(where: { NSMouseInRect(location, $0.frame, false) }) ?? NSScreen.main
     }
 
     private func frame(for size: CGSize, centeredAt location: CGPoint, on screen: NSScreen?) -> NSRect {
