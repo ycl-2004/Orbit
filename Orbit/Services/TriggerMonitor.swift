@@ -10,36 +10,19 @@ import ApplicationServices
 import AppKit
 import CoreGraphics
 
-private func orbitEventTapCallback(
+/// 事件 tap 的回调。必须是一个普通的 C 函数指针，所以是 `nonisolated`；它的
+/// run loop source 挂在主 run loop 上，回调一定跑在主线程，`assumeIsolated`
+/// 在这里是成立的断言而不是赌。
+nonisolated private func orbitEventTapCallback(
     proxy: CGEventTapProxy,
     type: CGEventType,
     event: CGEvent,
     refcon: UnsafeMutableRawPointer?
 ) -> Unmanaged<CGEvent>? {
-    guard let refcon else {
-        return Unmanaged.passUnretained(event)
-    }
-
-    let service = Unmanaged<TriggerMonitor>.fromOpaque(refcon).takeUnretainedValue()
     let flags = event.flags
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-    let shouldConsumeKeyDown = type == .keyDown && service.orbitIsOpen
-
-    DispatchQueue.main.async {
-        switch type {
-        case .flagsChanged:
-            service.handleFlagsChanged(flags)
-        case .keyDown:
-            service.handleKeyDown(keyCode: keyCode)
-        // 按住触发键的同时点鼠标或滚滚轮 —— ⌥ 拖拽复制、⌥ 点下载、⌥ 滚动缩放 ——
-        // 说明这一次按住是别的手势的一部分，不是在召唤 Orbit。
-        case .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel:
-            service.abandonPendingSummon()
-        case .tapDisabledByTimeout, .tapDisabledByUserInput:
-            service.recoverDisabledTap()
-        default:
-            break
-        }
+    let shouldConsumeKeyDown = MainActor.assumeIsolated {
+        TriggerMonitor.shared.handleTapEvent(type: type, flags: flags, keyCode: keyCode)
     }
 
     // An active tap can discard navigation keys after Orbit is visible. This
@@ -48,10 +31,37 @@ private func orbitEventTapCallback(
     return shouldConsumeKeyDown ? nil : Unmanaged.passUnretained(event)
 }
 
+extension TriggerMonitor {
+    /// 回调里要做的事：先同步判断这个按键要不要吞，其余的放到下一拍处理，
+    /// 让回调尽快返回 —— 回调慢了，系统会把整个 tap 停掉。
+    fileprivate func handleTapEvent(type: CGEventType, flags: CGEventFlags, keyCode: Int64) -> Bool {
+        let service = self
+        let shouldConsumeKeyDown = type == .keyDown && orbitIsOpen
+
+        DispatchQueue.main.async {
+            switch type {
+            case .flagsChanged:
+                service.handleFlagsChanged(flags)
+            case .keyDown:
+                service.handleKeyDown(keyCode: keyCode)
+            // 按住触发键的同时点鼠标或滚滚轮 —— ⌥ 拖拽复制、⌥ 点下载、⌥ 滚动缩放 ——
+            // 说明这一次按住是别的手势的一部分，不是在召唤 Orbit。
+            case .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel:
+                service.abandonPendingSummon()
+            case .tapDisabledByTimeout, .tapDisabledByUserInput:
+                service.recoverDisabledTap()
+            default:
+                break
+            }
+        }
+        return shouldConsumeKeyDown
+    }
+}
+
 final class TriggerMonitor {
     static let shared = TriggerMonitor()
 
-    fileprivate var eventTap: CFMachPort?
+    private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var listening = false
     private var triggerPressed = false
@@ -128,7 +138,7 @@ final class TriggerMonitor {
             options: .defaultTap,
             eventsOfInterest: mask,
             callback: orbitEventTapCallback,
-            userInfo: Unmanaged.passUnretained(self).toOpaque()
+            userInfo: nil
         ) else {
             return
         }

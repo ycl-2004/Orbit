@@ -64,7 +64,7 @@ Automated tests cover selection and interaction logic, not the parts that depend
 on system permissions. Before opening a PR, run through whatever your change
 touches:
 
-- **Trigger:** hold the trigger modifier over a non-Orbit app; the ring appears near the cursor. Release to switch, Escape to cancel.
+- **Trigger:** hold the trigger modifier over a non-Orbit app; the ring appears near the cursor. Release to switch, Escape to cancel. Escape followed by an immediate release must not switch.
 - **Keyboard:** arrow keys and Tab move the selection; the clear-selection key removes the highlight; releasing then closes without switching.
 - **Window previews:** enable **Show window previews**, grant Screen Recording, **restart Orbit** (macOS requires it), then check left/right window selection on a multi-window app.
 - **Language:** select a bundled language or **Follow System** in Settings, confirm the restart prompt, then verify menus and settings reload in the selected locale.

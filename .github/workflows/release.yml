@@ -9,23 +9,23 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 45
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Select Xcode 26
+      - name: Select Xcode 27.2
         run: |
-          XCODE_APP="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -n 1)"
-          [[ -n "$XCODE_APP" ]] || { echo "Xcode 26 is not installed on this runner" >&2; exit 1; }
+          XCODE_APP=/Applications/Xcode_27.2.app
+          [[ -d "$XCODE_APP" ]] || { echo "$XCODE_APP is not installed on this runner" >&2; exit 1; }
           sudo xcode-select -s "$XCODE_APP/Contents/Developer"
           echo "DEVELOPER_DIR=$XCODE_APP/Contents/Developer" >> "$GITHUB_ENV"
           xcode-select --print-path
           xcodebuild -version
 
-      - name: Validate version, tag, architecture, and test counts
+      - name: Validate version, tag, and architecture
         run: bash scripts/ci_validate.sh
 
       - name: Determine signing mode
@@ -98,7 +98,7 @@ jobs:
         run: bash scripts/verify_release.sh dist/Orbit-macOS.zip
 
       - name: Upload GitHub Release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           files: |

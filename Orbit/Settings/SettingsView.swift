@@ -34,7 +34,7 @@ final class SettingsWindowController: NSWindowController {
     }
 
     func show() {
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
     }
 }
@@ -172,7 +172,7 @@ private struct WindowPreviewSettingsSection: View {
 
             HStack(spacing: 12) {
                 Text("prefs.preview.size")
-                Slider(value: $model.previewScale, in: 0.7 ... 1.5, step: 0.05)
+                Slider(value: $model.previewScale, in: OrbitPreferences.previewScaleRange, step: 0.05)
                 Text(String(
                     format: NSLocalizedString("prefs.preview.sizeValue", comment: "Percent"),
                     Int((model.previewScale * 100).rounded())
@@ -258,7 +258,7 @@ private struct ShortcutSettingsPane: View {
 
                 HStack(spacing: 12) {
                     Text("prefs.trigger.holdTime")
-                    Slider(value: $model.summonHoldDuration, in: 100 ... 300, step: 10)
+                    Slider(value: $model.summonHoldDuration, in: OrbitPreferences.summonHoldRange, step: 10)
                     Text(String(
                         format: NSLocalizedString("prefs.trigger.holdTimeValue", comment: "Milliseconds"),
                         Int(model.summonHoldDuration)

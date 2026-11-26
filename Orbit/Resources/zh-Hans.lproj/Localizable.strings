@@ -58,7 +58,6 @@
 
 "prefs.group.ringBackdrop" = "圆环背景";
 "prefs.appearance.ringBackdrop" = "显示圆环背景";
-"prefs.appearance.ringBackdropColor" = "背景颜色";
 "prefs.appearance.ringBackdropMode" = "颜色来源";
 "ringBackdropMode.followAccent" = "跟随强调颜色";
 "ringBackdropMode.custom" = "自定义";

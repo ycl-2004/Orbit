@@ -58,7 +58,6 @@
 
 "prefs.group.ringBackdrop" = "Ringbakgrunn";
 "prefs.appearance.ringBackdrop" = "Vis ringbakgrunn";
-"prefs.appearance.ringBackdropColor" = "Bakgrunnsfarge";
 "prefs.appearance.ringBackdropMode" = "Fargekilde";
 "ringBackdropMode.followAccent" = "Følg aksentfargen";
 "ringBackdropMode.custom" = "Egendefinert";

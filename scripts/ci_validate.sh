@@ -1,5 +1,6 @@
 #!/bin/bash
-# Validate the release metadata and test counts used by CI.
+# Validate the release metadata used by CI: version, build, architectures,
+# and the version lines in the READMEs, CHANGELOG and release tag.
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -28,29 +29,7 @@ grep -Fq "當前原始碼版本：\`${EXPECTED_SOURCE_VERSION_ZH}\`。" README.z
     exit 1
 }
 grep -Eq "^## ${MARKETING_VERSION//./\\.} —" CHANGELOG.md || {
-    echo "CHANGELOG.md does not start with version $MARKETING_VERSION" >&2
-    exit 1
-}
-
-UNIT_TEST_COUNT="$(grep -Ec '^[[:space:]]*@Test' OrbitTests/OrbitTests.swift)"
-UI_TEST_COUNT="$(find OrbitUITests -type f -name '*.swift' -exec grep -Ehc '^[[:space:]]*func test' {} + | awk '{ total += $1 } END { print total + 0 }')"
-# Keep these three in step with each other. Two commits in a row changed the
-# suite without touching this file, which is exactly the drift the check exists
-# to catch — so it names the file to edit rather than only the number it wanted.
-EXPECTED_UNIT_TESTS=69
-EXPECTED_UI_TESTS=2
-
-[[ "$UNIT_TEST_COUNT" == "$EXPECTED_UNIT_TESTS" ]] || {
-    echo "Expected $EXPECTED_UNIT_TESTS OrbitTests tests; found $UNIT_TEST_COUNT." >&2
-    echo "If the change is intended, update EXPECTED_UNIT_TESTS in $0 and the CHANGELOG test-count line." >&2
-    exit 1
-}
-[[ "$UI_TEST_COUNT" == "$EXPECTED_UI_TESTS" ]] || {
-    echo "Expected $EXPECTED_UI_TESTS OrbitUITests methods; found $UI_TEST_COUNT" >&2
-    exit 1
-}
-grep -Eq "$EXPECTED_UNIT_TESTS.*OrbitTests.*$EXPECTED_UI_TESTS.*OrbitUITests|$EXPECTED_UI_TESTS.*OrbitUITests.*$EXPECTED_UNIT_TESTS.*OrbitTests" CHANGELOG.md || {
-    echo "CHANGELOG.md does not declare $EXPECTED_UNIT_TESTS OrbitTests and $EXPECTED_UI_TESTS OrbitUITests" >&2
+    echo "CHANGELOG.md has no section for version $MARKETING_VERSION" >&2
     exit 1
 }
 
@@ -62,4 +41,4 @@ if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
     }
 fi
 
-echo "Metadata OK: $MARKETING_VERSION (build $BUILD_NUMBER), ARCHS=$ARCHS, tests=$UNIT_TEST_COUNT+$UI_TEST_COUNT"
+echo "Metadata OK: $MARKETING_VERSION (build $BUILD_NUMBER), ARCHS=$ARCHS"

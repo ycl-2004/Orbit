@@ -58,7 +58,6 @@
 
 "prefs.group.ringBackdrop" = "Fond de l’anneau";
 "prefs.appearance.ringBackdrop" = "Afficher le fond de l’anneau";
-"prefs.appearance.ringBackdropColor" = "Couleur du fond";
 "prefs.appearance.ringBackdropMode" = "Source de couleur";
 "ringBackdropMode.followAccent" = "Suivre la couleur d’accentuation";
 "ringBackdropMode.custom" = "Personnalisé";

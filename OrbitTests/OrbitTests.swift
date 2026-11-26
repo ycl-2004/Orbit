@@ -9,9 +9,10 @@ import AppKit
 import UniformTypeIdentifiers
 @testable import Orbit
 
+/// 被测的代码默认都隔离在主 actor 上，测试也跑在那里。
+@MainActor
 struct OrbitTests {
 
-    @MainActor
     private func withShortcutSettings<T>(
         letters: Bool = false,
         numbers: Bool = false,
@@ -28,18 +29,28 @@ struct OrbitTests {
         return body()
     }
 
+    /// 等到条件成立，或者超时。代替固定时长的 sleep：机器忙的时候固定时长不够，
+    /// 闲的时候又白等。
+    private func eventually(
+        within timeout: Duration = .seconds(3),
+        _ condition: () -> Bool
+    ) async throws -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now + timeout
+        while !condition() {
+            guard clock.now < deadline else { return false }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        return true
+    }
+
     /// 环上有没有 Orbit 那张卡，是一个用户偏好。
     ///
-    /// 测试宿主就是 Orbit 本体，`OrbitPreferences.store` 因此正是开发者自己那一份：
-    /// 谁在设置里把 Orbit 卡关掉，`OrbitRingViewModel` 就会在 init 里把它从
-    /// `apps` 里滤掉，于是一个只放了这张卡的环变成空环。A test that builds such a
-    /// ring without pinning the setting passes on a default machine and fails on
-    /// a machine where the card is off — which is exactly what
-    /// `neutralEntrySkipsTheOrbitCardTheWayQuickSwitchDoes` did.
-    ///
-    /// 恢复时区分"原来没写过"和"原来写的是 false"：这个偏好默认为 true，把缺省
-    /// 写成 false 会静静改掉开发者的设置。
-    @MainActor
+    /// `OrbitRingViewModel` filters the card out in `init` when the preference
+    /// is off, so a test that builds a ring containing it pins the setting
+    /// first. The tests share one settings store, so the previous value is put
+    /// back afterwards — telling "never written" apart from "written false",
+    /// because the preference defaults to true.
     private func withOrbitCard<T>(shown: Bool, _ body: () -> T) -> T {
         let key = "showOrbitCard"
         let previous = OrbitPreferences.store.object(forKey: key)
@@ -319,7 +330,7 @@ struct OrbitTests {
         #expect(arranged.map(\.id) == ["com.previous", "com.older-a", "com.older-b"])
     }
 
-    @Test @MainActor func openingBehaviorDefaultsToCancelAndKeepsQuickSwitchSelectable() {
+    @Test func openingBehaviorDefaultsToCancelAndKeepsQuickSwitchSelectable() {
         let defaults = OrbitPreferences.store
         let previous = defaults.object(forKey: "ringOpeningBehavior")
         defer {
@@ -386,7 +397,7 @@ struct OrbitTests {
     }
 
     /// 预选一个不在环上的应用，会让中心显示确认态、松手却什么也切不过去。
-    @Test @MainActor func preselectingAnAppThatIsNotOnTheRingSelectsNothing() {
+    @Test func preselectingAnAppThatIsNotOnTheRingSelectsNothing() {
         let model = OrbitRingViewModel(
             apps: [listed("com.a", "Alpha")],
             showsPreview: false,
@@ -397,7 +408,7 @@ struct OrbitTests {
         #expect(model.centerMode == .cancel)
     }
 
-    @Test @MainActor func previousAppAlwaysOccupiesTheTwelveOClockAnchor() {
+    @Test func previousAppAlwaysOccupiesTheTwelveOClockAnchor() {
         let apps = [listed("com.previous", "Previous"), listed("com.older", "Older")]
         let withoutPreview = OrbitRingViewModel(apps: apps, showsPreview: false)
         let withPreview = OrbitRingViewModel(apps: apps, showsPreview: true)
@@ -408,7 +419,7 @@ struct OrbitTests {
         #expect(withPreview.angle(for: 1) < withPreview.angle(for: 0))
     }
 
-    @Test @MainActor func eitherArrowEntersANeutralRingAtThePreviousApp() {
+    @Test func eitherArrowEntersANeutralRingAtThePreviousApp() {
         withOrbitCard(shown: true) {
             let apps = [
                 listed("com.previous", "Previous"),
@@ -429,7 +440,7 @@ struct OrbitTests {
     /// Orbit 自己那张卡是清理入口，不是切换目标 —— 确认它只会关掉圆环。所以
     /// 方向键进入一个空选的环时要跳过它，而这正是快速切换预选时用的同一条规则：
     /// 两边不一致的话，同样是松开触发键，结果会取决于高亮是谁放上去的。
-    @Test @MainActor func neutralEntrySkipsTheOrbitCardTheWayQuickSwitchDoes() {
+    @Test func neutralEntrySkipsTheOrbitCardTheWayQuickSwitchDoes() {
         withOrbitCard(shown: true) {
             let withRealTarget = OrbitRingViewModel(
                 apps: [AppRecord.orbitCard, listed("com.previous", "Previous")],
@@ -445,7 +456,7 @@ struct OrbitTests {
         }
     }
 
-    @Test @MainActor func currentAppWindowTargetCanConfirmBeforePreviewCaptureFinishes() {
+    @Test func currentAppWindowTargetCanConfirmBeforePreviewCaptureFinishes() {
         let current = listed("com.current", "Current", processIdentifier: 42)
         let target = WindowTarget(
             id: 200,
@@ -521,7 +532,7 @@ struct OrbitTests {
         #expect(!lookupRan)
     }
 
-    @Test @MainActor func dismissalExplicitlyRestoresTheCancelState() {
+    @Test func dismissalExplicitlyRestoresTheCancelState() {
         let model = OrbitRingViewModel(
             apps: [listed("com.a", "Alpha")],
             showsPreview: false,
@@ -538,7 +549,7 @@ struct OrbitTests {
 
     /// 按 Esc 之后环还要收 0.2 秒才撤。这期间松开触发键、按回车、点中心，都不能
     /// 把刚取消掉的那个应用切过去，也不能再触发一次取消。
-    @Test @MainActor func nothingActsOnTheRingWhileItCollapses() {
+    @Test func nothingActsOnTheRingWhileItCollapses() {
         let model = OrbitRingViewModel(
             apps: [listed("com.a", "Alpha"), listed("com.b", "Beta")],
             showsPreview: false,
@@ -563,7 +574,7 @@ struct OrbitTests {
 
     /// 拖着卡片时松开触发键：那次松开要被记住，卡片一放下环就关，而且不切换。
     /// 以前这次松开直接丢了，环停在屏幕上，只能点中心关掉。
-    @Test @MainActor func releasingTheTriggerMidDragClosesTheRingOnceTheCardIsDropped() {
+    @Test func releasingTheTriggerMidDragClosesTheRingOnceTheCardIsDropped() {
         let alpha = listed("com.a", "Alpha")
         let model = OrbitRingViewModel(apps: [alpha, listed("com.b", "Beta")], showsPreview: false)
         var activated = false
@@ -582,7 +593,7 @@ struct OrbitTests {
     }
 
     /// 正在消散的卡片不能再被选中：松手会把一个正在退出的应用重新拉起来。
-    @Test @MainActor func departingCardsCannotBeSelected() {
+    @Test func departingCardsCannotBeSelected() {
         let model = OrbitRingViewModel(
             apps: [listed("com.a", "Alpha"), listed("com.b", "Beta"), listed("com.c", "Gamma")],
             showsPreview: false
@@ -620,7 +631,7 @@ struct OrbitTests {
         #expect(targets.first?.processIdentifier == 10)
     }
 
-    @Test @MainActor func orbitCardCanBeShownOrHiddenFromTheRing() {
+    @Test func orbitCardCanBeShownOrHiddenFromTheRing() {
         withOrbitCard(shown: true) {
             let shown = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
             #expect(shown.apps.contains(where: { $0.isOrbit }))
@@ -632,7 +643,7 @@ struct OrbitTests {
         }
     }
 
-    @Test @MainActor func orbitCleanupKeepsRingOpenUntilTriggerRelease() {
+    @Test func orbitCleanupKeepsRingOpenUntilTriggerRelease() {
         withOrbitCard(shown: true) {
             let model = OrbitRingViewModel(apps: [.orbitCard], showsPreview: false)
             var didCancel = false
@@ -667,7 +678,7 @@ struct OrbitTests {
         #expect(app(named: "   ").letterShortcut == nil)
     }
 
-    @Test @MainActor func releasingWithoutSelectionCancels() {
+    @Test func releasingWithoutSelectionCancels() {
         let model = OrbitRingViewModel(apps: [])
         var didCancel = false
         model.onCancel = { didCancel = true }
@@ -677,7 +688,7 @@ struct OrbitTests {
         #expect(didCancel)
     }
 
-    @Test @MainActor func triggerReleaseDoesNotDismissDuringFileDrop() {
+    @Test func triggerReleaseDoesNotDismissDuringFileDrop() {
         let model = OrbitRingViewModel(apps: [])
         var didCancel = false
         model.onCancel = { didCancel = true }
@@ -692,7 +703,7 @@ struct OrbitTests {
         model.setFileDragTargeted(false)
     }
 
-    @Test @MainActor func triggerReleaseAfterFileDropExitDismissesAfterReset() async throws {
+    @Test func triggerReleaseAfterFileDropExitDismissesAfterReset() async throws {
         let model = OrbitRingViewModel(apps: [])
         var didCancel = false
         model.onCancel = { didCancel = true }
@@ -702,8 +713,7 @@ struct OrbitTests {
         #expect(!didCancel)
 
         model.setFileDragTargeted(false)
-        try await Task.sleep(for: .seconds(OrbitPreferences.fileDragExitGrace + 0.2))
-        #expect(didCancel)
+        #expect(try await eventually { didCancel })
     }
 
     /// 悬停到黑洞出现、再把文件拖走而不放手，环必须还能关掉。
@@ -712,19 +722,17 @@ struct OrbitTests {
     /// `fileDropPhase` stayed on `.trashReady` forever. Both `cancel()` and
     /// `triggerReleased()` require `.resting`, which left the ring floating over
     /// everything with Escape, the trigger key and the hub all inert.
-    @Test @MainActor func draggingFilesAwayAfterTheTrashArmsStillLetsTheRingClose() async throws {
+    @Test func draggingFilesAwayAfterTheTrashArmsStillLetsTheRingClose() async throws {
         let model = OrbitRingViewModel(apps: [])
         var didCancel = false
         model.onCancel = { didCancel = true }
 
         model.setFileDragTargeted(true)
-        try await Task.sleep(for: .seconds(OrbitPreferences.fileTrashHoldDuration + 0.2))
-        #expect(model.centerMode == .trash)
+        #expect(try await eventually { model.centerMode == .trash })
 
         // 文件离开了窗口，但用户并没有放手 —— 不会有 drop 回调来收拾状态。
         model.setFileDragTargeted(false)
-        try await Task.sleep(for: .seconds(OrbitPreferences.fileDragExitGrace + 0.2))
-        #expect(model.fileDropPhase == .resting)
+        #expect(try await eventually { model.fileDropPhase == .resting })
         #expect(model.centerMode == .cancel)
 
         model.triggerReleased()
@@ -737,7 +745,7 @@ struct OrbitTests {
     /// finishes the drop holds it weakly — so a cancel landing inside that
     /// window used to make an accepted AirDrop or Trash move disappear without
     /// a trace. The cancel is recorded and applied once the drop settles.
-    @Test @MainActor func cancellingMidDropWaitsForTheDropToSettle() async throws {
+    @Test func cancellingMidDropWaitsForTheDropToSettle() async throws {
         let model = OrbitRingViewModel(apps: [])
         var didCancel = false
         model.onCancel = { didCancel = true }
@@ -748,13 +756,12 @@ struct OrbitTests {
         model.cancel()
         #expect(!didCancel)
 
-        try await Task.sleep(for: .milliseconds(200))
+        #expect(try await eventually { didCancel })
         #expect(model.fileDropPhase == .resting)
-        #expect(didCancel)
     }
 
     /// 同一个窗口里点中心也不能切走 —— 切换会关闭环，代价和取消一样。
-    @Test @MainActor func theHubDoesNotSwitchAppsWhileADropIsCompleting() async throws {
+    @Test func theHubDoesNotSwitchAppsWhileADropIsCompleting() async throws {
         let model = OrbitRingViewModel(apps: [listed("com.a", "Alpha")])
         var activated: AppRecord?
         model.onActivate = { app, _ in activated = app }
@@ -764,7 +771,7 @@ struct OrbitTests {
         model.confirmFromHub()
         #expect(activated == nil)
 
-        try await Task.sleep(for: .milliseconds(200))
+        #expect(try await eventually { model.fileDropPhase == .resting })
         model.confirmFromHub()
         #expect(activated?.id == "com.a")
     }
@@ -774,7 +781,7 @@ struct OrbitTests {
     /// `trashItem` used to be called with `try?`, so a locked file, a volume
     /// with no Trash, or a path that no longer exists ended exactly like a
     /// success: the ring closed and the file stayed put.
-    @Test @MainActor func aFailedTrashIsReportedOnTheHub() async throws {
+    @Test func aFailedTrashIsReportedOnTheHub() async throws {
         let missing = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("orbit-not-a-real-file-\(UUID().uuidString)")
         let provider = NSItemProvider(
@@ -788,15 +795,52 @@ struct OrbitTests {
 
         model.fileTrashReady = true
         _ = model.handleFileDrop([provider])
-        try await Task.sleep(for: .milliseconds(300))
 
-        #expect(model.fileDropFailed)
+        #expect(try await eventually { model.fileDropFailed })
         #expect(model.centerMode == .failed)
         #expect(!didCancel)
     }
 
+    /// 旧键搬到新键、修饰键拼写跟着翻译；新键已经有值时不覆盖；不再读的键被清掉。
+    @Test func storedPreferencesMigrateOnceAndDropRetiredKeys() {
+        let store = OrbitPreferences.store
+        let keys = ["triggerModifier", "summonKey", "cardSize", "cardScale", "clearSelectionModifier"]
+            + OrbitPreferences.retiredKeys
+        let saved = keys.map { store.object(forKey: $0) }
+        defer {
+            for (key, value) in zip(keys, saved) {
+                if let value {
+                    store.set(value, forKey: key)
+                } else {
+                    store.removeObject(forKey: key)
+                }
+            }
+        }
+
+        store.removeObject(forKey: "summonKey")
+        store.set("option", forKey: "triggerModifier")
+        store.set("small", forKey: "cardSize")
+        store.set("large", forKey: "cardScale")
+        store.set("disabled", forKey: "clearSelectionModifier")
+        for key in OrbitPreferences.retiredKeys {
+            store.set(true, forKey: key)
+        }
+
+        OrbitPreferences.migrateStoredPreferences()
+
+        #expect(store.string(forKey: "summonKey") == "alternate")
+        #expect(store.object(forKey: "triggerModifier") == nil)
+        // 新键已经有值：旧值不能盖回去，但旧键照样删掉。
+        #expect(store.string(forKey: "cardScale") == "large")
+        #expect(store.object(forKey: "cardSize") == nil)
+        #expect(store.string(forKey: "clearSelectionModifier") == "none")
+        for key in OrbitPreferences.retiredKeys {
+            #expect(store.object(forKey: key) == nil)
+        }
+    }
+
     /// 触发键设成 `.none` 会让环再也唤不出来，所以它连存都不该存得住。
-    @Test @MainActor func summonKeyAlwaysHasAValue() {
+    @Test func summonKeyAlwaysHasAValue() {
         let previous = OrbitPreferences.store.object(forKey: "summonKey")
         defer { OrbitPreferences.store.set(previous, forKey: "summonKey") }
 
@@ -828,7 +872,7 @@ struct OrbitTests {
         }
     }
 
-    @Test @MainActor func selectionDoesNotActivateUntilConfirmed() {
+    @Test func selectionDoesNotActivateUntilConfirmed() {
         let app = AppRecord(
             id: "test.orbit.app",
             name: "Test App",
@@ -847,7 +891,7 @@ struct OrbitTests {
         #expect(didActivate)
     }
 
-    @Test @MainActor func keyboardNavigationSelectsWithoutActivating() {
+    @Test func keyboardNavigationSelectsWithoutActivating() {
         let first = AppRecord(
             id: "test.orbit.first",
             name: "First App",
@@ -878,7 +922,7 @@ struct OrbitTests {
         #expect(didActivate)
     }
 
-    @Test @MainActor func deselectingLetsTheTriggerDismissWithoutActivating() {
+    @Test func deselectingLetsTheTriggerDismissWithoutActivating() {
         let app = AppRecord(
             id: "test.orbit.app",
             name: "Test App",
@@ -903,7 +947,7 @@ struct OrbitTests {
         #expect(didCancel)
     }
 
-    @Test @MainActor func arrowingAfterDeselectResumesWhereItLeftOff() {
+    @Test func arrowingAfterDeselectResumesWhereItLeftOff() {
         withShortcutSettings(numbers: true) {
             let apps = ["Safari", "Xcode", "Terminal", "Notes"].enumerated().map { index, name in
                 AppRecord(
@@ -932,7 +976,7 @@ struct OrbitTests {
         }
     }
 
-    @Test @MainActor func deselectTwiceStillResumesFromTheLatestPosition() {
+    @Test func deselectTwiceStillResumesFromTheLatestPosition() {
         withShortcutSettings(numbers: true) {
             let apps = ["Safari", "Xcode", "Terminal"].enumerated().map { index, name in
                 AppRecord(
@@ -957,7 +1001,7 @@ struct OrbitTests {
         }
     }
 
-    @Test @MainActor func numberAndLetterCommandsSelectExpectedCards() {
+    @Test func numberAndLetterCommandsSelectExpectedCards() {
         withShortcutSettings(letters: true, numbers: true) {
             let apps = ["Safari", "Xcode", "Terminal"].enumerated().map { index, name in
                 AppRecord(
@@ -978,7 +1022,7 @@ struct OrbitTests {
         }
     }
 
-    @Test @MainActor func optionalShortcutsStayDisabledByDefault() {
+    @Test func optionalShortcutsStayDisabledByDefault() {
         withShortcutSettings {
             let apps = ["Safari", "Xcode"].enumerated().map { index, name in
                 AppRecord(

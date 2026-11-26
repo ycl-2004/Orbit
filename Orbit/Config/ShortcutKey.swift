@@ -7,40 +7,21 @@ import AppKit
 
 /// User-selectable modifier keys used by the summon and clear-selection gestures.
 ///
-/// `rawValue` is written straight to `UserDefaults`, so the spellings here are a
-/// storage format rather than display text — `localizedTitle` is what the
-/// settings window shows.
-enum ShortcutKey: CaseIterable, Identifiable, Equatable {
+/// `rawValue` — the case name — is written straight to `UserDefaults`, so the
+/// case names here are a storage format rather than display text:
+/// `localizedTitle` is what the settings window shows. Renaming a case needs a
+/// migration in `OrbitPreferences.migrateStoredPreferences`.
+///
+/// `nonisolated`: a plain value type, read from the event tap's callback as well
+/// as from the UI.
+nonisolated enum ShortcutKey: String, CaseIterable, Identifiable {
     case alternate
     case command
     case control
     case shift
     case none
 
-    static var allCases: [ShortcutKey] { [.alternate, .command, .control, .shift, .none] }
-
     var id: String { rawValue }
-
-    var rawValue: String {
-        switch self {
-        case .alternate: "alternate"
-        case .command: "command"
-        case .control: "control"
-        case .shift: "shift"
-        case .none: "none"
-        }
-    }
-
-    nonisolated init?(rawValue: String) {
-        switch rawValue {
-        case "alternate": self = .alternate
-        case "command": self = .command
-        case "control": self = .control
-        case "shift": self = .shift
-        case "none": self = .none
-        default: return nil
-        }
-    }
 
     /// Keys that can actually summon Orbit. `.none` is only for the optional
     /// clear-selection shortcut.

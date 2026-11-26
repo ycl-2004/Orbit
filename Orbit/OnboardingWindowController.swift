@@ -36,7 +36,7 @@ final class OnboardingWindowController: NSWindowController {
     }
 
     func show() {
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
     }
 }
@@ -107,7 +107,6 @@ private struct WelcomeView: View {
                 .padding(.top, 20)
 
                 Button("onboarding.start") {
-                    UserDefaults.standard.set(true, forKey: "onboardingCompleted")
                     onStart()
                 }
                 .buttonStyle(.borderedProminent)

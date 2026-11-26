@@ -51,10 +51,10 @@ AppKit 寫的選單欄應用，沒有任何第三方依賴，也不聯網——�
 ## 快速開始
 
 1. **[下載 `Orbit-macOS.zip`](https://github.com/ycl-2004/Orbit/releases/latest/download/Orbit-macOS.zip)** 並解壓。需要 macOS 14.0 或更高版本；正式包是同時支援 Apple Silicon 與 Intel Mac 的 Universal 2 建構。
-2. 把 `Orbit.app` 移到 `/Applications`。首次啟動請按住 Control 點按它並選擇**開啟**——這個建構是 ad-hoc 簽名、未經 Apple 公證的，直接雙擊會被攔截。
+2. 把 `Orbit.app` 移到 `/Applications` 並開啟。這個建構是 ad-hoc 簽名、未經 Apple 公證的，macOS 會攔下第一次啟動：關掉提示框，打開**系統設定 → 隱私權與安全性**，在 Orbit 那條訊息旁點**強制打開**。
 3. 按提示授予**輔助功能（Accessibility）**權限，然後在任意介面長按 **Option（⌥）** 撥出環。
 
-如果右鍵選單裡沒有**開啟**選項，手動清除隔離標記：
+如果沒有出現**強制打開**，改為手動清除隔離標記：
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Orbit.app
@@ -158,8 +158,8 @@ README 與倉庫內的產品截圖保持同步。
 <details>
 <summary>macOS 提示"無法開啟，因為無法驗證開發者"</summary>
 
-釋出版是 ad-hoc 簽名、未經 Apple 公證的，所以直接雙擊會被 Gatekeeper 攔截。
-按住 Control 點按 `Orbit.app` 選擇**開啟**，或執行
+釋出版是 ad-hoc 簽名、未經 Apple 公證的，所以第一次啟動會被 Gatekeeper 攔截。
+打開**系統設定 → 隱私權與安全性**，在 Orbit 那條訊息旁點**強制打開**，或執行
 `xattr -dr com.apple.quarantine /Applications/Orbit.app`。公證建構已列入
 [路線圖](#路線圖)。
 
@@ -221,7 +221,7 @@ defaults delete app.orbit.local
 
 環境要求：
 
-- macOS 14.0 或更高版本（當前重建 Xcode 工程的部署目標）。
+- macOS 14.0 或更高版本。
 - 正式釋出包包含 `arm64` 與 `x86_64` 兩種架構，支援 Apple Silicon 和 Intel Mac。
 - Xcode 26 或更高版本。
 - Accessibility 權限，用於全域修飾鍵觸發。
@@ -265,7 +265,7 @@ xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug \
 
 Universal 2 檢查、乾淨機器安裝和權限迴歸清單見
 [docs/release-checklist.md](docs/release-checklist.md)。GitHub Actions 會在每次 push
-和 pull request 上執行後設資料檢查、Debug 建構以及 64 個 `OrbitTests` 測試。
+和 pull request 上執行後設資料檢查、Debug Universal 2 建構以及 `OrbitTests` 單元測試。
 
 </details>
 

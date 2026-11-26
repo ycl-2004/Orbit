@@ -21,7 +21,7 @@ import VideoToolbox
 /// A title alone is not an identity: an app can have several windows carrying
 /// the same one, and the string ScreenCaptureKit reports is not always the
 /// string Accessibility reports for the same window. The frame settles both.
-struct WindowTarget: Sendable, Equatable {
+nonisolated struct WindowTarget: Sendable, Equatable {
     let id: CGWindowID
     let title: String
     /// CoreGraphics global coordinates, top-left origin — the space
@@ -33,7 +33,7 @@ struct WindowTarget: Sendable, Equatable {
 ///
 /// 预览面板把它藏起来：它就是此刻占满屏幕的那一扇，列出来只会占掉一个位置，
 /// 而选中它等于什么也没发生。
-struct CurrentWindow: Sendable, Equatable {
+nonisolated struct CurrentWindow: Sendable, Equatable {
     let processIdentifier: pid_t
     let id: CGWindowID
 
@@ -44,7 +44,7 @@ struct CurrentWindow: Sendable, Equatable {
     }
 }
 
-struct WindowPreview: Identifiable, Sendable {
+nonisolated struct WindowPreview: Identifiable, Sendable {
     let id: CGWindowID
     let title: String
     /// Where the window sat when it was listed. Only used to find it again.
@@ -249,10 +249,11 @@ final class WindowPreviewService {
     /// 功能确实看不见这扇窗，该老实返回 nil 去走下一级，而不是拿标题和尺寸凑一个
     /// 出来。只有在窗口号答不上来时（旧系统、或应用不给），才退回原来的标题/尺寸。
     private static func axWindow(matching target: WindowTarget, pid: pid_t) -> AXUIElement? {
-        let axApp = AXUIElementCreateApplication(pid)
         // An app busy on its main thread answers slowly or not at all, and the
-        // app switch is waiting on this call. Give up rather than stall.
-        AXUIElementSetMessagingTimeout(axApp, 0.4)
+        // app switch is waiting on this call. The process-wide ceiling that
+        // `ApplicationDelegate` installs makes each round trip give up rather
+        // than stall.
+        let axApp = AXUIElementCreateApplication(pid)
 
         var value: AnyObject?
         guard AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &value) == .success,
@@ -456,7 +457,11 @@ final class WindowPreviewService {
             guard windowsWithContent < OrbitPreferences.maxVisiblePreviews,
                   previews.count < OrbitPreferences.maxPreviewCaptures else { break }
 
-            let fresh = await Self.capture(window, width: captureWidth, scale: scale)
+            // `SCWindow` is an immutable snapshot that ScreenCaptureKit hands out,
+            // and nothing here touches it while the capture runs, but the SDK
+            // does not mark it `Sendable`.
+            nonisolated(unsafe) let snapshot = window
+            let fresh = await Self.capture(snapshot, width: captureWidth, scale: scale)
             // 环关掉时缓存已经清空了；被取消的这一轮截回来的图不能再塞回去。
             if let fresh, !Task.isCancelled {
                 remember(fresh, for: window.windowID)
@@ -702,7 +707,10 @@ extension CGRect {
 
 /// Pulls exactly one frame out of an `SCStream` and tears it down. This is the
 /// only way to reach windows on other Spaces.
-private final class SingleFrameStreamCapture: NSObject, SCStreamOutput, @unchecked Sendable {
+///
+/// `nonisolated`: ScreenCaptureKit delivers the frame on its own queue, and the
+/// capture itself runs off the main actor. Its state is guarded by `lock`.
+nonisolated private final class SingleFrameStreamCapture: NSObject, SCStreamOutput, @unchecked Sendable {
     private let lock = NSLock()
     nonisolated(unsafe) private var continuation: CheckedContinuation<CGImage?, Never>?
     nonisolated(unsafe) private var stream: SCStream?

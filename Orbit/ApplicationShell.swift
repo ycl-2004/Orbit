@@ -27,10 +27,6 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var summonObserver: NSObjectProtocol?
 
-    /// 首次运行后写入的标记；改成 `true` 可以在调试时强制重看欢迎页。
-    private static let alwaysShowWelcome = false
-    private static let welcomeSeenKey = "onboardingCompleted"
-
     // MARK: - 生命周期
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -41,8 +37,8 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
         // 必须排在最前：后面每一步都会读设置，而升级上来的机器此刻还只有旧键。
         OrbitPreferences.migrateStoredPreferences()
 
-        // 不占 Dock 图标，只在菜单栏出现。
-        NSApp.setActivationPolicy(.accessory)
+        // 不占 Dock 图标、只在菜单栏出现，由 Info.plist 的 `LSUIElement` 决定：
+        // 启动那一刻就生效，不会先闪一下 Dock 图标。
 
         Self.boundAccessibilityMessaging()
         installStatusItem()
@@ -86,7 +82,7 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     /// Passing the system-wide object is what makes this global; individual
     /// elements can still ask for more, and the Window-menu press does.
     private static func boundAccessibilityMessaging() {
-        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 0.4)
+        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), OrbitPreferences.accessibilityMessagingTimeout)
     }
 
     /// 有权限就装上（或修好）事件监听；没权限时让监听器等权限，反复调用也无副作用。
@@ -108,13 +104,12 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func presentWelcomeIfNeeded() {
-        guard Self.alwaysShowWelcome || OrbitPreferences.showWelcomeOnLaunch else { return }
+        guard OrbitPreferences.showWelcomeOnLaunch else { return }
 
         // 稍等一拍再弹，让菜单栏图标和事件监听先就位，
         // 否则欢迎窗口可能抢在应用真正激活之前出现。
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             OnboardingWindowController.shared.show()
-            UserDefaults.standard.set(true, forKey: Self.welcomeSeenKey)
         }
     }
 

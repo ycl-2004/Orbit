@@ -58,7 +58,6 @@
 
 "prefs.group.ringBackdrop" = "링 배경";
 "prefs.appearance.ringBackdrop" = "링 배경 표시";
-"prefs.appearance.ringBackdropColor" = "배경 색상";
 "prefs.appearance.ringBackdropMode" = "색상 기준";
 "ringBackdropMode.followAccent" = "강조 색상 따르기";
 "ringBackdropMode.custom" = "사용자 설정";

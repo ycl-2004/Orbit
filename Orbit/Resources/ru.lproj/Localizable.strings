@@ -58,7 +58,6 @@
 
 "prefs.group.ringBackdrop" = "Фон кольца";
 "prefs.appearance.ringBackdrop" = "Показывать фон кольца";
-"prefs.appearance.ringBackdropColor" = "Цвет фона";
 "prefs.appearance.ringBackdropMode" = "Источник цвета";
 "ringBackdropMode.followAccent" = "Следовать цвету акцента";
 "ringBackdropMode.custom" = "Свой цвет";

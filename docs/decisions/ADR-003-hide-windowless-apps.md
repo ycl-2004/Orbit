@@ -26,7 +26,7 @@ moment it did nothing.
 An app must own at least one real window to appear on the ring, controlled by
 `hideWindowlessApps` in Settings → Appearance and **on by default**.
 
-"Real window" is decided by `WindowVisibilityChecker.isRealWindow`: normal
+"Real window" is decided by `WindowServerInspector.qualifiesAsWindow`: normal
 window layer, non-transparent, and at least `OrbitPreferences.minimumRealWindowSize`
 (200×120). Both the ring's app list and `WindowPreviewService`'s window list
 measure against that one constant, so a card never promises a thumbnail the
@@ -50,7 +50,7 @@ it reads as a bug.
 ## Consequences
 
 - The window list is copied once per summon rather than once per app —
-  `processesWithWindows()` returns the whole pid set in a single pass.
+  `WindowServerInspector.windowOwners()` returns the whole pid set in a single pass.
 - Users who want the Dock's roster back can turn the setting off.
 - One residual mismatch remains: the preview additionally requires a non-empty
   window title, which the ring cannot check because `kCGWindowName` needs the

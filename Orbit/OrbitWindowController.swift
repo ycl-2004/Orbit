@@ -76,10 +76,6 @@ final class OrbitWindowController: NSObject {
         )
     }
 
-    deinit {
-        notificationTokens.forEach(NotificationCenter.default.removeObserver)
-    }
-
     func show(at location: CGPoint) {
         // Tear down any stale panel without reporting a close: the ring is
         // being opened right now, and telling the hotkey service otherwise
@@ -144,7 +140,7 @@ final class OrbitWindowController: NSObject {
         // always selects the same 12-o'clock target that the first arrow enters
         // — the skip-the-Orbit-card rule here is the one `entryCardID` applies.
         let preselecting = OrbitPreferences.ringOpeningBehavior == .quickSwitch
-            ? (apps.first(where: { !$0.isOrbit }) ?? apps.first)?.id
+            ? OrbitRingViewModel.entryCardID(in: apps)
             : nil
 
         let ringModel = OrbitRingViewModel(
@@ -426,7 +422,8 @@ final class OrbitWindowController: NSObject {
             // 系统的自动化授权框，而那个框在屏幕上挂多久，这里就阻塞多久。所以回来
             // 之后要先问一句"这次切换还是用户正在做的事吗"。
             let requestedAt = Date()
-            ScriptedWindowFocus.focus(window, bundleIdentifier: app.id) { [weak self] switched in
+            Task { [weak self] in
+                let switched = await ScriptedWindowFocus.focus(window, bundleIdentifier: app.id)
                 let elapsed = Date().timeIntervalSince(requestedAt)
                 windowSwitchLogger.notice(
                     "AppleScript fallback target=\(window.id, privacy: .public) switched=\(switched, privacy: .public) elapsed=\(elapsed, privacy: .public)"

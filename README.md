@@ -54,10 +54,10 @@ on-device.
 ## Quick start
 
 1. **[Download `Orbit-macOS.zip`](https://github.com/ycl-2004/Orbit/releases/latest/download/Orbit-macOS.zip)** and unzip it. Requires macOS 14.0 or later; the release is a Universal 2 build for Apple Silicon and Intel Macs.
-2. Move `Orbit.app` to `/Applications`. On first launch, Control-click it and choose **Open** — the build is ad-hoc signed, not Apple-notarized, so a regular double-click is blocked.
+2. Move `Orbit.app` to `/Applications` and open it. The build is ad-hoc signed, not Apple-notarized, so macOS blocks the first launch: close the dialog, open **System Settings → Privacy & Security**, and click **Open Anyway** next to the Orbit message.
 3. Grant **Accessibility** permission when asked, then hold **Option (⌥)** anywhere to summon the ring.
 
-If the Control-click **Open** option is unavailable, clear the quarantine flag:
+If **Open Anyway** does not appear, clear the quarantine flag instead:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Orbit.app
@@ -166,7 +166,8 @@ Orbit version are the most useful thing you can send.
 <summary>macOS says Orbit "cannot be opened because the developer cannot be verified"</summary>
 
 The release build is ad-hoc signed and not Apple-notarized, so Gatekeeper blocks
-a plain double-click. Control-click `Orbit.app` and choose **Open**, or run
+the first launch. Open **System Settings → Privacy & Security** and click
+**Open Anyway** next to the Orbit message, or run
 `xattr -dr com.apple.quarantine /Applications/Orbit.app`. Notarized builds are on
 the [roadmap](#roadmap).
 
@@ -235,7 +236,7 @@ transfers are handed to macOS and never touch an Orbit-controlled server.
 
 Requirements:
 
-- macOS 14.0 or later for the current reconstructed Xcode project.
+- macOS 14.0 or later.
 - Universal 2 release artifacts contain both `arm64` and `x86_64`; the downloadable release supports Apple Silicon and Intel Macs.
 - Xcode 26 or later.
 - Accessibility permission for the global modifier-key trigger.
@@ -284,7 +285,8 @@ public documentation remain tracked.
 Release verification, including Universal 2 checks and the clean-machine
 installation/permission regression checklist, is documented in
 [docs/release-checklist.md](docs/release-checklist.md). GitHub Actions runs the
-metadata check, Debug build, and 64 `OrbitTests` tests on every push and pull request.
+metadata check, a Debug Universal 2 build, and the `OrbitTests` unit tests on every
+push and pull request.
 
 </details>
 
@@ -308,7 +310,7 @@ gesture-first workflow. This repository provides:
 - The complete SwiftUI/AppKit source, resources, tests, and shared Xcode project.
 - Portable placeholder bundle identifiers under `app.orbit.local`.
 - No developer Team ID, signing certificate, or machine-specific Xcode state.
-- English-first documentation with a separate Simplified Chinese version.
+- English-first documentation with a separate Traditional Chinese version.
 - Current source build: `1.7.0 (build 8)`.
 - English is the default app localization; the in-app picker ships English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, Russian, Danish, Norwegian Bokmål, and Esperanto.
 

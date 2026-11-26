@@ -21,12 +21,12 @@ whose titles are returned as unavailable.
 
 ## Decision
 
-- `WindowVisibilityChecker.processesWithWindows()` returns an optional PID set.
+- `WindowServerInspector.windowOwners()` returns an optional PID set.
 - An empty set is authoritative: no listed app owns a qualifying window, so
   `hideWindowlessApps` returns an empty app list.
 - `nil` means the window query failed, so the app list is preserved as a safe
   degraded result.
-- `isRealWindow` requires a non-empty title only when
+- `WindowServerInspector.qualifiesAsWindow` requires a non-empty title only when
   `CGPreflightScreenCaptureAccess()` reports that titles can be read.
 
 ## Consequences

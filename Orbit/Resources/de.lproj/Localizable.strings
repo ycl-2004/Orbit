@@ -58,7 +58,6 @@
 
 "prefs.group.ringBackdrop" = "Ring-Hintergrund";
 "prefs.appearance.ringBackdrop" = "Ring-Hintergrund anzeigen";
-"prefs.appearance.ringBackdropColor" = "Hintergrundfarbe";
 "prefs.appearance.ringBackdropMode" = "Farbquelle";
 "ringBackdropMode.followAccent" = "Akzentfarbe folgen";
 "ringBackdropMode.custom" = "Benutzerdefiniert";

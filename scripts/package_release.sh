@@ -1,11 +1,12 @@
 #!/bin/bash
 # Build the distributable macOS app and create the GitHub Release asset.
-# Usage: scripts/package_release.sh [version]   (default: 1.7.0)
+# Usage: scripts/package_release.sh [version]   (default: the project's MARKETING_VERSION)
 set -euo pipefail
 
-VERSION="${1:-1.7.0}"
-SIGNING_IDENTITY="${SIGNING_IDENTITY:--}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION="${1:-$(xcodebuild -project "$PROJECT_DIR/Orbit.xcodeproj" -scheme Orbit -configuration Release -showBuildSettings 2>/dev/null \
+    | awk -F' = ' '$1 ~ /^[[:space:]]*MARKETING_VERSION$/ { print $2; exit }')}"
+SIGNING_IDENTITY="${SIGNING_IDENTITY:--}"
 BUILD_DIR="$PROJECT_DIR/Build"
 DERIVED_DATA_DIR="$BUILD_DIR/DerivedData"
 BUILT_APP="$BUILD_DIR/Release/Orbit.app"

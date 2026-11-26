@@ -50,28 +50,22 @@ enum ScriptedWindowFocus {
     /// away even when the user had long since moved on. Activation is the
     /// caller's decision, made only if the switch is still current.
     ///
-    /// - Parameter completion: Called on the main queue with whether the app
-    ///   reported a window switched. On true the caller activates the app; on
-    ///   false it falls back to activating it the ordinary way.
-    static func focus(
-        _ target: WindowTarget,
-        bundleIdentifier: String,
-        completion: @escaping (Bool) -> Void
-    ) {
-        guard !target.title.isEmpty, !bundleIdentifier.isEmpty else {
-            DispatchQueue.main.async { completion(false) }
-            return
-        }
+    /// - Returns: Whether the app reported a window switched. On true the
+    ///   caller activates the app; on false it falls back to activating it the
+    ///   ordinary way.
+    static func focus(_ target: WindowTarget, bundleIdentifier: String) async -> Bool {
+        guard !target.title.isEmpty, !bundleIdentifier.isEmpty else { return false }
 
         let source = script(bundleIdentifier: bundleIdentifier, title: target.title)
-        scriptQueue.async {
-            var error: NSDictionary?
-            let result = NSAppleScript(source: source)?.executeAndReturnError(&error)
-            // Apps without a scripting dictionary, a declined Automation
-            // permission, and a title that matched nothing all land here the
-            // same way: no `true` came back.
-            let switched = result?.booleanValue == true
-            DispatchQueue.main.async { completion(switched) }
+        return await withCheckedContinuation { continuation in
+            scriptQueue.async {
+                var error: NSDictionary?
+                let result = NSAppleScript(source: source)?.executeAndReturnError(&error)
+                // Apps without a scripting dictionary, a declined Automation
+                // permission, and a title that matched nothing all land here the
+                // same way: no `true` came back.
+                continuation.resume(returning: result?.booleanValue == true)
+            }
         }
     }
 
@@ -177,8 +171,8 @@ enum ScriptedWindowFocus {
             return false
         }
 
+        // 往返上限由 `ApplicationDelegate` 在系统级对象上统一设好了。
         let axApp = AXUIElementCreateApplication(pid)
-        AXUIElementSetMessagingTimeout(axApp, 0.4)
 
         var value: AnyObject?
         let menuBarStatus = AXUIElementCopyAttributeValue(
@@ -216,12 +210,10 @@ enum ScriptedWindowFocus {
             }
 
             let targetItem = items[index]
-            // AX timeouts are per object: neither the one on `axApp` nor the
-            // process-wide ceiling `boundAccessibilityMessaging` installs
-            // reaches a menu-item object. Overriding it here on purpose — this
-            // one call is allowed to take longer than the ceiling, because
-            // Chromium does modal work inside the action's callback and a press
-            // cut short there is a switch that silently does nothing.
+            // Overriding the process-wide ceiling on purpose: this one call is
+            // allowed to take longer, because Chromium does modal work inside
+            // the action's callback and a press cut short there is a switch
+            // that silently does nothing.
             AXUIElementSetMessagingTimeout(targetItem, 1.0)
             let pressStatus = AXUIElementPerformAction(targetItem, kAXPressAction as CFString)
             scriptedWindowFocusLogger.notice(

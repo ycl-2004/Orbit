@@ -58,7 +58,6 @@
 
 "prefs.group.ringBackdrop" = "Fono de la ringo";
 "prefs.appearance.ringBackdrop" = "Montri fonon de la ringo";
-"prefs.appearance.ringBackdropColor" = "Fona koloro";
 "prefs.appearance.ringBackdropMode" = "Kolora fonto";
 "ringBackdropMode.followAccent" = "Sekvi akcentkoloron";
 "ringBackdropMode.custom" = "Propra";

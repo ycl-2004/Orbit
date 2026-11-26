@@ -23,9 +23,16 @@
 - Orbit no longer shows a Dock icon for a moment at launch.
 - Unit tests run against their own settings store and skip the app's launch work, so a test run no longer reads or changes the developer's own Orbit settings.
 
+### Changed
+
+- CI and release builds run on GitHub's `xcode-27` runner with Xcode 27.2, and use `actions/checkout@v7` and `softprops/action-gh-release@v3`; the Node 20 versions no longer run on hosted runners. The metadata check no longer counts tests by hand.
+- `scripts/package_release.sh` takes its default version from the project's `MARKETING_VERSION`.
+- The README and release checklist describe the macOS 15+ **Privacy & Security → Open Anyway** flow; the Control-click **Open** shortcut no longer bypasses Gatekeeper.
+- Internal cleanup: the ring view file is split into the view model, its layout, and one file per view; fixed geometry and timing live in `OrbitTuning.swift`; enum-backed settings share one storage helper; repeated animation rules, ranges and timeouts are defined once; unused code and the retired `hasSeenWelcome`, `onboardingCompleted` and `preselectRecentApp` settings are removed. The code compiles without warnings in Swift 6 language mode; the project still builds in Swift 5 mode.
+
 ### Validation
 
-- The test targets contain 69 `OrbitTests` tests and 2 `OrbitUITests` methods; the unit target passes with 0 failures.
+- The `OrbitTests` unit target passes with 0 failures, and a universal ad-hoc Release build carries the Apple Events entitlement and no `get-task-allow`.
 
 ## 1.7.0 — 2026-08-24
 
