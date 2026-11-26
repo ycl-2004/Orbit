@@ -16,9 +16,12 @@ permissions of that kind.
 ## What Orbit stores on your Mac
 
 Your settings, and nothing else. They live in Orbit's own `UserDefaults` domain:
-trigger modifier, long-press threshold, card size, ring order and placement,
-preview size, whether window previews are on, keyboard shortcut toggles, your
-language choice, and whether you have seen the welcome window.
+the trigger and clear-selection keys, the hold time, the letter and number
+shortcut toggles, how the ring opens and whether it animates, ring order and
+placement, card size and finish, the accent and backdrop colours and whether the
+backdrop is shown, whether windowless apps and the Orbit card appear, whether
+window previews are on and their size, your language choice, and whether the
+welcome window shows at launch.
 
 That list is the whole of it. In particular, Orbit does **not** persist which
 apps you use or when. The recently-used ordering in the ring is rebuilt in

@@ -291,12 +291,14 @@ push and pull request.
 ## Project layout
 
 - `Orbit/` — app source, configuration, resources, and asset catalog.
-- `Orbit/Config/AppLanguage.swift` and `Orbit/Settings/` — language and user preference behavior.
-- `Orbit/Services/AppActivationHistory.swift` — recent activation history used to build the ring.
+- `Orbit/Ring/` — the ring: its view model and layout, and one file per view (cards, hub, preview panel, backdrop, trail, scrim).
+- `Orbit/Services/` — window-server, Accessibility and Apple Events access, the event tap, window previews, and the in-memory activation history that orders the ring.
+- `Orbit/Config/` and `Orbit/Settings/` — stored settings, fixed geometry and timing (`OrbitTuning.swift`), language, and the Settings window.
 - `OrbitTests/` — unit tests for interaction and selection behavior.
 - `OrbitUITests/` — UI test targets.
 - `Orbit.xcodeproj/` — shared Xcode project and workspace data.
 - `photos/` — README screenshots, the App Intro artwork, and supporting images.
+- `artwork/` — the project poster.
 - `scripts/` — install, release packaging, and demo GIF helpers.
 - `docs/decisions/` — product and engineering decision records.
 

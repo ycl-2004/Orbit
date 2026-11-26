@@ -270,12 +270,14 @@ Universal 2 檢查、乾淨機器安裝和權限迴歸清單見
 ## 專案結構
 
 - `Orbit/` — 應用原始碼、配置、資源和 asset catalog。
-- `Orbit/Config/AppLanguage.swift` 與 `Orbit/Settings/` — 語言和使用者偏好行為。
-- `Orbit/Services/AppActivationHistory.swift` — 用於建構環形應用集合的最近啟用歷史。
+- `Orbit/Ring/` — 圓環本身：它的 view model 與版面，以及每個視圖各一個檔案（卡片、中心、預覽面板、背景光、軌道、遮罩）。
+- `Orbit/Services/` — 視窗伺服器、輔助使用與 Apple 事件的存取、事件監聽、視窗預覽，以及決定環上順序的記憶體內啟用歷史。
+- `Orbit/Config/` 與 `Orbit/Settings/` — 儲存的設定、固定的幾何與時間常數（`OrbitTuning.swift`）、語言，以及設定視窗。
 - `OrbitTests/` — 互動與選擇邏輯的單元測試。
 - `OrbitUITests/` — UI 測試目標。
 - `Orbit.xcodeproj/` — 共享 Xcode 工程和 workspace 資料。
 - `photos/` — README 截圖、App Intro 介紹圖和輔助圖片。
+- `artwork/` — 專案海報。
 - `scripts/` — 安裝、釋出打包與演示動圖生成指令碼。
 - `docs/decisions/` — 產品與工程決策記錄。
 
